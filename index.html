@@ -3629,7 +3629,9 @@ const Auth=(function(){
   const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const db=()=>{ if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG); return firebase.database(); };
   const roster=f=>{ try{ return rosterOf(f)||[]; }catch(e){ return []; } };
-  let ov=null,btn=null,reqs=[],pend={},flash=false,view="home",cardsTimer=null,prompted=false;
+  let ov=null,btn=null,reqs=[],pend={},flash=false,view="home",cardsTimer=null,prompted=false,keepY=0,lockUntil=0,lockBound=false;
+  const isOpen=()=>!!(ov&&ov.style.display==="flex");
+  function bindLock(){ if(lockBound) return; lockBound=true; window.addEventListener("scroll",()=>{ if(!isOpen()&&Date.now()>lockUntil) return; if(Math.abs(window.scrollY-keepY)>2) window.scrollTo({top:keepY,behavior:"instant"}); },{passive:true}); }
   function paint(){
     if(!btn){
       btn=document.createElement("button");
@@ -3667,15 +3669,15 @@ const Auth=(function(){
   function box(){
     if(!ov){
       ov=document.createElement("div");
-      ov.style.cssText="position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;padding:16px";
-      ov.innerHTML='<div id="authBox" style="background:var(--bg-panel);border:1px solid var(--line);border-radius:12px;width:100%;max-width:420px;max-height:88vh;overflow:auto;padding:22px"></div>';
+      ov.style.cssText="position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;padding:16px;overscroll-behavior:contain";
+      ov.innerHTML='<div id="authBox" style="background:var(--bg-panel);border:1px solid var(--line);border-radius:12px;width:100%;max-width:420px;max-height:88vh;overflow:auto;overscroll-behavior:contain;padding:22px"></div>';
       ov.addEventListener("click",e=>{ if(e.target===ov) hide(); });
       document.body.appendChild(ov);
     }
     return document.getElementById("authBox");
   }
-  const hide=()=>{ if(ov) ov.style.display="none"; if(cardsTimer){ clearInterval(cardsTimer); cardsTimer=null; } };
-  function openPanel(){ const b=box(); ov.style.display="flex"; view="home"; render(b); }
+  const hide=()=>{ lockUntil=Date.now()+1500; if(ov) ov.style.display="none"; window.scrollTo({top:keepY,behavior:"instant"}); if(cardsTimer){ clearInterval(cardsTimer); cardsTimer=null; } };
+  function openPanel(){ const b=box(); if(!isOpen()){ keepY=window.scrollY; view="home"; } bindLock(); ov.style.display="flex"; render(b); }
   const row=(id,label,val)=>'<div class="au_row" data-v="'+id+'" style="display:flex;justify-content:space-between;align-items:center;padding:12px 2px;border-bottom:1px solid var(--line);cursor:pointer;font-size:14px"><span>'+label+'</span><span style="opacity:.6;font-size:13px">'+val+' ›</span></div>';
   const backLink='<a href="#" class="au_back" style="font-size:13px;opacity:.7;display:inline-block;margin-bottom:12px">‹ 返回</a>';
   function myChars(){ const o=[]; Object.keys(ST).forEach(f=>roster(f).forEach(s=>{ if(user&&s.owner===user.uid) o.push({f,s}); })); return o; }
@@ -3780,6 +3782,7 @@ const Auth=(function(){
   }
   const api={
     init,openPanel,
+    get isOpen(){return isOpen();},
     get isAdmin(){return admin;},
     uid:()=>user?user.uid:null, nick:()=>nick,
     newOwner:()=>(user&&!admin)?user.uid:null,
@@ -4466,6 +4469,7 @@ let wheelIdleTimer = null;
 
 window.addEventListener("wheel", (e) => {
   if(transitioning || jumping) return;
+  if(window.Auth && window.Auth.isOpen) return;
 
   const {idx, distFromTop, distToNext} = getSeamState();
   const canGoForward = idx < snapSections.length - 1 && canForward(idx, distFromTop, distToNext);
@@ -4501,6 +4505,7 @@ window.addEventListener("touchstart", (e) => {
 
 window.addEventListener("touchmove", (e) => {
   if(touchStartY === null || transitioning || jumping) return;
+  if(window.Auth && window.Auth.isOpen) return;
   const dy = touchStartY - e.touches[0].clientY;
   const {idx, distFromTop, distToNext} = getSeamState();
   if(dy > TOUCH_TRIGGER && idx < snapSections.length - 1 && canForward(idx, distFromTop, distToNext)){
