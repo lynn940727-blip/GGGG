@@ -3629,7 +3629,7 @@ const Auth=(function(){
   const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const db=()=>{ if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG); return firebase.database(); };
   const roster=f=>{ try{ return rosterOf(f)||[]; }catch(e){ return []; } };
-  let ov=null,btn=null,reqs=[],pend={},flash=false,view="home",cardsTimer=null,prompted=false,keepY=0,lockUntil=0,lockBound=false;
+  let ov=null,btn=null,reqs=[],pend={},flash=false,view="home",cardsTimer=null,prompted=false,keepY=0,lockUntil=0,lockBound=false,favs=new Set();
   const isOpen=()=>!!(ov&&ov.style.display==="flex");
   function bindLock(){ if(lockBound) return; lockBound=true; window.addEventListener("scroll",()=>{ if(!isOpen()&&Date.now()>lockUntil) return; if(Math.abs(window.scrollY-keepY)>2) window.scrollTo({top:keepY,behavior:"instant"}); },{passive:true}); }
   function paint(){
@@ -3642,10 +3642,66 @@ const Auth=(function(){
     }
     btn.title=user?(nick||"設定暱稱")+(admin?"（管理員）":""):"登入";
   }
+  const localFavs=()=>{ try{ return JSON.parse(localStorage.getItem("bp_favs_"+(user&&user.uid))||"[]"); }catch(e){ return []; } };
+  function saveFavs(){
+    if(!user) return;
+    const arr=Array.from(favs);
+    try{ localStorage.setItem("bp_favs_"+user.uid,JSON.stringify(arr)); }catch(e){}
+    const o={}; arr.forEach(k=>{ o[k]=true; });
+    db().ref("users/"+user.uid+"/favs").set(arr.length?o:null).catch(e=>console.warn("favs save failed",e));
+  }
+  function ensureStyle(){
+    if(document.getElementById("authStyle")) return;
+    const st=document.createElement("style"); st.id="authStyle";
+    st.textContent=`
+#authBox .au-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:15px 16px;margin-bottom:8px;border:1px solid var(--line);border-left:3px solid #7a1015;background:var(--bg-panel-2);border-radius:8px;cursor:pointer;font-size:15px;transition:border-color .2s,background .2s}
+#authBox .au-row:hover{border-color:var(--bone-dim);border-left-color:#b5020f;background:#211918}
+#authBox .au-row .v{opacity:.8;font-size:13px;white-space:nowrap}
+#authBox .au-sec{display:flex;justify-content:space-between;align-items:center;margin:26px 0 6px;padding-bottom:8px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:12px;letter-spacing:.16em;color:var(--bone)}
+#authBox .au-sec>span:first-child::before{content:'◆';color:#b5020f;font-size:8px;margin-right:8px;vertical-align:middle}
+#authBox .au-badge{display:inline-block;background:#b5020f;color:#fff;font-size:13px;font-weight:700;padding:3px 12px;border-radius:12px;margin-right:6px;letter-spacing:0}
+#authBox .au-badge.amber{background:#d9a62e;color:#1a1200;box-shadow:0 0 0 3px rgba(217,166,46,.25);animation:auPulse 1.8s ease-in-out infinite}
+@keyframes auPulse{0%,100%{box-shadow:0 0 0 3px rgba(217,166,46,.25)}50%{box-shadow:0 0 0 6px rgba(217,166,46,.08)}}
+#authBox .au-mini{background:none;border:1px solid var(--line);color:var(--bone);font-size:12px;padding:4px 10px;border-radius:4px;cursor:pointer;font-family:var(--sans);letter-spacing:0}
+#authBox .au-mini:hover{border-color:var(--bone-dim)}
+#authBox .au-btn{flex:1;padding:14px 16px;border-radius:8px;font-size:16px;cursor:pointer;border:1px solid;font-family:inherit;font-weight:700;letter-spacing:.06em;transition:background .2s,transform .1s}
+#authBox .au-btn:active{transform:scale(.98)}
+#authBox .au-ok{background:#2f7a4f;border-color:#4aa171;color:#fff;box-shadow:0 2px 10px rgba(47,122,79,.35)}
+#authBox .au-ok:hover{background:#3a7f55}
+#authBox .au-danger{background:#8f0a16;border-color:#c8202e;color:#fff}
+#authBox .au-danger:hover{background:#b5020f}
+#authBox .au-pend{border:2px solid #d9a62e;background:linear-gradient(180deg,rgba(217,166,46,.18),rgba(217,166,46,.06));border-radius:10px;padding:16px;margin:14px 0;box-shadow:0 0 18px rgba(217,166,46,.15)}
+#authBox .au-pend.click{cursor:pointer}
+#authBox .au-pend-h{font-size:32px;font-weight:900;margin-bottom:6px;color:#ffd166;letter-spacing:.08em;line-height:1.2}
+#authBox .au-pend-s{font-size:12px;color:#d9c48a;opacity:.85;margin-bottom:4px}
+#authBox .au-pend-t{font-size:17px;font-weight:700;margin:12px 0 10px;word-break:break-all;color:var(--bone)}
+#authBox .au-pend .au-btn{width:100%}
+#authBox .au-req{border:1px solid #d9a62e;background:linear-gradient(180deg,rgba(217,166,46,.10),var(--bg-panel-2));border-radius:10px;padding:16px;margin:12px 0}
+#authBox .au-req-n{font-size:20px;font-weight:700;word-break:break-all}
+#authBox .au-req-t{font-size:15px;opacity:.85;margin:4px 0 12px;word-break:break-all}
+#authBox .au-req-b{display:flex;gap:10px}
+#authBox .au-logout{background:#8f0a16;border:1px solid #c8202e;color:#fff;font-size:12px;padding:6px 22px;border-radius:5px;cursor:pointer;font-family:inherit;letter-spacing:.1em}
+#authBox .au-logout:hover{background:#b5020f}
+#authBox .au-outwrap{text-align:center;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+#authBox .au-head{display:flex;align-items:center;gap:14px;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--line)}
+#authBox .au-ava{width:52px;height:52px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;font-family:var(--serif);color:var(--bone);background:radial-gradient(circle at 30% 25%,#7a1015,#2a0a0c);border:1px solid #b5020f;box-shadow:0 0 14px rgba(181,2,15,.35)}
+#authBox .au-hn{font-size:22px;font-weight:700;font-family:var(--serif);word-break:break-all;line-height:1.25}
+#authBox .au-role{display:inline-block;margin-top:4px;font-family:var(--mono);font-size:10px;letter-spacing:.16em;padding:2px 8px;border:1px solid var(--line);color:var(--bone-dim)}
+#authBox .au-role.adm{border-color:#d9a62e;color:#ffd166}
+#authBox .au-favrow{display:flex;align-items:center;gap:10px;padding:12px 14px;margin:8px 0;border:1px solid var(--line);background:var(--bg-panel-2);border-radius:6px;cursor:pointer}
+#authBox .au-favrow:hover{border-color:var(--bone-dim)}
+#authBox .au-favrow.on{border-color:#f2cec0;background:#2a1a17}
+#authBox .au-star{font-size:18px}
+#authBox .au-fn{flex:1;word-break:break-all}
+#authBox .au-fs{font-size:12px;opacity:.75}
+#authBox .au-empty{padding:14px;border:1px dashed var(--line);border-radius:6px;font-size:13px;opacity:.7}`;
+    document.head.appendChild(st);
+  }
   function load(){
-    if(!user){ nick="";admin=false;paint();return Promise.resolve(); }
+    if(!user){ nick="";admin=false;favs=new Set();paint();return Promise.resolve(); }
     const d=db();
     return Promise.all([
+      d.ref("users/"+user.uid+"/favs").once("value").then(s=>{ const v=s.val(); favs=new Set(v?Object.keys(v):localFavs()); }).catch(()=>{ favs=new Set(localFavs()); }),
       d.ref("users/"+user.uid+"/nick").once("value").then(s=>{nick=s.val()||"";}).catch(()=>{}),
       d.ref("admins/"+user.uid).once("value").then(s=>{admin=s.val()===true;}).catch(()=>{admin=false;}),
       d.ref("claimRequests/"+user.uid).once("value").then(s=>{pend=s.val()||{};}).catch(()=>{pend={};})
@@ -3667,6 +3723,7 @@ const Auth=(function(){
     }catch(e){ console.warn("auth init failed",e); }
   }
   function box(){
+    ensureStyle();
     if(!ov){
       ov=document.createElement("div");
       ov.style.cssText="position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;padding:16px;overscroll-behavior:contain";
@@ -3678,43 +3735,67 @@ const Auth=(function(){
   }
   const hide=()=>{ lockUntil=Date.now()+1500; if(ov) ov.style.display="none"; window.scrollTo({top:keepY,behavior:"instant"}); if(cardsTimer){ clearInterval(cardsTimer); cardsTimer=null; } };
   function openPanel(){ const b=box(); if(!isOpen()){ keepY=window.scrollY; view="home"; } bindLock(); ov.style.display="flex"; render(b); }
-  const row=(id,label,val)=>'<div class="au_row" data-v="'+id+'" style="display:flex;justify-content:space-between;align-items:center;padding:12px 2px;border-bottom:1px solid var(--line);cursor:pointer;font-size:14px"><span>'+label+'</span><span style="opacity:.6;font-size:13px">'+val+' ›</span></div>';
-  const backLink='<a href="#" class="au_back" style="font-size:13px;opacity:.7;display:inline-block;margin-bottom:12px">‹ 返回</a>';
+  const row=(id,label,val)=>'<div class="au_row au-row" data-v="'+id+'"><span>'+label+'</span><span class="v">'+val+' ›</span></div>';
   function myChars(){ const o=[]; Object.keys(ST).forEach(f=>roster(f).forEach(s=>{ if(user&&s.owner===user.uid) o.push({f,s}); })); return o; }
-  function bar(label,n,type){
-    const col=type==="hp"?"var(--c-hp)":"var(--c-san)", dk=type==="hp"?"var(--c-hp-dark,var(--c-hp))":"var(--c-san-dark,var(--c-san))";
+  const TH={
+    "實驗體":{bg:"#331915",glow:"none",ok:"#f2cec0",pill:"#622f2d",txt:"#e6ddcf",dim:"#a89f92"},
+    "醫療清潔部隊":{bg:"#152a33",glow:"none",ok:"#0F7F8D",pill:"#045A63",txt:"#e0e6e2",dim:"#a3ada9"},
+    "資助者":{bg:"#22202f",glow:"0 0 20px rgba(140,132,206,.14),inset 0 0 28px rgba(140,132,206,.06)",ok:"#594fa1",pill:"#3e376c",txt:"#e4e2ea",dim:"#a9a6b8"}
+  };
+  function bar(label,n,type,th){
+    const col=type==="hp"?"#7E2625":"#798da6", dk=type==="hp"?"#401010":"#465364";
     let seg="";
-    for(let i=0;i<3;i++) seg+='<div style="flex:1;height:8px;border:1px solid '+(i<n?dk:"var(--line)")+';background:'+(i<n?col:"transparent")+'"></div>';
-    return '<div style="display:flex;flex-direction:column;gap:5px;margin-top:10px"><div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--bone-dim)"><span>'+label+'</span><span>'+n+'/3</span></div><div style="display:flex;gap:4px">'+seg+'</div></div>';
+    for(let i=0;i<3;i++) seg+='<div style="flex:1;height:8px;border:1px solid '+(i<n?dk:"rgba(255,255,255,.14)")+';background:'+(i<n?col:"transparent")+'"></div>';
+    return '<div style="display:flex;flex-direction:column;gap:5px;margin-top:12px"><div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:'+th.dim+'"><span>'+label+'</span><span>'+n+'/3</span></div><div style="display:flex;gap:4px">'+seg+'</div></div>';
   }
-  function cardsHTML(){
-    const m=myChars();
-    if(!m.length) return '<div class="modal-note">還沒有已認領的角色，點上方「申請認領角色」。</div>';
-    return m.map(({f,s})=>{
-      const dead=typeof s.hp==="number"&&s.hp===0, mad=typeof s.san==="number"&&s.san===0;
-      const tag=dead?'<span style="color:var(--c-crit);font-size:12px">死亡</span>':(mad?'<span style="color:var(--c-san);font-size:12px">瘋狂</span>':"");
-      const av=s.avatarUrl?'<img src="'+esc(s.avatarUrl)+'" style="width:44px;height:44px;border-radius:4px;object-fit:cover;flex:none;border:1px solid var(--line)">':'<div style="width:44px;height:44px;border-radius:4px;flex:none;border:1px dashed var(--line);background:rgba(255,255,255,.04)"></div>';
-      let h='<div style="border:1px solid var(--line);background:var(--bg-panel-2);border-radius:4px;padding:12px 14px;margin:10px 0"><div style="display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--bone-dim)"><span>'+esc(f)+" 編號 "+esc(s.id)+'</span><span>'+tag+'<a href="#" class="au_unbind" data-f="'+esc(f)+'" data-id="'+esc(s.id)+'" style="font-size:12px;opacity:.7;margin-left:10px">解綁</a></span></div><div style="display:flex;gap:10px;align-items:center;margin-top:10px">'+av+'<div style="flex:1;min-width:0;font-size:16px;word-break:break-all">'+esc(s.name)+'</div></div>';
-      if(typeof s.hp==="number") h+=bar("HP",s.hp,"hp");
-      if(typeof s.san==="number") h+=bar("SAN",s.san,"san");
-      const st=Array.isArray(s.statuses)?s.statuses:[];
-      if(st.length) h+='<div style="margin-top:10px">'+st.map(x=>'<span style="display:inline-block;font-size:11px;padding:2px 8px;margin:2px 4px 2px 0;border-radius:10px;background:var(--c-pill)">'+esc(x)+'</span>').join("")+'</div>';
-      const bits=[];
+  function cardHTML(f,s,mode){
+    const th=TH[f]||TH["實驗體"];
+    const hasStat=typeof s.hp==="number"&&typeof s.san==="number";
+    const dead=hasStat&&(s.hp===0||s.san===0);
+    const sev=hasStat?Math.max(3-s.hp,3-s.san):0;
+    const bc=dead?"#6B070E":(sev===0?th.ok:(sev===1?"#c24452":"#b5020f"));
+    const tc=dead?"#e8a9a4":(sev===0?th.ok:(sev===1?"#e0606c":"#ff5a66"));
+    const label=f==="資助者"?"資助者":(dead?"死亡":(sev===0?"良好":(sev===1?"異常":"瀕死")));
+    const av=s.avatarUrl?'<img src="'+esc(s.avatarUrl)+'" style="width:48px;height:48px;border-radius:4px;object-fit:cover;flex:none;border:1px solid '+th.dim+'">':'<div style="width:48px;height:48px;border-radius:4px;flex:none;border:1px dashed '+th.dim+';background:rgba(255,255,255,.05)"></div>';
+    let h='<div style="border:1px solid '+bc+';background:'+(dead?"#6B070E":th.bg)+';border-radius:2px;padding:16px 16px 14px;margin:10px 0;color:'+th.txt+';'+(dead?"filter:grayscale(.35);":"")+(f==="資助者"?"box-shadow:"+th.glow+";":"")+'">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:'+th.dim+'">'+esc(f)+'　編號 <b style="color:'+th.txt+'">'+esc(s.id)+'</b></span><span style="font-family:var(--mono);font-size:10px;letter-spacing:.08em;padding:2px 8px;border:1px solid '+bc+';color:'+tc+'">'+label+'</span></div>'
+      +'<div style="display:flex;gap:12px;align-items:center;margin-top:12px">'+av+'<div style="flex:1;min-width:0;font-size:20px;font-weight:700;word-break:break-all;'+(dead?"text-decoration:line-through;color:#c69a94;":"")+'">'+esc(s.name)+'</div></div>';
+    if(typeof s.hp==="number") h+=bar("HP",s.hp,"hp",th);
+    if(typeof s.san==="number") h+=bar("SAN",s.san,"san",th);
+    const st=Array.isArray(s.statuses)?s.statuses:[];
+    if(st.length) h+='<div style="margin-top:12px">'+st.map(x=>'<span style="display:inline-block;font-size:11px;padding:2px 9px;margin:2px 4px 2px 0;background:'+th.pill+';color:'+th.txt+'">'+esc(x)+'</span>').join("")+'</div>';
+    const bits=[];
+    if(f==="資助者"){ bits.push("繃帶 ∞","針筒 ∞"); }
+    else{
       if(typeof s.bandages==="number") bits.push("繃帶 x"+s.bandages);
       if(typeof s.syringes==="number") bits.push("針筒 x"+s.syringes);
       if(s.deathCount) bits.push("死亡 x"+s.deathCount);
       if(s.madCount) bits.push("瘋狂 x"+s.madCount);
-      if(bits.length) h+='<div style="margin-top:10px;font-size:11px;opacity:.65">'+bits.join("　／　")+'</div>';
-      return h+"</div>";
-    }).join("");
+    }
+    if(bits.length) h+='<div style="margin-top:12px;font-size:12px;color:'+th.dim+'">'+bits.join("　／　")+'</div>';
+    h+='<div style="text-align:right;margin-top:10px">'+(mode==="fav"
+      ?'<a href="#" class="au_unfav" data-id="'+esc(s.id)+'" style="font-size:12px;color:'+th.dim+';border:1px solid '+th.dim+';padding:2px 10px;border-radius:3px;text-decoration:none">☆ 取消收藏</a>'
+      :'<a href="#" class="au_unbind" data-f="'+esc(f)+'" data-id="'+esc(s.id)+'" style="font-size:12px;color:'+th.dim+';border:1px solid '+th.dim+';padding:2px 10px;border-radius:3px;text-decoration:none">解綁</a>')+'</div>';
+    return h+"</div>";
+  }
+  function cardsHTML(){
+    const m=myChars();
+    if(!m.length) return '<div class="au-empty">還沒有已認領的角色，點上方「申請認領角色」。</div>';
+    return m.map(({f,s})=>cardHTML(f,s,"own")).join("");
+  }
+  function favsHTML(){
+    const list=roster("實驗體").filter(s=>favs.has(String(s.id)));
+    if(!list.length) return '<div class="au-empty">還沒有收藏的實驗體。收藏後可在這裡看他的面板，行動時他會置頂。</div>';
+    return list.map(s=>cardHTML("實驗體",s,"fav")).join("");
   }
   function bindCards(c){
     c.querySelectorAll(".au_unbind").forEach(a=>a.onclick=ev=>{
       ev.preventDefault();
-      const f=a.dataset.f,id=a.dataset.id,s=roster(f).find(x=>x.id===id);
+      const f=a.dataset.f,id=a.dataset.id,s=roster(f).find(x=>String(x.id)===id);
       if(!s||!confirm("確定要解除「"+s.name+"」的認領嗎？之後要重新申請並由管理員批准。")) return;
       db().ref(ST[f][1]+"/s"+id+"/owner").remove().then(()=>{ s.owner=null; render(); }).catch(e=>alert("解綁失敗："+(e.code||e.message)));
     });
+    c.querySelectorAll(".au_unfav").forEach(a=>a.onclick=ev=>{ ev.preventDefault(); favs.delete(a.dataset.id); saveFavs(); render(); });
   }
   function render(b){
     b=b||box();
@@ -3725,30 +3806,42 @@ const Auth=(function(){
       b.querySelector("#au_x").onclick=hide; return;
     }
     if(!nick) view="nick";
+    const keep=b.dataset.view===view?b.scrollTop:0; b.dataset.view=view;
     let h=flash?'<div class="modal-note" style="color:#8fbf8f;margin-bottom:10px">✓ 登入成功</div>':"";
     if(view==="nick"){
       h+='<div class="modal-title">'+(nick?"修改暱稱":"先取個暱稱吧")+'</div><span class="field-label">暱稱（1–20 字）</span><input class="text-input" id="au_nick" maxlength="20" value="'+esc(nick)+'"><button class="confirm-btn" id="au_sn">儲存</button>';
     }else if(view==="claim"){
-      h+='<div class="modal-title">申請認領角色</div>';
+      h+='<div class="modal-eyebrow">帳號</div><div class="modal-title" style="font-size:17px">申請認領角色</div>';
       const pk=Object.keys(pend);
-      if(pk.length) h+='<div class="modal-eyebrow">等待批准</div>'+pk.map(k=>'<div class="modal-note">'+esc(pend[k].f+" "+pend[k].id+" "+pend[k].name)+' <a href="#" data-c="'+esc(k)+'" class="au_cancel">取消</a></div>').join("");
+      if(pk.length) h+='<div class="au-pend"><div class="au-pend-h">等待批准</div><div class="au-pend-s">管理員批准後即可使用角色</div>'+pk.map(k=>'<div class="au-pend-t">'+esc(pend[k].f)+'　編號 '+esc(pend[k].id)+'　'+esc(pend[k].name)+'</div><button class="au-btn au-danger au_cancel" data-c="'+esc(k)+'">取消申請</button>').join("")+'</div>';
       h+='<span class="field-label">陣營</span><select class="pick" id="au_f">'+Object.keys(ST).map(f=>"<option>"+f+"</option>").join("")+'</select><span class="field-label">角色</span><select class="pick" id="au_c" size="5"></select><button class="confirm-btn" id="au_rq">送出申請</button>';
     }else if(view==="admin"){
-      h+='<div class="modal-title">待批准的申請</div><div id="au_list" class="modal-note">讀取中…</div>';
+      h+='<div class="modal-eyebrow">管理員</div><div class="modal-title" style="font-size:17px">待批准的申請</div><div id="au_list" class="modal-note">讀取中…</div>';
+    }else if(view==="fav"){
+      h+='<div class="modal-eyebrow">帳號</div><div class="modal-title">收藏的實驗體</div><div class="modal-note">收藏後，會在個人檔案顯示他的面板；行動選目標時，他會置頂並標示 ☆。</div>'
+        +roster("實驗體").map(x=>{ const on=favs.has(String(x.id)); return '<div class="au-favrow'+(on?" on":"")+'" data-id="'+esc(x.id)+'"><span class="au-star">☆</span><span class="au-fn">編號 '+esc(x.id)+'　'+esc(x.name)+'</span><span class="au-fs">'+(on?"已收藏":"點擊收藏")+'</span></div>'; }).join("");
     }else{
       const pn=Object.keys(pend).length;
-      h+='<div class="modal-eyebrow">帳號'+(admin?"・管理員":"")+'</div><div class="modal-title">'+esc(nick)+'</div>'+row("nick","暱稱",esc(nick))+row("claim","申請認領角色",pn?"待批准 "+pn:"")+(admin?row("admin","待批准的申請",""):"")+'<div class="modal-eyebrow" style="margin-top:18px">我的角色</div><div id="au_cards"></div>'+(admin?"":'<div class="modal-note" style="word-break:break-all;font-size:11px;opacity:.5">UID：'+user.uid+"</div>");
+      h+='<div class="au-head"><div class="au-ava">'+esc(Array.from(nick)[0]||"?")+'</div><div><div class="au-hn">'+esc(nick)+'</div><span class="au-role'+(admin?" adm":"")+'">'+(admin?"管理員":"帳號")+'</span></div></div>'
+        +(pn?'<div class="au-pend click au_row" data-v="claim"><div class="au-pend-h">等待批准</div><div class="au-pend-s">你有 '+pn+' 筆申請正在等管理員審核，點此查看／取消 ›</div></div>':"")
+        +row("nick","暱稱",esc(nick))
+        +row("claim","申請認領角色",pn?'<span class="au-badge amber">待批准 '+pn+'</span>':"")
+        +(admin?row("admin","待批准的申請",'<span id="au_admcnt"></span>'):"")
+        +'<div class="au-sec"><span>我的角色</span></div><div id="au_cards"></div>'
+        +'<div class="au-sec"><span>收藏的實驗體</span><button class="au-mini au_row" data-v="fav">＋ 選擇收藏</button></div><div id="au_favcards"></div>'
+        +(admin?"":'<div class="modal-note" style="word-break:break-all;font-size:11px;opacity:.5;margin-top:16px">UID：'+user.uid+"</div>");
     }
-    if(view==="home"||!nick) h+='<button class="modify-btn" id="au_out">登出</button>';
     h+='<button class="modify-btn" id="au_x">關閉</button>';
-    flash=false; b.innerHTML=h;
+    if(view==="home"||!nick) h+='<div class="au-outwrap"><button class="au-logout" id="au_out">登出</button></div>';
+    flash=false; b.innerHTML=h; b.scrollTop=keep;
     b.querySelector("#au_x").onclick=()=>{ if(view!=="home"&&nick){ view="home"; render(); } else hide(); };
     b.querySelectorAll(".au_row").forEach(r=>r.onclick=()=>{ view=r.dataset.v; render(); });
+    b.querySelectorAll(".au-favrow").forEach(r=>r.onclick=()=>{ const id=r.dataset.id; if(favs.has(id)) favs.delete(id); else favs.add(id); saveFavs(); render(); });
     const out=b.querySelector("#au_out"); if(out) out.onclick=()=>{ firebase.auth().signOut(); hide(); };
     const sn=b.querySelector("#au_sn");
     if(sn) sn.onclick=()=>{
       const v=b.querySelector("#au_nick").value.trim(); if(!v||v.length>20) return alert("暱稱需為 1–20 字");
-      db().ref("users/"+user.uid).set({nick:v}).then(()=>{ nick=v; paint(); view="home"; render(); }).catch(e=>alert("儲存失敗："+(e.code||e.message)));
+      db().ref("users/"+user.uid).update({nick:v}).then(()=>{ nick=v; paint(); view="home"; render(); }).catch(e=>alert("儲存失敗："+(e.code||e.message)));
     };
     b.querySelectorAll(".au_cancel").forEach(a=>a.onclick=ev=>{ ev.preventDefault(); const k=a.dataset.c; db().ref("claimRequests/"+user.uid+"/"+k).remove().then(()=>{ delete pend[k]; render(); }); });
     if(view==="claim"){
@@ -3757,17 +3850,25 @@ const Auth=(function(){
       fs.onchange=fill; fill();
       b.querySelector("#au_rq").onclick=()=>{
         const id=cs.value; if(!id) return alert("請選擇角色");
-        const f=fs.value,s=roster(f).find(x=>x.id===id),k=ST[f][0]+"_"+id;
+        const f=fs.value,s=roster(f).find(x=>String(x.id)===id),k=ST[f][0]+"_"+id;
         const rec={f,id,name:s?s.name:"",nick,ts:firebase.database.ServerValue.TIMESTAMP};
         db().ref("claimRequests/"+user.uid+"/"+k).set(rec).then(()=>{ pend[k]=rec; view="home"; render(); }).catch(e=>alert("送出失敗："+(e.code||e.message)));
       };
     }
     if(view==="admin") adminList(b);
     if(view==="home"){
-      const c=b.querySelector("#au_cards");
-      const fillC=()=>{ const html=cardsHTML(); if(c.dataset.h!==html){ c.dataset.h=html; c.innerHTML=html; bindCards(c); } };
+      const c=b.querySelector("#au_cards"), fc=b.querySelector("#au_favcards");
+      const fillC=()=>{
+        const h1=cardsHTML(); if(c.dataset.h!==h1){ c.dataset.h=h1; c.innerHTML=h1; bindCards(c); }
+        const h2=favsHTML(); if(fc.dataset.h!==h2){ fc.dataset.h=h2; fc.innerHTML=h2; bindCards(fc); }
+      };
       fillC();
       cardsTimer=setInterval(()=>{ if(!document.body.contains(c)||ov.style.display!=="flex"){ clearInterval(cardsTimer); cardsTimer=null; return; } fillC(); },1000);
+      if(admin) db().ref("claimRequests").once("value").then(sn=>{
+        const el=b.querySelector("#au_admcnt"); if(!el) return;
+        let n=0; const v=sn.val()||{}; Object.keys(v).forEach(u=>{ n+=Object.keys(v[u]||{}).length; });
+        el.innerHTML=n?'<span class="au-badge">待批准 '+n+'</span>':"";
+      }).catch(()=>{});
     }
   }
   function adminList(b){
@@ -3775,8 +3876,9 @@ const Auth=(function(){
       const box2=b.querySelector("#au_list"); if(!box2) return;
       const rows=[]; const v=snap.val()||{};
       Object.keys(v).forEach(u=>Object.keys(v[u]||{}).forEach(k=>rows.push({u,k,r:v[u][k]})));
-      box2.innerHTML=rows.length?rows.map((x,i)=>'<div style="margin:8px 0">'+esc(x.r.nick)+' → '+esc(x.r.f+" "+x.r.id+" "+x.r.name)+' <a href="#" data-i="'+i+'" data-a="ok">批准</a>　<a href="#" data-i="'+i+'" data-a="no">拒絕</a></div>').join(""):"沒有待處理的申請。";
-      box2.querySelectorAll("a").forEach(a=>a.onclick=ev=>{
+      box2.className="";
+      box2.innerHTML=rows.length?rows.map((x,i)=>'<div class="au-req"><div class="au-req-n">'+esc(x.r.nick)+'</div><div class="au-req-t">申請認領　'+esc(x.r.f)+'　編號 '+esc(x.r.id)+'　'+esc(x.r.name)+'</div><div class="au-req-b"><button class="au-btn au-ok" data-i="'+i+'" data-a="ok">批准</button><button class="au-btn au-danger" data-i="'+i+'" data-a="no">拒絕</button></div></div>').join(""):'<div class="au-empty">沒有待處理的申請。</div>';
+      box2.querySelectorAll("button[data-a]").forEach(a=>a.onclick=ev=>{
         ev.preventDefault(); const x=rows[+a.dataset.i]; const d=db();
         const done=()=>d.ref("claimRequests/"+x.u+"/"+x.k).remove().then(()=>render());
         if(a.dataset.a==="no") return done();
@@ -3787,6 +3889,7 @@ const Auth=(function(){
   const api={
     init,openPanel,
     get isOpen(){return isOpen();},
+    favIds:()=>Array.from(favs), isFav:id=>favs.has(String(id)),
     get isAdmin(){return admin;},
     uid:()=>user?user.uid:null, nick:()=>nick,
     newOwner:()=>(user&&!admin)?user.uid:null,
@@ -4694,8 +4797,13 @@ function goBack(){
   }
 }
 
-function subjectOptions(list){
-  return (list || subjects).map(s => '<option value="' + s.id + '">' + s.id + ' ' + s.name + '</option>').join("");
+function isFavSubject(s){ try{ return !!(window.Auth && Auth.isFav && Auth.isFav(s.id)); }catch(e){ return false; } }
+function favFirst(list){
+  const arr = (list || subjects).slice();
+  return arr.filter(isFavSubject).concat(arr.filter(s => !isFavSubject(s)));
+}
+function subjectOptions(list, pin){
+  return (list || subjects).map(s => '<option value="' + s.id + '">' + (pin && isFavSubject(s) ? '☆ ' : '') + s.id + ' ' + s.name + '</option>').join("");
 }
 
 function rosterOf(faction){
@@ -4830,7 +4938,7 @@ function renderModalBody(){
         '<div class="modal-title">' + L.targetPrompt + '（可複選）</div>' +
         '<button class="choice-btn" id="selectAllBtn" onclick="toggleSelectAllTargets()">全選</button>' +
         '<div class="check-list" id="targetCheckList">' +
-          subjects.map(s => '<label class="check-item"><input type="checkbox" class="target-check" value="' + s.id + '"> ' + s.id + ' ' + s.name + '</label>').join("") +
+          favFirst(subjects).map(s => '<label class="check-item"><input type="checkbox" class="target-check" value="' + s.id + '"> ' + (isFavSubject(s) ? '☆ ' : '') + s.id + ' ' + s.name + '</label>').join("") +
         '</div>' +
         '<button class="confirm-btn" onclick="confirmMultiTarget()">確認目標</button>';
     } else {
@@ -4841,7 +4949,7 @@ function renderModalBody(){
         backBtn() +
         '<div class="modal-eyebrow">目標選擇</div>' +
         '<div class="modal-title">' + prompt + '</div>' +
-        '<select class="pick" id="targetSelect" size="6">' + subjectOptions() + '</select>' +
+        '<select class="pick" id="targetSelect" size="6">' + subjectOptions(favFirst(subjects), true) + '</select>' +
         '<button class="confirm-btn" onclick="confirmTarget()">確認目標</button>';
     }
 
