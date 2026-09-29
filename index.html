@@ -1516,76 +1516,24 @@
     transform:scale(1) translateY(0);
   }
 
-  /* 擊殺回報：紅光 + 紅字 */
+  /* 回報排版 */
+  .target-report{margin-bottom:16px;}
+  .target-report .modal-title{margin-bottom:6px;}
+  .target-report .result-line{margin-bottom:0;}
+
+  /* 擊殺回報：背景不變，只有微微的紅光 + 紅字 */
   .modal-box:has(.reveal-box.kill){
     border-color:var(--c-crit);
-    animation:killGlow 1.8s ease-in-out infinite;
+    animation:killGlow 2.4s ease-in-out infinite;
   }
   @keyframes killGlow{
-    0%,100%{box-shadow:0 0 30px rgba(181,2,15,.45), 0 0 70px rgba(181,2,15,.25), inset 0 0 30px rgba(120,0,8,.35);}
-    50%{box-shadow:0 0 50px rgba(220,10,25,.8), 0 0 110px rgba(181,2,15,.5), inset 0 0 50px rgba(150,0,10,.55);}
+    0%,100%{box-shadow:0 0 0 rgba(0,0,0,0), 0 0 18px rgba(181,2,15,.22);}
+    50%{box-shadow:0 0 0 rgba(0,0,0,0), 0 0 32px rgba(200,5,20,.4);}
   }
-  .reveal-box.kill .modal-eyebrow{
-    color:#ff2a3a;
-    letter-spacing:.3em;
-    text-shadow:0 0 8px rgba(255,30,45,.9);
-    animation:killBlink 1.6s ease-in-out infinite;
-  }
-  .reveal-box.kill .modal-title{
-    color:#e0111f;
-    text-shadow:0 0 10px rgba(224,17,31,.85), 0 0 26px rgba(181,2,15,.6);
-  }
-  .reveal-box.kill .result-line{
-    color:#b5020f;
-    text-shadow:0 0 6px rgba(181,2,15,.6);
-  }
-  .reveal-box.kill .result-line.killed{
-    color:#ff2a3a;
-    font-weight:700;
-    text-shadow:0 0 10px rgba(255,30,45,.95), 0 0 22px rgba(181,2,15,.7);
-  }
-  @keyframes killBlink{
-    0%,100%{opacity:1}
-    50%{opacity:.55}
-  }
-  /* 擊殺回報：整個畫面泛血紅光、視窗震動、標題閃爍 */
-  .modal-overlay:has(.reveal-box.kill){
-    background:radial-gradient(ellipse at center, rgba(90,0,6,.82) 0%, rgba(30,0,2,.94) 70%, rgba(0,0,0,.98) 100%);
-    animation:killVignette 1.8s ease-in-out infinite;
-  }
-  @keyframes killVignette{
-    0%,100%{box-shadow:inset 0 0 120px rgba(181,2,15,.45);}
-    50%{box-shadow:inset 0 0 220px rgba(230,10,25,.85);}
-  }
-  .modal-box:has(.reveal-box.kill){
-    background:#160203;
-    border-width:2px;
-    animation:killGlow 1.8s ease-in-out infinite, killShake .5s ease-out 1;
-  }
-  @keyframes killShake{
-    0%{transform:translate(0,0)}
-    15%{transform:translate(-7px,3px)}
-    30%{transform:translate(6px,-4px)}
-    45%{transform:translate(-5px,-2px)}
-    60%{transform:translate(4px,3px)}
-    80%{transform:translate(-2px,1px)}
-    100%{transform:translate(0,0)}
-  }
-  .reveal-box.kill .modal-eyebrow{
-    font-size:15px;
-    font-weight:700;
-    color:#ff1f30;
-    text-shadow:0 0 10px rgba(255,20,35,1), 0 0 24px rgba(255,0,20,.8);
-  }
-  .reveal-box.kill .modal-title{
-    font-size:21px;
-    animation:killFlicker 3.2s steps(1,end) infinite;
-  }
-  @keyframes killFlicker{
-    0%,86%,90%,100%{opacity:1}
-    88%{opacity:.25}
-    92%{opacity:.6}
-    94%{opacity:1}
+  .reveal-box.kill .target-report.killed .modal-title,
+  .reveal-box.kill .target-report.killed .result-line{
+    color:#d2202e;
+    text-shadow:0 0 6px rgba(210,32,46,.45);
   }
 
   /* ---------- MEDIC SQUAD PAGE (scoped) ---------- */
@@ -5018,12 +4966,7 @@ function renderModalBody(){
     const self = subjects.find(s => s.id === wizard.selfId);
     html =
       '<div class="reveal-box" id="revealBox">' +
-        '<div class="modal-eyebrow">重生成功</div>' +
-        '<div class="modal-title">實驗體 ' + self.id + ' ' + self.name + '</div>' +
-        '<div class="result-block">' +
-          '<div class="result-line">HP：3／3　　SAN：3／3</div>' +
-          '<div class="result-line">狀態：已清空　　判定：良好</div>' +
-        '</div>' +
+        reportBlock(self, "重生", "") +
         '<button class="confirm-btn" onclick="closeModal()">確認</button>' +
       '</div>';
 
@@ -5178,47 +5121,22 @@ function renderModalBody(){
   } else if(step === "actionResult"){
     const target = subjects.find(s => s.id === wizard.targetId);
 
-    if(wizard.mode === "medical"){
-      const extraLine = wizard.removedNow ? ("已解除狀態：" + escapeHTML(wizard.removedNow)) : "未解除任何狀態";
+    if(wizard.mode === "medical" || wizard.mode === "support"){
       html =
         '<div class="reveal-box" id="revealBox">' +
-          '<div class="modal-eyebrow">醫療成功</div>' +
-          '<div class="modal-title">實驗體 ' + target.id + ' ' + target.name + '</div>' +
-          '<div class="result-block">' +
-            '<div class="result-line">' + wizard.natureLabel + '　　目前 HP：' + target.hp + '／3　　SAN：' + target.san + '／3</div>' +
-            '<div class="result-line">' + extraLine + '</div>' +
-          '</div>' +
-          '<button class="confirm-btn" onclick="closeModal()">確認</button>' +
-        '</div>';
-    } else if(wizard.mode === "support"){
-      html =
-        '<div class="reveal-box" id="revealBox">' +
-          '<div class="modal-eyebrow">資助成功</div>' +
-          '<div class="modal-title">實驗體 ' + target.id + ' ' + target.name + '</div>' +
-          '<div class="result-block">' +
-            '<div class="result-line">' + wizard.natureLabel + '　　目前 HP：' + target.hp + '／3　　SAN：' + target.san + '／3</div>' +
-            '<div class="result-line">' + (wizard.removedNow ? ("已解除狀態：" + escapeHTML(wizard.removedNow)) : "未解除任何狀態") + '</div>' +
-          '</div>' +
+          reportBlock(target, (wizard.statKey === "hp" ? "HP" : "SAN") + "+1", "") +
           '<button class="confirm-btn" onclick="closeModal()">確認</button>' +
         '</div>';
     } else {
-      const L = modeLabels[wizard.mode];
-      const resultEyebrow = wizard.anyDead ? "擊殺回報" : L.resultEyebrow;
-      const titleText = wizard.targetIds.length === 1
-        ? (function(){ const t = subjects.find(s => s.id === wizard.targetIds[0]); return "實驗體 " + t.id + " " + t.name; })()
-        : L.verb + "結果（共 " + wizard.targetIds.length + " 位）";
-      const lines = wizard.targetIds.map(id => {
-        const t = subjects.find(s => s.id === id);
-        const added = (wizard.lastAddedMap[id] || []);
-        const addedText = added.length ? ('〔' + escapeHTML(added.join("、")) + '〕') : '（未附加狀態）';
+      const dTxt = wizard.statKey === "hp" ? "HP-1" : "SAN-1";
+      const blocks = wizard.targetIds.map(id => {
+        const t = subjects.find(x => x.id === id);
         const kd = (wizard.killedMap || {})[id];
-        return '<div class="result-line' + (kd ? ' killed' : '') + '">' + L.causedPrefix + t.id + ' ' + t.name + '　HP：' + t.hp + '／3　SAN：' + t.san + '／3　' + addedText + (kd === "dead" ? '　☠ 死亡' : kd === "mad" ? '　☠ 瘋狂' : '') + '</div>';
+        return reportBlock(t, dTxt, kd === "dead" ? "☠ 死亡" : kd === "mad" ? "☠ 瘋狂" : "", !!kd);
       }).join("");
       html =
         '<div class="reveal-box' + (wizard.anyDead ? ' kill' : '') + '" id="revealBox">' +
-          '<div class="modal-eyebrow">' + resultEyebrow + '</div>' +
-          '<div class="modal-title">' + titleText + '</div>' +
-          '<div class="result-block">' + lines + '</div>' +
+          blocks +
           '<button class="confirm-btn" onclick="closeModal()">確認</button>' +
         '</div>';
     }
@@ -5259,12 +5177,7 @@ function renderModalBody(){
     const isBandage = wizard.itemType === "bandage";
     html =
       '<div class="reveal-box" id="revealBox">' +
-        '<div class="modal-eyebrow">道具使用成功</div>' +
-        '<div class="modal-title">實驗體 ' + self.id + ' ' + self.name + '</div>' +
-        '<div class="result-block">' +
-          '<div class="result-line">' + (isBandage ? "HP" : "SAN") + ' +1　　目前 HP：' + self.hp + '／3　　SAN：' + self.san + '／3</div>' +
-          '<div class="result-line">剩餘：繃帶 x' + self.bandages + '　／　針筒 x' + self.syringes + '</div>' +
-        '</div>' +
+        reportBlock(self, (isBandage ? "HP" : "SAN") + "+1", "") +
         '<button class="confirm-btn" onclick="closeModal()">確認</button>' +
       '</div>';
   }
@@ -5382,6 +5295,13 @@ function confirmStatus2(){
   if(val === null) return;
   wizard.pendingStatuses.push(val);
   goStep("actionPreview");
+}
+
+function reportBlock(t, deltaTxt, tailTxt, killed){
+  return '<div class="target-report' + (killed ? ' killed' : '') + '">' +
+    '<div class="modal-title">實驗體' + t.id + ' ' + escapeHTML(t.name) + ' ' + deltaTxt + '</div>' +
+    '<div class="result-line">目前 HP：' + t.hp + '／3　SAN：' + t.san + '／3' + (tailTxt ? '　' + tailTxt : '') + '</div>' +
+  '</div>';
 }
 
 function auditWho(){ return ""; }
