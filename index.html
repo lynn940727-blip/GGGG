@@ -2514,11 +2514,14 @@
 .log-edit-btn{flex-shrink:0;width:30px;height:30px;display:flex;align-items:center;justify-content:center;background:transparent;border:none;color:var(--bone-dim);cursor:pointer;transition:color .2s ease,transform .2s ease}
 .log-edit-btn:hover{color:var(--bone);transform:translateY(-1px)}
 .log-edit-panel{flex-basis:100%;margin-top:6px}
-.log-edit-text{width:100%;background:#0a0706;border:1px solid var(--line);color:var(--bone);font-family:var(--sans);font-size:13px;padding:8px 10px;border-radius:6px;resize:vertical}
-.log-confirm .log-save{background:#2f6b4f;border-color:#2f6b4f;color:#fff}
+.log-edit-text{width:100%;background:#0a0706;border:1px solid var(--line);color:var(--bone);font-family:var(--sans);font-size:13px;padding:8px 10px;border-radius:0;resize:vertical}
+.log-confirm .log-save{background:rgba(181,2,15,.32);border-color:var(--c-crit);color:var(--bone)}
+.log-confirm .log-save:hover{background:rgba(181,2,15,.5)}
 .log-confirm{display:flex;gap:8px;margin-top:8px}
-.log-confirm button{font-family:var(--sans);font-size:12.5px;padding:7px 14px;border-radius:6px;cursor:pointer;border:1px solid var(--line);background:#0a0706;color:var(--bone)}
-.log-confirm .log-del{background:var(--c-crit);border-color:var(--c-crit);color:#fff}
+.log-confirm button{font-family:var(--mono);font-size:12px;letter-spacing:.08em;padding:8px 16px;border-radius:0;cursor:pointer;border:1px solid var(--line);background:transparent;color:var(--bone-dim);transition:background .2s ease,color .2s ease,border-color .2s ease}
+.log-confirm button:hover{background:rgba(255,255,255,.05);color:var(--bone)}
+.log-confirm .log-del{background:transparent;border-color:rgba(194,68,82,.45);color:rgba(194,68,82,.85)}
+.log-confirm .log-del:hover{background:rgba(194,68,82,.18);color:#e8b3ba;border-color:#c24452}
 .log-empty{padding:40px 0;text-align:center;color:var(--bone-dim)}
 /* 行動紀錄：管理員面板 */
 .modal-box.log-admin-box{width:min(560px,94vw)}
@@ -3649,8 +3652,8 @@ const Auth=(function(){
   const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const db=()=>{ if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG); return firebase.database(); };
   const roster=f=>{ try{ return rosterOf(f)||[]; }catch(e){ return []; } };
-  let ov=null,btn=null,reqs=[],pend={},flash=false,view="home",cardsTimer=null,prompted=false,keepY=0,lockUntil=0,lockBound=false,favs=new Set(),outFlash=false,notice="",working="",authReady=false,loaded=false;
-  const isOpen=()=>!!(ov&&ov.style.display==="flex");
+  let ov=null,btn=null,reqs=[],pend={},flash=false,view="home",cardsTimer=null,prompted=false,keepY=0,lockUntil=0,lockBound=false,favs=new Set(),outFlash=false,notice="",working="",closing=false,authReady=false,loaded=false;
+  const isOpen=()=>!!(ov&&ov.style.display==="flex"&&!closing);
   function bindLock(){ if(lockBound) return; lockBound=true; window.addEventListener("scroll",()=>{ if(!isOpen()&&Date.now()>lockUntil) return; if(Math.abs(window.scrollY-keepY)>2) window.scrollTo({top:keepY,behavior:"instant"}); },{passive:true}); }
   function paint(){
     if(!btn){
@@ -3721,10 +3724,10 @@ const Auth=(function(){
 #authBox .au-star{font-size:16px}
 #authBox .au-fn{flex:1;word-break:break-all}
 #authBox .au-fs{font-size:11px;opacity:.75;font-family:var(--mono)}
-#authBox .au-wait{display:flex;gap:8px;margin:6px 0 10px}
-#authBox .au-wait span{width:8px;height:8px;background:var(--c-crit);animation:auBlink 1.2s ease-in-out infinite}
-#authBox .au-wait span:nth-child(2){animation-delay:.2s}
-#authBox .au-wait span:nth-child(3){animation-delay:.4s}
+#authBox.au-fade>*{animation:auFadeIn .45s ease both}
+@keyframes auFadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+#authBox .au-spin{position:relative;width:34px;height:34px;margin:44px auto;border-radius:50%;border:2px solid rgba(181,2,15,.22);border-top-color:var(--c-crit);box-shadow:0 0 14px rgba(181,2,15,.25);animation:logSpin .9s linear infinite}
+#authBox .au-spin::after{content:"";position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:var(--c-crit);animation:blink 1.2s ease-in-out infinite}
 #authBox .au-empty{padding:14px;border:1px dashed var(--line);border-radius:0;font-size:13px;opacity:.7}`;
     document.head.appendChild(st);
   }
@@ -3762,15 +3765,34 @@ const Auth=(function(){
     ensureStyle();
     if(!ov){
       ov=document.createElement("div");
-      ov.style.cssText="position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;padding:16px;overscroll-behavior:contain";
-      ov.innerHTML='<div id="authBox" style="background:var(--bg-panel-2);border:1px solid var(--c-warn);border-radius:0;box-shadow:0 0 40px rgba(0,0,0,.6);width:100%;max-width:420px;max-height:88vh;overflow:auto;overscroll-behavior:contain;padding:28px 24px 24px"></div>';
+      ov.style.cssText="position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;padding:16px;overscroll-behavior:contain;opacity:0;transition:opacity .35s ease";
+      ov.innerHTML='<div id="authBox" style="background:var(--bg-panel-2);border:1px solid var(--c-warn);border-radius:0;box-shadow:0 0 40px rgba(0,0,0,.6);width:100%;max-width:420px;max-height:88vh;overflow:auto;overscroll-behavior:contain;padding:28px 24px 24px;transition:transform .4s ease"></div>';
       ov.addEventListener("click",e=>{ if(e.target===ov) hide(); });
       document.body.appendChild(ov);
     }
     return document.getElementById("authBox");
   }
-  const hide=()=>{ notice=""; lockUntil=Date.now()+250; if(ov) ov.style.display="none"; window.scrollTo({top:keepY,behavior:"instant"}); if(cardsTimer){ clearInterval(cardsTimer); cardsTimer=null; } };
-  function openPanel(){ const b=box(); if(!isOpen()){ keepY=window.scrollY; view="home"; } bindLock(); ov.style.display="flex"; render(b); }
+  const hide=()=>{
+    notice=""; lockUntil=Date.now()+250;
+    if(ov){
+      closing=true; ov.style.opacity="0";
+      const bx=document.getElementById("authBox"); if(bx) bx.style.transform="translateY(10px)";
+      setTimeout(()=>{ if(closing){ ov.style.display="none"; closing=false; } },360);
+    }
+    window.scrollTo({top:keepY,behavior:"instant"});
+    if(cardsTimer){ clearInterval(cardsTimer); cardsTimer=null; }
+  };
+  function openPanel(){
+    const b=box(); const was=isOpen(); closing=false;
+    if(!was){ keepY=window.scrollY; view="home"; }
+    bindLock(); ov.style.display="flex";
+    if(!was){
+      ov.style.opacity="0"; b.style.transform="translateY(12px)";
+      render(b); b.classList.remove("au-fade");
+      void ov.offsetWidth;
+      ov.style.opacity="1"; b.style.transform="none";
+    } else render(b);
+  }
   const row=(id,label,val)=>'<div class="au_row au-row" data-v="'+id+'"><span>'+label+'</span><span class="v">'+val+' ›</span></div>';
   function myChars(){ const o=[]; Object.keys(ST).forEach(f=>roster(f).forEach(s=>{ if(user&&s.owner===user.uid) o.push({f,s}); })); return o; }
   const TH={
@@ -3836,12 +3858,14 @@ const Auth=(function(){
   function render(b){
     b=b||box();
     if(cardsTimer){ clearInterval(cardsTimer); cardsTimer=null; }
+    { const key=working?"w":(!authReady||(user&&!loaded))?"load":!user?(notice==="out"?"out":"login"):notice==="in"?"in":view;
+      b.classList.toggle("au-fade", b.dataset.st!==key); b.dataset.st=key; }
     if(working){
-      b.innerHTML='<div class="modal-eyebrow">帳號</div><div class="modal-title">'+working+'</div><div class="au-wait"><span></span><span></span><span></span></div>';
+      b.innerHTML='<div class="au-spin"></div>';
       return;
     }
     if(!authReady||(user&&!loaded)){
-      b.innerHTML='<div class="modal-eyebrow">帳號</div><div class="modal-title">讀取中…</div><button class="modify-btn" id="au_x">關閉</button>';
+      b.innerHTML='<div class="au-spin"></div><button class="modify-btn" id="au_x">關閉</button>';
       b.querySelector("#au_x").onclick=hide; return;
     }
     if(!user){
