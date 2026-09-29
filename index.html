@@ -3681,6 +3681,23 @@ const Auth=(function(){
   const roster=f=>{ try{ return rosterOf(f)||[]; }catch(e){ return []; } };
   let ov=null,btn=null,reqs=[],pend={},flash=false,view="home",cardsTimer=null,prompted=false,keepY=0,lockUntil=0,lockBound=false,favs=new Set(),outFlash=false,notice="",working="",closing=false,authReady=false,loaded=false;
   const isOpen=()=>!!(ov&&ov.style.display==="flex"&&!closing);
+  // 申請是否已批准：管理員標記過，或這個角色的綁定者已經是自己
+  const isApproved=r=>{ if(!r) return false; if(r.approved) return true; if(!user) return false; const s=roster(r.f).find(x=>String(x.id)===String(r.id)); return !!(s&&s.owner===user.uid); };
+  let pendRef=null;
+  // 即時監聽自己的申請：管理員批准／拒絕後，這台不用重新整理就會更新
+  function watchPend(){
+    if(pendRef){ try{ pendRef.off(); }catch(e){} pendRef=null; }
+    if(!user) return;
+    try{
+      pendRef=db().ref("claimRequests/"+user.uid);
+      pendRef.on("value",s=>{
+        const nv=s.val()||{};
+        if(JSON.stringify(nv)===JSON.stringify(pend)) return;
+        pend=nv; paint();
+        if(isOpen()&&(view==="home"||view==="claim")) render();
+      },()=>{});
+    }catch(e){ console.warn("watch claim failed",e); }
+  }
   function bindLock(){ if(lockBound) return; lockBound=true; window.addEventListener("scroll",()=>{ if(!isOpen()&&Date.now()>lockUntil) return; if(Math.abs(window.scrollY-keepY)>2) window.scrollTo({top:keepY,behavior:"instant"}); },{passive:true}); }
   function paint(){
     if(!btn){
@@ -3759,7 +3776,7 @@ const Auth=(function(){
     document.head.appendChild(st);
   }
   function load(){
-    if(!user){ nick="";admin=false;favs=new Set();loaded=true;paint();return Promise.resolve(); }
+    if(!user){ nick="";admin=false;favs=new Set();pend={};if(pendRef){ try{ pendRef.off(); }catch(e){} pendRef=null; }loaded=true;paint();return Promise.resolve(); }
     loaded=false;
     const d=db();
     return Promise.all([
@@ -3767,7 +3784,7 @@ const Auth=(function(){
       d.ref("users/"+user.uid+"/nick").once("value").then(s=>{ nick=s.val()||localNick(); if(nick) cacheNick(nick); }).catch(e=>{ nick=localNick(); console.warn("nick read failed",e); }),
       d.ref("admins/"+user.uid).once("value").then(s=>{admin=s.val()===true;}).catch(()=>{admin=false;}),
       d.ref("claimRequests/"+user.uid).once("value").then(s=>{pend=s.val()||{};}).catch(()=>{pend={};})
-    ]).then(()=>{ loaded=true; paint(); });
+    ]).then(()=>{ loaded=true; paint(); watchPend(); });
   }
   function init(){
     paint();
@@ -3916,7 +3933,8 @@ const Auth=(function(){
       h+='<div class="modal-title">'+(nick?"修改暱稱":"先取個暱稱吧")+'</div><span class="field-label">暱稱（1–50 字）</span><input class="text-input" id="au_nick" maxlength="50" placeholder="暱稱｜陣營｜角色名，ex：汪汪｜主辦方/實驗體｜十字，同DC暱稱" value="'+esc(nick)+'"><button class="confirm-btn" id="au_sn">儲存</button>';
     }else if(view==="claim"){
       h+='<div class="modal-eyebrow">帳號</div><div class="modal-title" style="font-size:17px">申請認領角色</div>';
-      const pk=Object.keys(pend);
+      const pk=Object.keys(pend).filter(k=>!isApproved(pend[k])), ak=Object.keys(pend).filter(k=>isApproved(pend[k]));
+      if(ak.length) h+='<div class="au-pend"><div class="au-pend-h">已批准</div><div class="au-pend-s">角色已綁定到你的帳號，可以在「我的角色」使用</div>'+ak.map(k=>'<div class="au-pend-t">'+esc(pend[k].f)+'　編號 '+esc(pend[k].id)+'　'+esc(pend[k].name)+'</div><button class="au-btn au_cancel" data-c="'+esc(k)+'">知道了</button>').join("")+'</div>';
       if(pk.length) h+='<div class="au-pend"><div class="au-pend-h">等待批准</div><div class="au-pend-s">管理員批准後即可使用角色</div>'+pk.map(k=>'<div class="au-pend-t">'+esc(pend[k].f)+'　編號 '+esc(pend[k].id)+'　'+esc(pend[k].name)+'</div><button class="au-btn au-danger au_cancel" data-c="'+esc(k)+'">取消申請</button>').join("")+'</div>';
       h+='<span class="field-label">陣營</span><select class="pick" id="au_f">'+Object.keys(ST).map(f=>"<option>"+f+"</option>").join("")+'</select><span class="field-label">角色</span><select class="pick" id="au_c" size="5"></select><button class="confirm-btn" id="au_rq">送出申請</button>';
     }else if(view==="admin"){
@@ -3925,8 +3943,9 @@ const Auth=(function(){
       h+='<div class="modal-eyebrow">帳號</div><div class="modal-title">收藏的實驗體</div><div class="modal-note">收藏後，會在個人檔案顯示他的面板；行動選目標時，他會置頂並標示 ☆。</div>'
         +roster("實驗體").map(x=>{ const on=favs.has(String(x.id)); return '<div class="au-favrow'+(on?" on":"")+'" data-id="'+esc(x.id)+'"><span class="au-star">☆</span><span class="au-fn">編號 '+esc(x.id)+'　'+esc(x.name)+'</span><span class="au-fs">'+(on?"已收藏":"點擊收藏")+'</span></div>'; }).join("");
     }else{
-      const pn=Object.keys(pend).length;
+      const pn=Object.keys(pend).filter(k=>!isApproved(pend[k])).length, an=Object.keys(pend).length-pn;
       h+='<div class="modal-eyebrow">帳號</div><div class="au-head"><div class="au-hrow"><div class="au-hn">'+esc(nick)+'</div><button class="au-edit au_row" data-v="nick" title="編輯暱稱"><svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M19,19V12.31L21,10.31V19A2,2 0 0,1 19,21H5A2,2 0 0,1 3,19V5A2,2 0 0,1 5,3H13.69L11.69,5H5V19H19M21.7,7.35L18.65,4.3L20.07,2.88C20.46,2.5 21.09,2.5 21.48,2.88L23.12,4.5C23.5,4.91 23.5,5.54 23.12,5.93L21.7,7.35M19.94,8.06L10,18H7V15L16.94,5.06L19.94,8.06Z"/></svg></button></div><span class="au-role'+(admin?" adm":"")+'">'+(admin?"管理員":"帳號")+'</span></div>'
+        +(an?'<div class="au-pend click au_row" data-v="claim"><div class="au-pend-h">已批准</div><div class="au-pend-s">你有 '+an+' 筆申請已批准，點此查看 ›</div></div>':"")
         +(pn?'<div class="au-pend click au_row" data-v="claim"><div class="au-pend-h">等待批准</div><div class="au-pend-s">你有 '+pn+' 筆申請正在等管理員審核，點此查看／取消 ›</div></div>':"")
         +(admin?row("admin","待批准的申請",'<span id="au_admcnt"></span>')+'<div class="au-row" id="au_addchar"><span>新增角色</span><span class="v">›</span></div>':"")
         +'<div class="au-sec"><span>我的角色</span><button class="au-mini au_row" data-v="claim">＋ 申請角色</button></div><div id="au_cards"></div>'
@@ -3973,7 +3992,7 @@ const Auth=(function(){
       cardsTimer=setInterval(()=>{ if(!document.body.contains(c)||ov.style.display!=="flex"){ clearInterval(cardsTimer); cardsTimer=null; return; } fillC(); },1000);
       if(admin) db().ref("claimRequests").once("value").then(sn=>{
         const el=b.querySelector("#au_admcnt"); if(!el) return;
-        let n=0; const v=sn.val()||{}; Object.keys(v).forEach(u=>{ n+=Object.keys(v[u]||{}).length; });
+        let n=0; const v=sn.val()||{}; Object.keys(v).forEach(u=>{ Object.keys(v[u]||{}).forEach(k=>{ if(!(v[u][k]&&v[u][k].approved)) n++; }); });
         el.innerHTML=n?'<span class="au-badge">待批准 '+n+'</span>':"";
       }).catch(()=>{});
     }
@@ -3982,14 +4001,16 @@ const Auth=(function(){
     db().ref("claimRequests").once("value").then(snap=>{
       const box2=b.querySelector("#au_list"); if(!box2) return;
       const rows=[]; const v=snap.val()||{};
-      Object.keys(v).forEach(u=>Object.keys(v[u]||{}).forEach(k=>rows.push({u,k,r:v[u][k]})));
+      Object.keys(v).forEach(u=>Object.keys(v[u]||{}).forEach(k=>{ if(v[u][k]&&!v[u][k].approved) rows.push({u,k,r:v[u][k]}); }));
       box2.className="";
       box2.innerHTML=rows.length?rows.map((x,i)=>'<div class="au-req"><div class="au-req-n">'+esc(x.r.nick)+'</div><div class="au-req-t">申請認領　'+esc(x.r.f)+'　編號 '+esc(x.r.id)+'　'+esc(x.r.name)+'</div><div class="au-req-b"><button class="au-btn au-ok" data-i="'+i+'" data-a="ok">批准</button><button class="au-btn au-danger" data-i="'+i+'" data-a="no">拒絕</button></div></div>').join(""):'<div class="au-empty">沒有待處理的申請。</div>';
       box2.querySelectorAll("button[data-a]").forEach(a=>a.onclick=ev=>{
         ev.preventDefault(); const x=rows[+a.dataset.i]; const d=db();
         const done=()=>d.ref("claimRequests/"+x.u+"/"+x.k).remove().then(()=>render());
+        // 批准：不刪除申請，改標記「已批准」，申請人那邊才看得到結果
+        const okDone=()=>d.ref("claimRequests/"+x.u+"/"+x.k).update({approved:true,at:firebase.database.ServerValue.TIMESTAMP}).then(()=>render()).catch(()=>done());
         if(a.dataset.a==="no") return done();
-        d.ref(ST[x.r.f][1]+"/s"+x.r.id+"/owner").set(x.u).then(done).catch(e=>alert("批准失敗："+(e.code||e.message)));
+        d.ref(ST[x.r.f][1]+"/s"+x.r.id+"/owner").set(x.u).then(okDone).catch(e=>alert("批准失敗："+(e.code||e.message)));
       });
     }).catch(e=>{ const bx=b.querySelector("#au_list"); if(bx) bx.textContent="讀取失敗："+(e.code||e.message); });
   }
