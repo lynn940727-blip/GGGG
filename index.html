@@ -39,7 +39,11 @@
 
   *{box-sizing:border-box; margin:0; padding:0;}
 
-  html{background:var(--bg); scroll-behavior:smooth;}
+  html{background:var(--bg); scroll-behavior:smooth; touch-action:manipulation;}
+  @media (pointer:coarse){
+    input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]), select, textarea{font-size:16px !important;}
+  }
+  .modal-box, #authBox{overscroll-behavior:contain;}
 
   body{
     background:var(--bg);
@@ -68,6 +72,7 @@
   .hero{
     position:relative;
     min-height:100vh;
+    min-height:100dvh;
     display:flex;
     flex-direction:column;
     align-items:center;
@@ -651,6 +656,7 @@
   .prologue-section{
     position:relative;
     min-height:100vh;
+    min-height:100dvh;
     display:flex;
     align-items:center;
     justify-content:center;
@@ -3505,7 +3511,7 @@ const SharedStore = (function(){
   // 手動編輯（編輯視窗按儲存）也留紀錄：只記真的有變的欄位
   function logEdit(group, label, before, after){
     try{
-      const fields = ["name", "hp", "san", "bandages", "syringes", "deathCount", "madCount", "statuses"];
+      const fields = ["hp", "san", "bandages", "syringes", "deathCount", "madCount", "statuses"];  // 名字修改不記錄
       const parts = [];
       fields.forEach(f => {
         if(before[f] === undefined && after[f] === undefined) return;
@@ -3643,7 +3649,7 @@ const Auth=(function(){
   const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const db=()=>{ if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG); return firebase.database(); };
   const roster=f=>{ try{ return rosterOf(f)||[]; }catch(e){ return []; } };
-  let ov=null,btn=null,reqs=[],pend={},flash=false,view="home",cardsTimer=null,prompted=false,keepY=0,lockUntil=0,lockBound=false,favs=new Set(),outFlash=false,authReady=false,loaded=false;
+  let ov=null,btn=null,reqs=[],pend={},flash=false,view="home",cardsTimer=null,prompted=false,keepY=0,lockUntil=0,lockBound=false,favs=new Set(),outFlash=false,notice="",working="",authReady=false,loaded=false;
   const isOpen=()=>!!(ov&&ov.style.display==="flex");
   function bindLock(){ if(lockBound) return; lockBound=true; window.addEventListener("scroll",()=>{ if(!isOpen()&&Date.now()>lockUntil) return; if(Math.abs(window.scrollY-keepY)>2) window.scrollTo({top:keepY,behavior:"instant"}); },{passive:true}); }
   function paint(){
@@ -3715,6 +3721,10 @@ const Auth=(function(){
 #authBox .au-star{font-size:16px}
 #authBox .au-fn{flex:1;word-break:break-all}
 #authBox .au-fs{font-size:11px;opacity:.75;font-family:var(--mono)}
+#authBox .au-wait{display:flex;gap:8px;margin:6px 0 10px}
+#authBox .au-wait span{width:8px;height:8px;background:var(--c-crit);animation:auBlink 1.2s ease-in-out infinite}
+#authBox .au-wait span:nth-child(2){animation-delay:.2s}
+#authBox .au-wait span:nth-child(3){animation-delay:.4s}
 #authBox .au-empty{padding:14px;border:1px dashed var(--line);border-radius:0;font-size:13px;opacity:.7}`;
     document.head.appendChild(st);
   }
@@ -3737,10 +3747,14 @@ const Auth=(function(){
       firebase.auth().onAuthStateChanged(u=>{
         const was=user; user=u; authReady=true;
         if(!u&&!prompted){ prompted=true; setTimeout(()=>{ if(!user&&!(ov&&ov.style.display==="flex")) openPanel(); },3000); }
-        if(u&&!was&&ov&&ov.style.display==="flex") flash=true;
+        if(u&&!was&&isOpen()) notice="in";
+        if(!u&&was&&isOpen()) notice="out";
         const p=load();
         Promise.race([p,new Promise(r=>setTimeout(r,6000))]).then(paint);
-        p.then(()=>{ if(u&&!nick) openPanel(); else if(ov&&ov.style.display==="flex") render(); });
+        p.then(()=>{
+          const finish=()=>{ working=""; if(u&&!nick&&!notice) openPanel(); else if(isOpen()) render(); };
+          if(u&&working) setTimeout(finish,900); else finish();
+        });
       });
     }catch(e){ authReady=true; console.warn("auth init failed",e); }
   }
@@ -3755,7 +3769,7 @@ const Auth=(function(){
     }
     return document.getElementById("authBox");
   }
-  const hide=()=>{ outFlash=false; lockUntil=Date.now()+1500; if(ov) ov.style.display="none"; window.scrollTo({top:keepY,behavior:"instant"}); if(cardsTimer){ clearInterval(cardsTimer); cardsTimer=null; } };
+  const hide=()=>{ notice=""; lockUntil=Date.now()+250; if(ov) ov.style.display="none"; window.scrollTo({top:keepY,behavior:"instant"}); if(cardsTimer){ clearInterval(cardsTimer); cardsTimer=null; } };
   function openPanel(){ const b=box(); if(!isOpen()){ keepY=window.scrollY; view="home"; } bindLock(); ov.style.display="flex"; render(b); }
   const row=(id,label,val)=>'<div class="au_row au-row" data-v="'+id+'"><span>'+label+'</span><span class="v">'+val+' ›</span></div>';
   function myChars(){ const o=[]; Object.keys(ST).forEach(f=>roster(f).forEach(s=>{ if(user&&s.owner===user.uid) o.push({f,s}); })); return o; }
@@ -3822,18 +3836,31 @@ const Auth=(function(){
   function render(b){
     b=b||box();
     if(cardsTimer){ clearInterval(cardsTimer); cardsTimer=null; }
+    if(working){
+      b.innerHTML='<div class="modal-eyebrow">帳號</div><div class="modal-title">'+working+'</div><div class="au-wait"><span></span><span></span><span></span></div>';
+      return;
+    }
     if(!authReady||(user&&!loaded)){
       b.innerHTML='<div class="modal-eyebrow">帳號</div><div class="modal-title">讀取中…</div><button class="modify-btn" id="au_x">關閉</button>';
       b.querySelector("#au_x").onclick=hide; return;
     }
     if(!user){
-      b.innerHTML=(outFlash?'<div class="au-flash">✓ 登出成功</div>':"")+'<div class="modal-eyebrow">帳號</div><div class="modal-title">登入後才能行動、使用道具</div><button class="confirm-btn" id="au_in">用 Google 帳號登入</button><button class="modify-btn" id="au_x">關閉</button>';
-      b.querySelector("#au_in").onclick=()=>{ outFlash=false; return firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>alert("登入失敗："+(e.code||e.message))); };
+      if(notice==="out"){
+        b.innerHTML='<div class="modal-eyebrow">帳號</div><div class="modal-title">登出成功</div><button class="confirm-btn" id="au_x">關閉</button>';
+        b.querySelector("#au_x").onclick=hide; return;
+      }
+      b.innerHTML='<div class="modal-eyebrow">帳號</div><div class="modal-title">登入後才能行動、使用道具</div><button class="confirm-btn" id="au_in">用 Google 帳號登入</button><button class="modify-btn" id="au_x">關閉</button>';
+      b.querySelector("#au_in").onclick=()=>{ working="登入中…"; render(); return firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>{ working=""; if(isOpen()) render(); alert("登入失敗："+(e.code||e.message)); }); };
+      b.querySelector("#au_x").onclick=hide; return;
+    }
+    if(notice==="in"){
+      b.innerHTML='<div class="modal-eyebrow">帳號</div><div class="modal-title">登入成功</div><button class="confirm-btn" id="au_go">前往個人檔案</button><button class="modify-btn" id="au_x">關閉</button>';
+      b.querySelector("#au_go").onclick=()=>{ notice=""; view="home"; render(); };
       b.querySelector("#au_x").onclick=hide; return;
     }
     if(!nick) view="nick";
     const keep=b.dataset.view===view?b.scrollTop:0; b.dataset.view=view;
-    let h=flash?'<div class="au-flash">✓ 登入成功</div>':"";
+    let h="";
     if(view==="nick"){
       h+='<div class="modal-title">'+(nick?"修改暱稱":"先取個暱稱吧")+'</div><span class="field-label">暱稱（1–20 字）</span><input class="text-input" id="au_nick" maxlength="20" value="'+esc(nick)+'"><button class="confirm-btn" id="au_sn">儲存</button>';
     }else if(view==="claim"){
@@ -3857,13 +3884,16 @@ const Auth=(function(){
     }
     h+='<button class="modify-btn" id="au_x">關閉</button>';
     if(view==="home"||!nick) h+='<div class="au-outwrap"><button class="au-logout" id="au_out">登出</button></div>';
-    flash=false; b.innerHTML=h; b.scrollTop=keep;
+    b.innerHTML=h; b.scrollTop=keep;
     b.querySelector("#au_x").onclick=()=>{ if(view!=="home"&&nick){ view="home"; render(); } else hide(); };
     b.querySelectorAll(".au_row").forEach(r=>r.onclick=()=>{ view=r.dataset.v; render(); });
     const addc=b.querySelector("#au_addchar");
     if(addc) addc.onclick=()=>{ if(!admin){ alert("只有管理員可以新增角色"); return; } hide(); openAddCharacter(); };
     b.querySelectorAll(".au-favrow").forEach(r=>r.onclick=()=>{ const id=r.dataset.id; if(favs.has(id)) favs.delete(id); else favs.add(id); saveFavs(); render(); });
-    const out=b.querySelector("#au_out"); if(out) out.onclick=()=>{ outFlash=true; view="home"; firebase.auth().signOut().then(()=>{ if(isOpen()) render(); }).catch(e=>{ outFlash=false; alert("登出失敗："+(e.code||e.message)); }); };
+    const out=b.querySelector("#au_out"); if(out) out.onclick=()=>{
+      working="登出中…"; view="home"; render();
+      setTimeout(()=>{ firebase.auth().signOut().catch(e=>{ working=""; notice=""; if(isOpen()) render(); alert("登出失敗："+(e.code||e.message)); }); },900);
+    };
     const sn=b.querySelector("#au_sn");
     if(sn) sn.onclick=()=>{
       const v=b.querySelector("#au_nick").value.trim(); if(!v||v.length>20) return alert("暱稱需為 1–20 字");
@@ -4149,7 +4179,7 @@ const subjects = [
   {id:"085", name:"藍和",       hp:3, san:3, aliases:["099/藍和"]},
   {id:"086", name:"མེ་ཏོག་蓮རྒྱ་མཚོ", hp:3, san:3},
   {id:"087", name:"依倫",       hp:3, san:3},
-  {id:"088", name:"NAMI",       hp:3, san:3},
+  {id:"088", name:"NANI",       hp:3, san:3},
   {id:"089", name:"Vera Martha/維拉.瑪爾塔", hp:3, san:3, aliases:["Vera Martha/維拉•瑪爾塔"]},
   {id:"090", name:"雷特克斯",   hp:3, san:3},
   {id:"091", name:"那子",       hp:3, san:3},
@@ -4390,7 +4420,9 @@ function withTransitionLock(fn){
   setTimeout(() => { transitioning = false; }, TRANSITION_LOCK_MS);
 }
 
-let jumping = false, jumpChecker = null;
+let jumping = false, jumpChecker = null, userTookOver = false;
+["touchstart","wheel","keydown","mousedown"].forEach(ev =>
+  window.addEventListener(ev, () => { if(jumping) userTookOver = true; }, {passive:true, capture:true}));
 let settledAt = 0;          // when the last auto-jump finished (ms)
 let needFreshGesture = false; // after a jump, ignore leftover swipe/inertia until a NEW gesture starts
 const ARRIVE_COOLDOWN_MS = 900; // must stay on a page at least this long before another auto-jump
@@ -4406,9 +4438,11 @@ function jumpToIndex(i){
   // 這裡等捲動停下後檢查有沒有到位，沒到就再捲一次。
   clearInterval(jumpChecker);
   jumping = true;
+  userTookOver = false;
   let lastY = -1, still = 0, retries = 0, ticks = 0;
   jumpChecker = setInterval(() => {
     ticks++;
+    if(userTookOver){ clearInterval(jumpChecker); jumping = false; settledAt = Date.now(); return; }
     const y = window.scrollY;
     still = Math.abs(y - lastY) < 1 ? still + 1 : 0;
     lastY = y;
@@ -4611,6 +4645,7 @@ window.addEventListener("wheel", (e) => {
   const nowTs = Date.now(), gap = nowTs - lastWheelTs; lastWheelTs = nowTs;
   if(transitioning || jumping) return;
   if(window.Auth && window.Auth.isOpen) return;
+  if(document.querySelector(".modal-overlay.open")) return;
   // trackpad / mouse inertia from the previous swipe keeps firing after we land — ignore it
   if(needFreshGesture){
     if(gap > WHEEL_FRESH_GAP_MS && nowTs - settledAt > ARRIVE_COOLDOWN_MS) needFreshGesture = false;
@@ -4654,6 +4689,7 @@ window.addEventListener("touchstart", (e) => {
 window.addEventListener("touchmove", (e) => {
   if(touchStartY === null || transitioning || jumping) return;
   if(window.Auth && window.Auth.isOpen) return;
+  if(document.querySelector(".modal-overlay.open")){ touchStartY = null; return; }
   if(Date.now() - settledAt < ARRIVE_COOLDOWN_MS) return;
   const dy = touchStartY - e.touches[0].clientY;
   const {idx, distFromTop, distToNext} = getSeamState();
