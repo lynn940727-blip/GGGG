@@ -3629,12 +3629,13 @@ const Auth=(function(){
   const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const db=()=>{ if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG); return firebase.database(); };
   const roster=f=>{ try{ return rosterOf(f)||[]; }catch(e){ return []; } };
-  let ov=null,btn=null,reqs=[],pend={};
+  let ov=null,btn=null,reqs=[],pend={},flash=false;
   function paint(){
     if(!btn){
       btn=document.createElement("button");
-      btn.style.cssText="position:fixed;top:20px;right:20px;z-index:210;width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--bone);background:none;border:none;cursor:pointer";
-      btn.innerHTML='<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"><path d="M12 3.2c-2.3 0-3.7 1.9-3.7 4.3 0 2 .9 3.6 2 4.4-.2 1.3-1.7 1.9-3.7 2.5C4.9 15 3.6 16 3.6 17.6v3h16.8v-3c0-1.6-1.3-2.6-3-3.2-2-.6-3.5-1.2-3.7-2.5 1.1-.8 2-2.4 2-4.4 0-2.4-1.4-4.3-3.7-4.3z"/></svg>';
+      btn.style.cssText="position:fixed;top:24px;right:24px;z-index:200;width:42px;height:42px;display:flex;align-items:center;justify-content:center;color:var(--bone-dim);background:none;border:none;cursor:pointer;transition:color .3s ease";
+      btn.onmouseenter=()=>{btn.style.color="var(--bone)";}; btn.onmouseleave=()=>{btn.style.color="var(--bone-dim)";};
+      btn.innerHTML='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"><path d="M12 3.2c-2.3 0-3.7 1.9-3.7 4.3 0 2 .9 3.6 2 4.4-.2 1.3-1.7 1.9-3.7 2.5C4.9 15 3.6 16 3.6 17.6v3h16.8v-3c0-1.6-1.3-2.6-3-3.2-2-.6-3.5-1.2-3.7-2.5 1.1-.8 2-2.4 2-4.4 0-2.4-1.4-4.3-3.7-4.3z"/></svg>';
       btn.onclick=openPanel; document.body.appendChild(btn);
     }
     btn.title=user?(nick||"設定暱稱")+(admin?"（管理員）":""):"登入";
@@ -3654,9 +3655,11 @@ const Auth=(function(){
     try{
       db();
       firebase.auth().onAuthStateChanged(u=>{
-        user=u; const p=load();
+        const was=user; user=u;
+        if(u&&!was&&ov&&ov.style.display==="flex") flash=true;
+        const p=load();
         Promise.race([p,new Promise(r=>setTimeout(r,6000))]).then(paint);
-        p.then(()=>{ if(u&&!nick) openPanel(); });
+        p.then(()=>{ if(u&&!nick) openPanel(); else if(ov&&ov.style.display==="flex") render(); });
       });
     }catch(e){ console.warn("auth init failed",e); }
   }
@@ -3679,7 +3682,7 @@ const Auth=(function(){
       b.querySelector("#au_in").onclick=()=>firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>alert("登入失敗："+(e.code||e.message)));
       b.querySelector("#au_x").onclick=hide; return;
     }
-    let h='<div class="modal-eyebrow">帳號</div><div class="modal-title">'+(nick?esc(nick):"請先設定暱稱")+(admin?"（管理員）":"")+'</div>'+
+    let h=(flash?'<div class="modal-note" style="color:#8fbf8f;margin-bottom:10px">✓ 登入成功</div>':'')+'<div class="modal-eyebrow">帳號</div><div class="modal-title">'+(nick?esc(nick):"請先設定暱稱")+(admin?"（管理員）":"")+'</div>'+
       '<span class="field-label">暱稱（1–20 字）</span><input class="text-input" id="au_nick" maxlength="20" value="'+esc(nick)+'"><button class="confirm-btn" id="au_sn">儲存暱稱</button>';
     if(nick){
       const mine=[];
@@ -3692,6 +3695,7 @@ const Auth=(function(){
     if(admin) h+='<div class="modal-eyebrow" style="margin-top:18px">待批准的申請</div><div id="au_list" class="modal-note">讀取中…</div>';
     if(!admin) h+='<div class="modal-note" style="word-break:break-all;font-size:11px;opacity:.6">UID：'+user.uid+'</div>';
     h+='<button class="modify-btn" id="au_out">登出</button><button class="modify-btn" id="au_x">關閉</button>';
+    flash=false;
     b.innerHTML=h;
     b.querySelector("#au_x").onclick=hide;
     b.querySelector("#au_out").onclick=()=>{ firebase.auth().signOut(); hide(); };
@@ -4615,7 +4619,7 @@ function goToAddedCharacter(){
 
 document.getElementById("fab").addEventListener("click", () => { if(Auth.requireLogin()) openModal(); });
 document.getElementById("itemFab").addEventListener("click", () => { if(Auth.requireLogin()) openItemModal(); });
-document.getElementById("addFab").addEventListener("click", () => { if(Auth.requireLogin()) openAddCharacter(); });
+document.getElementById("addFab").addEventListener("click", () => { if(!Auth.requireLogin()) return; if(!Auth.isAdmin){ alert("只有管理員可以新增角色"); return; } openAddCharacter(); });
 document.getElementById("modalClose").addEventListener("click", closeModal);
 modalOverlay.addEventListener("click", (e) => {
   if(e.target === modalOverlay) closeModal();
