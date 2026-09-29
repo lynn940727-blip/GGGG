@@ -3259,9 +3259,6 @@
   <div class="fab-btn fab-add" id="addFab" title="新增角色">
     <div class="fab-label"><span class="fab-plus">＋</span></div>
   </div>
-  <div class="fab-btn fab-item" id="itemFab">
-    <div class="fab-label">道具</div>
-  </div>
   <div class="fab-btn fab-action" id="fab">
     <div class="fab-label">行動</div>
   </div>
@@ -3629,7 +3626,7 @@ const Auth=(function(){
   const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const db=()=>{ if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG); return firebase.database(); };
   const roster=f=>{ try{ return rosterOf(f)||[]; }catch(e){ return []; } };
-  let ov=null,btn=null,reqs=[],pend={},flash=false,view="home",cardsTimer=null,prompted=false,keepY=0,lockUntil=0,lockBound=false,favs=new Set(),outFlash=false;
+  let ov=null,btn=null,reqs=[],pend={},flash=false,view="home",cardsTimer=null,prompted=false,keepY=0,lockUntil=0,lockBound=false,favs=new Set(),outFlash=false,authReady=false,loaded=false;
   const isOpen=()=>!!(ov&&ov.style.display==="flex");
   function bindLock(){ if(lockBound) return; lockBound=true; window.addEventListener("scroll",()=>{ if(!isOpen()&&Date.now()>lockUntil) return; if(Math.abs(window.scrollY-keepY)>2) window.scrollTo({top:keepY,behavior:"instant"}); },{passive:true}); }
   function paint(){
@@ -3705,29 +3702,30 @@ const Auth=(function(){
     document.head.appendChild(st);
   }
   function load(){
-    if(!user){ nick="";admin=false;favs=new Set();paint();return Promise.resolve(); }
+    if(!user){ nick="";admin=false;favs=new Set();loaded=true;paint();return Promise.resolve(); }
+    loaded=false;
     const d=db();
     return Promise.all([
       d.ref("users/"+user.uid+"/favs").once("value").then(s=>{ const v=s.val(); favs=new Set(v?Object.keys(v):localFavs()); }).catch(()=>{ favs=new Set(localFavs()); }),
       d.ref("users/"+user.uid+"/nick").once("value").then(s=>{ nick=s.val()||localNick(); if(nick) cacheNick(nick); }).catch(e=>{ nick=localNick(); console.warn("nick read failed",e); }),
       d.ref("admins/"+user.uid).once("value").then(s=>{admin=s.val()===true;}).catch(()=>{admin=false;}),
       d.ref("claimRequests/"+user.uid).once("value").then(s=>{pend=s.val()||{};}).catch(()=>{pend={};})
-    ]).then(paint);
+    ]).then(()=>{ loaded=true; paint(); });
   }
   function init(){
     paint();
-    if(typeof firebase==="undefined"||!firebase.auth) return;
+    if(typeof firebase==="undefined"||!firebase.auth){ authReady=true; return; }
     try{
       db();
       firebase.auth().onAuthStateChanged(u=>{
-        const was=user; user=u;
+        const was=user; user=u; authReady=true;
         if(!u&&!prompted){ prompted=true; setTimeout(()=>{ if(!user&&!(ov&&ov.style.display==="flex")) openPanel(); },3000); }
         if(u&&!was&&ov&&ov.style.display==="flex") flash=true;
         const p=load();
         Promise.race([p,new Promise(r=>setTimeout(r,6000))]).then(paint);
         p.then(()=>{ if(u&&!nick) openPanel(); else if(ov&&ov.style.display==="flex") render(); });
       });
-    }catch(e){ console.warn("auth init failed",e); }
+    }catch(e){ authReady=true; console.warn("auth init failed",e); }
   }
   function box(){
     ensureStyle();
@@ -3807,6 +3805,10 @@ const Auth=(function(){
   function render(b){
     b=b||box();
     if(cardsTimer){ clearInterval(cardsTimer); cardsTimer=null; }
+    if(!authReady||(user&&!loaded)){
+      b.innerHTML='<div class="modal-eyebrow">帳號</div><div class="modal-title">讀取中…</div><button class="modify-btn" id="au_x">關閉</button>';
+      b.querySelector("#au_x").onclick=hide; return;
+    }
     if(!user){
       b.innerHTML=(outFlash?'<div class="au-flash">✓ 登出成功</div>':"")+'<div class="modal-eyebrow">帳號</div><div class="modal-title">登入後才能行動、使用道具</div><button class="confirm-btn" id="au_in">用 Google 帳號登入</button><button class="modify-btn" id="au_x">關閉</button>';
       b.querySelector("#au_in").onclick=()=>{ outFlash=false; return firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>alert("登入失敗："+(e.code||e.message))); };
@@ -4720,8 +4722,20 @@ function resetWizard(startStep){
   };
 }
 
+const ALL_FACTIONS = ["實驗體", "醫療清潔部隊", "資助者"];
+function myFactions(){
+  // 玩家（或管理員）實際擁有角色的陣營；一個都沒有時，維持顯示全部陣營
+  const owned = ALL_FACTIONS.filter(f => Auth.mine(f, rosterOf(f)).length > 0);
+  return owned.length ? owned : ALL_FACTIONS;
+}
 function openModal(){
   resetWizard("faction");
+  const fs = myFactions();
+  if(fs.length === 1){
+    // 只有一個陣營：跳過「你是什麼陣營？」
+    wizard.faction = fs[0];
+    wizard.step = "whoSelect";
+  }
   renderModalBody();
   modalOverlay.classList.add("open");
 }
@@ -4799,7 +4813,6 @@ function goToAddedCharacter(){
 }
 
 document.getElementById("fab").addEventListener("click", () => { if(Auth.requireLogin()) openModal(); });
-document.getElementById("itemFab").addEventListener("click", () => { if(Auth.requireLogin()) openItemModal(); });
 document.getElementById("addFab").addEventListener("click", () => { if(!Auth.requireLogin()) return; if(!Auth.isAdmin){ alert("只有管理員可以新增角色"); return; } openAddCharacter(); });
 document.getElementById("modalClose").addEventListener("click", closeModal);
 modalOverlay.addEventListener("click", (e) => {
@@ -4843,6 +4856,7 @@ function actorLabel(){
 }
 
 function backBtn(){
+  if(!wizard.history.length) return "";
   return '<button class="back-link" onclick="goBack()">‹ 上一步</button>';
 }
 
@@ -4875,9 +4889,7 @@ function renderModalBody(){
     html =
       '<div class="modal-eyebrow">身份確認</div>' +
       '<div class="modal-title">你是什麼陣營？</div>' +
-      '<button class="choice-btn" onclick="selectFaction(\'實驗體\')">實驗體</button>' +
-      '<button class="choice-btn" onclick="selectFaction(\'醫療清潔部隊\')">醫療清潔部隊</button>' +
-      '<button class="choice-btn" onclick="selectFaction(\'資助者\')">資助者</button>';
+      myFactions().map(f => '<button class="choice-btn" onclick="selectFaction(\'' + f + '\')">' + f + '</button>').join("");
 
   } else if(step === "otherFaction"){
     html =
@@ -4920,6 +4932,7 @@ function renderModalBody(){
       '<div class="modal-eyebrow">實驗體</div>' +
       '<div class="modal-title">請選擇行動</div>' +
       '<button class="choice-btn" onclick="startMode(\'attack\')">攻擊</button>' +
+      '<button class="choice-btn" onclick="goStep(\'itemChoice\')">道具</button>' +
       '<button class="choice-btn" onclick="goStep(\'respawnPreview\')">重生</button>';
 
   } else if(step === "respawnPreview"){
