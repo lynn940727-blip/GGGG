@@ -990,7 +990,10 @@
     display:inline-block;
     padding:3px 10px;
     margin:4px 8px 4px 0;
-    border-radius:999px;
+    border-radius:14px;
+    max-width:100%;
+    white-space:normal;
+    word-break:break-word;
     background:rgba(98,47,45,0.55);
     border:1px solid var(--c-pill);
     font-size:11px;
@@ -2016,7 +2019,10 @@
     display:inline-block;
     padding:3px 10px;
     margin:4px 8px 4px 0;
-    border-radius:999px;
+    border-radius:14px;
+    max-width:100%;
+    white-space:normal;
+    word-break:break-word;
     background:rgba(4,90,99,0.4);
     border:1px solid var(--c-pill);
     font-size:11px;
@@ -3015,7 +3021,7 @@
 
 <section class="hero snap-section" id="hero">
   <div class="hero-top">
-    <div class="case-number">實驗編號 <span>NO.017</span> ／ 監控中</div>
+    <div class="case-number">實驗編號 <span>NO.005</span> ／ 監控中</div>
   </div>
 
   <div class="hero-center">
@@ -3890,7 +3896,7 @@ const Auth=(function(){
     const keep=b.dataset.view===view?b.scrollTop:0; b.dataset.view=view;
     let h="";
     if(view==="nick"){
-      h+='<div class="modal-title">'+(nick?"修改暱稱":"先取個暱稱吧")+'</div><span class="field-label">暱稱（1–20 字）</span><input class="text-input" id="au_nick" maxlength="20" value="'+esc(nick)+'"><button class="confirm-btn" id="au_sn">儲存</button>';
+      h+='<div class="modal-title">'+(nick?"修改暱稱":"先取個暱稱吧")+'</div><span class="field-label">暱稱（1–50 字）</span><input class="text-input" id="au_nick" maxlength="50" placeholder="暱稱｜陣營｜角色名，ex：汪汪｜主辦方/實驗體｜十字，同DC暱稱" value="'+esc(nick)+'"><button class="confirm-btn" id="au_sn">儲存</button>';
     }else if(view==="claim"){
       h+='<div class="modal-eyebrow">帳號</div><div class="modal-title" style="font-size:17px">申請認領角色</div>';
       const pk=Object.keys(pend);
@@ -3924,7 +3930,7 @@ const Auth=(function(){
     };
     const sn=b.querySelector("#au_sn");
     if(sn) sn.onclick=()=>{
-      const v=b.querySelector("#au_nick").value.trim(); if(!v||v.length>20) return alert("暱稱需為 1–20 字");
+      const v=b.querySelector("#au_nick").value.trim(); if(!v||v.length>50) return alert("暱稱需為 1–50 字");
       cacheNick(v); db().ref("users/"+user.uid).update({nick:v}).then(()=>{ nick=v; paint(); view="home"; render(); }).catch(e=>alert("儲存失敗："+(e.code||e.message)));
     };
     b.querySelectorAll(".au_cancel").forEach(a=>a.onclick=ev=>{ ev.preventDefault(); const k=a.dataset.c; db().ref("claimRequests/"+user.uid+"/"+k).remove().then(()=>{ delete pend[k]; render(); }); });
@@ -5130,7 +5136,7 @@ function renderModalBody(){
       backBtn() +
       '<div class="modal-eyebrow">' + eyebrow + '</div>' +
       '<div class="modal-title">添加狀態</div>' +
-      '<input type="text" class="text-input" id="statusInput1" maxlength="12" placeholder="例如：斷手、腦震盪">' +
+      '<input type="text" class="text-input" id="statusInput1" maxlength="50" placeholder="例如：斷手、腦震盪">' +
       '<button class="confirm-btn" onclick="confirmStatus1()">下一步</button>';
 
   } else if(step === "statusAskSecond"){
@@ -5147,7 +5153,7 @@ function renderModalBody(){
       backBtn() +
       '<div class="modal-eyebrow">' + eyebrow + '</div>' +
       '<div class="modal-title">第二個狀態</div>' +
-      '<input type="text" class="text-input" id="statusInput2" maxlength="12" placeholder="例如：斷手、腦震盪">' +
+      '<input type="text" class="text-input" id="statusInput2" maxlength="50" placeholder="例如：斷手、腦震盪">' +
       '<button class="confirm-btn" onclick="confirmStatus2()">前往確認</button>';
 
   } else if(step === "actionPreview"){
@@ -5560,7 +5566,7 @@ function renderEditForm(){
         : '<span class="edit-status-empty">目前沒有狀態</span>') +
     '</div>' +
     '<div class="edit-status-add">' +
-      '<input type="text" class="text-input" id="editStatusInput" placeholder="輸入新狀態名稱" maxlength="12">' +
+      '<input type="text" class="text-input" id="editStatusInput" placeholder="輸入新狀態名稱" maxlength="50">' +
       '<button class="modify-btn small" onclick="addEditStatus()">新增狀態</button>' +
     '</div>' +
     '<span class="field-label">隱藏台詞（連續點擊卡片三下觸發，可留空）</span>' +
@@ -5578,7 +5584,7 @@ function openEditStatusModal(i){
     '<div class="modal-eyebrow">編輯狀態 ／ ' + s.id + '</div>' +
     '<div class="modal-title">修改狀態內容</div>' +
     '<span class="field-label">狀態名稱</span>' +
-    '<input type="text" class="text-input" id="editStatusModalInput" value="' + escapeHTML(editDraft.statuses[i]) + '" maxlength="12">' +
+    '<input type="text" class="text-input" id="editStatusModalInput" value="' + escapeHTML(editDraft.statuses[i]) + '" maxlength="50">' +
     '<button class="confirm-btn" onclick="saveEditStatusModal()">儲存</button>' +
     '<button class="modify-btn" onclick="renderEditForm()">取消</button>' +
     '<button class="danger-btn" onclick="deleteEditStatusModal()">刪除此狀態</button>';
