@@ -1516,6 +1516,78 @@
     transform:scale(1) translateY(0);
   }
 
+  /* 擊殺回報：紅光 + 紅字 */
+  .modal-box:has(.reveal-box.kill){
+    border-color:var(--c-crit);
+    animation:killGlow 1.8s ease-in-out infinite;
+  }
+  @keyframes killGlow{
+    0%,100%{box-shadow:0 0 30px rgba(181,2,15,.45), 0 0 70px rgba(181,2,15,.25), inset 0 0 30px rgba(120,0,8,.35);}
+    50%{box-shadow:0 0 50px rgba(220,10,25,.8), 0 0 110px rgba(181,2,15,.5), inset 0 0 50px rgba(150,0,10,.55);}
+  }
+  .reveal-box.kill .modal-eyebrow{
+    color:#ff2a3a;
+    letter-spacing:.3em;
+    text-shadow:0 0 8px rgba(255,30,45,.9);
+    animation:killBlink 1.6s ease-in-out infinite;
+  }
+  .reveal-box.kill .modal-title{
+    color:#e0111f;
+    text-shadow:0 0 10px rgba(224,17,31,.85), 0 0 26px rgba(181,2,15,.6);
+  }
+  .reveal-box.kill .result-line{
+    color:#b5020f;
+    text-shadow:0 0 6px rgba(181,2,15,.6);
+  }
+  .reveal-box.kill .result-line.killed{
+    color:#ff2a3a;
+    font-weight:700;
+    text-shadow:0 0 10px rgba(255,30,45,.95), 0 0 22px rgba(181,2,15,.7);
+  }
+  @keyframes killBlink{
+    0%,100%{opacity:1}
+    50%{opacity:.55}
+  }
+  /* 擊殺回報：整個畫面泛血紅光、視窗震動、標題閃爍 */
+  .modal-overlay:has(.reveal-box.kill){
+    background:radial-gradient(ellipse at center, rgba(90,0,6,.82) 0%, rgba(30,0,2,.94) 70%, rgba(0,0,0,.98) 100%);
+    animation:killVignette 1.8s ease-in-out infinite;
+  }
+  @keyframes killVignette{
+    0%,100%{box-shadow:inset 0 0 120px rgba(181,2,15,.45);}
+    50%{box-shadow:inset 0 0 220px rgba(230,10,25,.85);}
+  }
+  .modal-box:has(.reveal-box.kill){
+    background:#160203;
+    border-width:2px;
+    animation:killGlow 1.8s ease-in-out infinite, killShake .5s ease-out 1;
+  }
+  @keyframes killShake{
+    0%{transform:translate(0,0)}
+    15%{transform:translate(-7px,3px)}
+    30%{transform:translate(6px,-4px)}
+    45%{transform:translate(-5px,-2px)}
+    60%{transform:translate(4px,3px)}
+    80%{transform:translate(-2px,1px)}
+    100%{transform:translate(0,0)}
+  }
+  .reveal-box.kill .modal-eyebrow{
+    font-size:15px;
+    font-weight:700;
+    color:#ff1f30;
+    text-shadow:0 0 10px rgba(255,20,35,1), 0 0 24px rgba(255,0,20,.8);
+  }
+  .reveal-box.kill .modal-title{
+    font-size:21px;
+    animation:killFlicker 3.2s steps(1,end) infinite;
+  }
+  @keyframes killFlicker{
+    0%,86%,90%,100%{opacity:1}
+    88%{opacity:.25}
+    92%{opacity:.6}
+    94%{opacity:1}
+  }
+
   /* ---------- MEDIC SQUAD PAGE (scoped) ---------- */
 
 .medic-page{
@@ -3256,9 +3328,6 @@
 </div>
 
 <div class="fab-stack">
-  <div class="fab-btn fab-add" id="addFab" title="新增角色">
-    <div class="fab-label"><span class="fab-plus">＋</span></div>
-  </div>
   <div class="fab-btn fab-action" id="fab">
     <div class="fab-label">行動</div>
   </div>
@@ -3833,7 +3902,7 @@ const Auth=(function(){
       const pn=Object.keys(pend).length;
       h+='<div class="modal-eyebrow">帳號</div><div class="au-head"><div class="au-hrow"><div class="au-hn">'+esc(nick)+'</div><button class="au-edit au_row" data-v="nick" title="編輯暱稱"><svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M19,19V12.31L21,10.31V19A2,2 0 0,1 19,21H5A2,2 0 0,1 3,19V5A2,2 0 0,1 5,3H13.69L11.69,5H5V19H19M21.7,7.35L18.65,4.3L20.07,2.88C20.46,2.5 21.09,2.5 21.48,2.88L23.12,4.5C23.5,4.91 23.5,5.54 23.12,5.93L21.7,7.35M19.94,8.06L10,18H7V15L16.94,5.06L19.94,8.06Z"/></svg></button></div><span class="au-role'+(admin?" adm":"")+'">'+(admin?"管理員":"帳號")+'</span></div>'
         +(pn?'<div class="au-pend click au_row" data-v="claim"><div class="au-pend-h">等待批准</div><div class="au-pend-s">你有 '+pn+' 筆申請正在等管理員審核，點此查看／取消 ›</div></div>':"")
-        +(admin?row("admin","待批准的申請",'<span id="au_admcnt"></span>'):"")
+        +(admin?row("admin","待批准的申請",'<span id="au_admcnt"></span>')+'<div class="au-row" id="au_addchar"><span>新增角色</span><span class="v">›</span></div>':"")
         +'<div class="au-sec"><span>我的角色</span><button class="au-mini au_row" data-v="claim">＋ 申請角色</button></div><div id="au_cards"></div>'
         +'<div class="au-sec"><span>收藏的實驗體</span><button class="au-mini au_row" data-v="fav">＋ 選擇收藏</button></div><div id="au_favcards"></div>'
         +(admin?"":'<div class="modal-note" style="word-break:break-all;font-size:11px;opacity:.5;margin-top:16px">UID：'+user.uid+"</div>");
@@ -3843,6 +3912,8 @@ const Auth=(function(){
     flash=false; b.innerHTML=h; b.scrollTop=keep;
     b.querySelector("#au_x").onclick=()=>{ if(view!=="home"&&nick){ view="home"; render(); } else hide(); };
     b.querySelectorAll(".au_row").forEach(r=>r.onclick=()=>{ view=r.dataset.v; render(); });
+    const addc=b.querySelector("#au_addchar");
+    if(addc) addc.onclick=()=>{ if(!admin){ alert("只有管理員可以新增角色"); return; } hide(); openAddCharacter(); };
     b.querySelectorAll(".au-favrow").forEach(r=>r.onclick=()=>{ const id=r.dataset.id; if(favs.has(id)) favs.delete(id); else favs.add(id); saveFavs(); render(); });
     const out=b.querySelector("#au_out"); if(out) out.onclick=()=>{ outFlash=true; view="home"; firebase.auth().signOut().then(()=>{ if(isOpen()) render(); }).catch(e=>{ outFlash=false; alert("登出失敗："+(e.code||e.message)); }); };
     const sn=b.querySelector("#au_sn");
@@ -4813,7 +4884,6 @@ function goToAddedCharacter(){
 }
 
 document.getElementById("fab").addEventListener("click", () => { if(Auth.requireLogin()) openModal(); });
-document.getElementById("addFab").addEventListener("click", () => { if(!Auth.requireLogin()) return; if(!Auth.isAdmin){ alert("只有管理員可以新增角色"); return; } openAddCharacter(); });
 document.getElementById("modalClose").addEventListener("click", closeModal);
 modalOverlay.addEventListener("click", (e) => {
   if(e.target === modalOverlay) closeModal();
@@ -5141,10 +5211,11 @@ function renderModalBody(){
         const t = subjects.find(s => s.id === id);
         const added = (wizard.lastAddedMap[id] || []);
         const addedText = added.length ? ('〔' + escapeHTML(added.join("、")) + '〕') : '（未附加狀態）';
-        return '<div class="result-line">' + L.causedPrefix + t.id + ' ' + t.name + '　HP：' + t.hp + '／3　SAN：' + t.san + '／3　' + addedText + '</div>';
+        const kd = (wizard.killedMap || {})[id];
+        return '<div class="result-line' + (kd ? ' killed' : '') + '">' + L.causedPrefix + t.id + ' ' + t.name + '　HP：' + t.hp + '／3　SAN：' + t.san + '／3　' + addedText + (kd === "dead" ? '　☠ 死亡' : kd === "mad" ? '　☠ 瘋狂' : '') + '</div>';
       }).join("");
       html =
-        '<div class="reveal-box" id="revealBox">' +
+        '<div class="reveal-box' + (wizard.anyDead ? ' kill' : '') + '" id="revealBox">' +
           '<div class="modal-eyebrow">' + resultEyebrow + '</div>' +
           '<div class="modal-title">' + titleText + '</div>' +
           '<div class="result-block">' + lines + '</div>' +
@@ -5338,6 +5409,7 @@ function applyAction(){
     }
   } else {
     const lastAddedMap = {};
+    const killedMap = {};
     let anyDead = false;
     wizard.targetIds.forEach(id => {
       const t = subjects.find(s => s.id === id);
@@ -5354,7 +5426,8 @@ function applyAction(){
       {
         const A = "「" + actorLabel() + "」", S = "「" + subjLabel(t) + "」";
         const addedTxt = added.length ? added.join("、") : "無";
-        const diedNow = _hp0 > 0 && t.hp === 0, madNow = _san0 > 0 && t.san === 0;
+        const _wasAlive = _hp0 > 0 && _san0 > 0;
+        const diedNow = _wasAlive && _hp0 > 0 && t.hp === 0, madNow = _wasAlive && _san0 > 0 && t.san === 0;
         const statTxt = wizard.statKey === "hp" ? "HP-1" : "SAN-1";
         let msg, dead = false;
         if(diedNow){ msg = A + "擊殺" + S + "。"; dead = true; }
@@ -5364,13 +5437,18 @@ function applyAction(){
         else { msg = A + "攻擊" + S + "（" + statTxt + "），附加狀態：" + addedTxt + "。"; }
         SharedStore.logEvent(msg, {g: wizard.faction, dead: dead});
       }
-      if(t.hp === 0 || t.san === 0){
+      // 只有「這一下」才讓 HP／SAN 歸零才算擊殺／瘋狂；對已經死亡（或瘋狂）的目標只是普通攻擊／折磨
+      const _wasAlive2 = _hp0 > 0 && _san0 > 0;
+      const _diedNow = _wasAlive2 && t.hp === 0, _madNow = _wasAlive2 && t.san === 0;
+      if(_diedNow || _madNow){
         anyDead = true;
+        killedMap[id] = _diedNow ? "dead" : "mad";
         t.statuses = [];
-        if(t.hp === 0) t.deathCount += 1;
-        if(t.san === 0) t.madCount += 1;
+        if(_diedNow) t.deathCount += 1;
+        if(_madNow) t.madCount += 1;
       }
     });
+    wizard.killedMap = killedMap;
     wizard.lastAddedMap = lastAddedMap;
     wizard.anyDead = anyDead;
   }
