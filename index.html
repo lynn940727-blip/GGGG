@@ -3688,6 +3688,9 @@ const Auth=(function(){
 #authBox .au-logout:hover{background:rgba(194,68,82,.18);color:#e8b3ba;border-color:#c24452}
 #authBox .au-outwrap{text-align:center;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
 #authBox .au-head{margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--line)}
+#authBox .au-hrow{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+#authBox .au-edit{flex:none;width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:transparent;border:none;color:var(--bone-dim);cursor:pointer;transition:color .2s ease,transform .2s ease}
+#authBox .au-edit:hover{color:var(--bone);transform:translateY(-1px)}
 #authBox .au-hn{font-size:22px;font-weight:700;font-family:var(--serif);word-break:break-all;line-height:1.25}
 #authBox .au-role{display:inline-block;margin-top:6px;font-family:var(--mono);font-size:10px;letter-spacing:.16em;padding:2px 8px;border:1px solid var(--line);color:var(--bone-dim)}
 #authBox .au-role.adm{border-color:var(--c-crit);color:var(--c-warn)}
@@ -3784,7 +3787,7 @@ const Auth=(function(){
   }
   function cardsHTML(){
     const m=myChars();
-    if(!m.length) return '<div class="au-empty">還沒有已認領的角色，點上方「申請認領角色」。</div>';
+    if(!m.length) return '<div class="au-empty">還沒有已認領的角色，點右上「＋ 申請角色」。</div>';
     return m.map(({f,s})=>cardHTML(f,s,"own")).join("");
   }
   function favsHTML(){
@@ -3826,12 +3829,10 @@ const Auth=(function(){
         +roster("實驗體").map(x=>{ const on=favs.has(String(x.id)); return '<div class="au-favrow'+(on?" on":"")+'" data-id="'+esc(x.id)+'"><span class="au-star">☆</span><span class="au-fn">編號 '+esc(x.id)+'　'+esc(x.name)+'</span><span class="au-fs">'+(on?"已收藏":"點擊收藏")+'</span></div>'; }).join("");
     }else{
       const pn=Object.keys(pend).length;
-      h+='<div class="modal-eyebrow">帳號</div><div class="au-head"><div class="au-hn">'+esc(nick)+'</div><span class="au-role'+(admin?" adm":"")+'">'+(admin?"管理員":"帳號")+'</span></div>'
+      h+='<div class="modal-eyebrow">帳號</div><div class="au-head"><div class="au-hrow"><div class="au-hn">'+esc(nick)+'</div><button class="au-edit au_row" data-v="nick" title="編輯暱稱"><svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M19,19V12.31L21,10.31V19A2,2 0 0,1 19,21H5A2,2 0 0,1 3,19V5A2,2 0 0,1 5,3H13.69L11.69,5H5V19H19M21.7,7.35L18.65,4.3L20.07,2.88C20.46,2.5 21.09,2.5 21.48,2.88L23.12,4.5C23.5,4.91 23.5,5.54 23.12,5.93L21.7,7.35M19.94,8.06L10,18H7V15L16.94,5.06L19.94,8.06Z"/></svg></button></div><span class="au-role'+(admin?" adm":"")+'">'+(admin?"管理員":"帳號")+'</span></div>'
         +(pn?'<div class="au-pend click au_row" data-v="claim"><div class="au-pend-h">等待批准</div><div class="au-pend-s">你有 '+pn+' 筆申請正在等管理員審核，點此查看／取消 ›</div></div>':"")
-        +row("nick","暱稱",esc(nick))
-        +row("claim","申請認領角色",pn?'<span class="au-badge amber">待批准 '+pn+'</span>':"")
         +(admin?row("admin","待批准的申請",'<span id="au_admcnt"></span>'):"")
-        +'<div class="au-sec"><span>我的角色</span></div><div id="au_cards"></div>'
+        +'<div class="au-sec"><span>我的角色</span><button class="au-mini au_row" data-v="claim">＋ 申請角色</button></div><div id="au_cards"></div>'
         +'<div class="au-sec"><span>收藏的實驗體</span><button class="au-mini au_row" data-v="fav">＋ 選擇收藏</button></div><div id="au_favcards"></div>'
         +(admin?"":'<div class="modal-note" style="word-break:break-all;font-size:11px;opacity:.5;margin-top:16px">UID：'+user.uid+"</div>");
     }
