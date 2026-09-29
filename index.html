@@ -3681,25 +3681,30 @@ const Auth=(function(){
   const row=(id,label,val)=>'<div class="au_row" data-v="'+id+'" style="display:flex;justify-content:space-between;align-items:center;padding:12px 2px;border-bottom:1px solid var(--line);cursor:pointer;font-size:14px"><span>'+label+'</span><span style="opacity:.6;font-size:13px">'+val+' ›</span></div>';
   const backLink='<a href="#" class="au_back" style="font-size:13px;opacity:.7;display:inline-block;margin-bottom:12px">‹ 返回</a>';
   function myChars(){ const o=[]; Object.keys(ST).forEach(f=>roster(f).forEach(s=>{ if(user&&s.owner===user.uid) o.push({f,s}); })); return o; }
-  function pips(n,c){ let o=""; for(let i=0;i<3;i++) o+='<span style="display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:middle;background:'+(i<n?c:"transparent")+';border:1px solid '+c+'"></span>'; return o; }
+  function bar(label,n,type){
+    const col=type==="hp"?"var(--c-hp)":"var(--c-san)", dk=type==="hp"?"var(--c-hp-dark,var(--c-hp))":"var(--c-san-dark,var(--c-san))";
+    let seg="";
+    for(let i=0;i<3;i++) seg+='<div style="flex:1;height:8px;border:1px solid '+(i<n?dk:"var(--line)")+';background:'+(i<n?col:"transparent")+'"></div>';
+    return '<div style="display:flex;flex-direction:column;gap:5px;margin-top:10px"><div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--bone-dim)"><span>'+label+'</span><span>'+n+'/3</span></div><div style="display:flex;gap:4px">'+seg+'</div></div>';
+  }
   function cardsHTML(){
     const m=myChars();
     if(!m.length) return '<div class="modal-note">還沒有已認領的角色，點上方「申請認領角色」。</div>';
     return m.map(({f,s})=>{
       const dead=typeof s.hp==="number"&&s.hp===0, mad=typeof s.san==="number"&&s.san===0;
       const tag=dead?'<span style="color:var(--c-crit);font-size:12px">死亡</span>':(mad?'<span style="color:var(--c-san);font-size:12px">瘋狂</span>':"");
-      const av=s.avatarUrl?'<img src="'+esc(s.avatarUrl)+'" style="width:38px;height:38px;border-radius:50%;object-fit:cover;flex:none">':"";
-      let h='<div style="border:1px solid var(--line);background:var(--bg-panel-2);border-radius:10px;padding:12px;margin:10px 0"><div style="display:flex;gap:10px;align-items:center">'+av+'<div style="flex:1;min-width:0"><div style="font-size:11px;opacity:.6">'+esc(f)+" "+esc(s.id)+'</div><div style="font-size:15px;word-break:break-all">'+esc(s.name)+'</div></div>'+tag+'<a href="#" class="au_unbind" data-f="'+esc(f)+'" data-id="'+esc(s.id)+'" style="font-size:12px;opacity:.7">解綁</a></div>';
-      if(typeof s.hp==="number") h+='<div style="margin-top:10px;font-size:12px">HP　'+pips(s.hp,"var(--c-hp)")+'</div>';
-      if(typeof s.san==="number") h+='<div style="margin-top:6px;font-size:12px">SAN　'+pips(s.san,"var(--c-san)")+'</div>';
+      const av=s.avatarUrl?'<img src="'+esc(s.avatarUrl)+'" style="width:44px;height:44px;border-radius:4px;object-fit:cover;flex:none;border:1px solid var(--line)">':'<div style="width:44px;height:44px;border-radius:4px;flex:none;border:1px dashed var(--line);background:rgba(255,255,255,.04)"></div>';
+      let h='<div style="border:1px solid var(--line);background:var(--bg-panel-2);border-radius:4px;padding:12px 14px;margin:10px 0"><div style="display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--bone-dim)"><span>'+esc(f)+" 編號 "+esc(s.id)+'</span><span>'+tag+'<a href="#" class="au_unbind" data-f="'+esc(f)+'" data-id="'+esc(s.id)+'" style="font-size:12px;opacity:.7;margin-left:10px">解綁</a></span></div><div style="display:flex;gap:10px;align-items:center;margin-top:10px">'+av+'<div style="flex:1;min-width:0;font-size:16px;word-break:break-all">'+esc(s.name)+'</div></div>';
+      if(typeof s.hp==="number") h+=bar("HP",s.hp,"hp");
+      if(typeof s.san==="number") h+=bar("SAN",s.san,"san");
       const st=Array.isArray(s.statuses)?s.statuses:[];
-      if(st.length) h+='<div style="margin-top:8px">'+st.map(x=>'<span style="display:inline-block;font-size:11px;padding:2px 8px;margin:2px 4px 2px 0;border-radius:10px;background:var(--c-pill)">'+esc(x)+'</span>').join("")+'</div>';
+      if(st.length) h+='<div style="margin-top:10px">'+st.map(x=>'<span style="display:inline-block;font-size:11px;padding:2px 8px;margin:2px 4px 2px 0;border-radius:10px;background:var(--c-pill)">'+esc(x)+'</span>').join("")+'</div>';
       const bits=[];
-      if(typeof s.bandages==="number") bits.push("繃帶 "+s.bandages);
-      if(typeof s.syringes==="number") bits.push("針筒 "+s.syringes);
-      if(s.deathCount) bits.push("死亡 "+s.deathCount+" 次");
-      if(s.madCount) bits.push("瘋狂 "+s.madCount+" 次");
-      if(bits.length) h+='<div style="margin-top:8px;font-size:11px;opacity:.65">'+bits.join("　")+'</div>';
+      if(typeof s.bandages==="number") bits.push("繃帶 x"+s.bandages);
+      if(typeof s.syringes==="number") bits.push("針筒 x"+s.syringes);
+      if(s.deathCount) bits.push("死亡 x"+s.deathCount);
+      if(s.madCount) bits.push("瘋狂 x"+s.madCount);
+      if(bits.length) h+='<div style="margin-top:10px;font-size:11px;opacity:.65">'+bits.join("　／　")+'</div>';
       return h+"</div>";
     }).join("");
   }
@@ -3722,14 +3727,14 @@ const Auth=(function(){
     if(!nick) view="nick";
     let h=flash?'<div class="modal-note" style="color:#8fbf8f;margin-bottom:10px">✓ 登入成功</div>':"";
     if(view==="nick"){
-      h+=(nick?backLink:"")+'<div class="modal-title">'+(nick?"修改暱稱":"先取個暱稱吧")+'</div><span class="field-label">暱稱（1–20 字）</span><input class="text-input" id="au_nick" maxlength="20" value="'+esc(nick)+'"><button class="confirm-btn" id="au_sn">儲存</button>';
+      h+='<div class="modal-title">'+(nick?"修改暱稱":"先取個暱稱吧")+'</div><span class="field-label">暱稱（1–20 字）</span><input class="text-input" id="au_nick" maxlength="20" value="'+esc(nick)+'"><button class="confirm-btn" id="au_sn">儲存</button>';
     }else if(view==="claim"){
-      h+=backLink+'<div class="modal-title">申請認領角色</div>';
+      h+='<div class="modal-title">申請認領角色</div>';
       const pk=Object.keys(pend);
       if(pk.length) h+='<div class="modal-eyebrow">等待批准</div>'+pk.map(k=>'<div class="modal-note">'+esc(pend[k].f+" "+pend[k].id+" "+pend[k].name)+' <a href="#" data-c="'+esc(k)+'" class="au_cancel">取消</a></div>').join("");
       h+='<span class="field-label">陣營</span><select class="pick" id="au_f">'+Object.keys(ST).map(f=>"<option>"+f+"</option>").join("")+'</select><span class="field-label">角色</span><select class="pick" id="au_c" size="5"></select><button class="confirm-btn" id="au_rq">送出申請</button>';
     }else if(view==="admin"){
-      h+=backLink+'<div class="modal-title">待批准的申請</div><div id="au_list" class="modal-note">讀取中…</div>';
+      h+='<div class="modal-title">待批准的申請</div><div id="au_list" class="modal-note">讀取中…</div>';
     }else{
       const pn=Object.keys(pend).length;
       h+='<div class="modal-eyebrow">帳號'+(admin?"・管理員":"")+'</div><div class="modal-title">'+esc(nick)+'</div>'+row("nick","暱稱",esc(nick))+row("claim","申請認領角色",pn?"待批准 "+pn:"")+(admin?row("admin","待批准的申請",""):"")+'<div class="modal-eyebrow" style="margin-top:18px">我的角色</div><div id="au_cards"></div>'+(admin?"":'<div class="modal-note" style="word-break:break-all;font-size:11px;opacity:.5">UID：'+user.uid+"</div>");
@@ -3737,8 +3742,7 @@ const Auth=(function(){
     if(view==="home"||!nick) h+='<button class="modify-btn" id="au_out">登出</button>';
     h+='<button class="modify-btn" id="au_x">關閉</button>';
     flash=false; b.innerHTML=h;
-    b.querySelector("#au_x").onclick=hide;
-    const bk=b.querySelector(".au_back"); if(bk) bk.onclick=e=>{ e.preventDefault(); view="home"; render(); };
+    b.querySelector("#au_x").onclick=()=>{ if(view!=="home"&&nick){ view="home"; render(); } else hide(); };
     b.querySelectorAll(".au_row").forEach(r=>r.onclick=()=>{ view=r.dataset.v; render(); });
     const out=b.querySelector("#au_out"); if(out) out.onclick=()=>{ firebase.auth().signOut(); hide(); };
     const sn=b.querySelector("#au_sn");
