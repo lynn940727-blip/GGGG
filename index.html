@@ -1542,6 +1542,10 @@
     text-shadow:0 0 6px rgba(210,32,46,.45);
   }
 
+  .result-actions{display:flex;gap:10px;margin-top:4px;}
+  .result-actions .modify-btn, .result-actions .confirm-btn{flex:1;width:auto;margin:0;padding:13px 8px;white-space:nowrap;}
+  .result-actions .modify-btn{flex:1.15;}
+
   /* ---------- MEDIC SQUAD PAGE (scoped) ---------- */
 
 .medic-page{
@@ -4825,6 +4829,19 @@ function openItemModal(){
   modalOverlay.classList.add("open");
 }
 
+function resultBtns(){
+  return '<div class="result-actions">' +
+    '<button class="modify-btn" onclick="viewActionLog()">查看行動紀錄</button>' +
+    '<button class="confirm-btn" onclick="closeModal()">確認</button>' +
+  '</div>';
+}
+function viewActionLog(){
+  closeModal();
+  const idx = snapSections.findIndex(x => x.id === "logRoster");
+  if(idx < 0) return;
+  setTimeout(() => withTransitionLock(() => jumpToIndex(idx)), 60);
+}
+
 function closeModal(){
   editDraft = null; editSnap = null;   // 沒按儲存就關掉：所有修改作廢、不留紀錄
   modalOverlay.classList.remove("open");
@@ -5027,7 +5044,7 @@ function renderModalBody(){
     html =
       '<div class="reveal-box" id="revealBox">' +
         reportBlock(self, "重生", "") +
-        '<button class="confirm-btn" onclick="closeModal()">確認</button>' +
+        resultBtns() +
       '</div>';
 
   } else if(step === "medicalAction"){
@@ -5185,7 +5202,7 @@ function renderModalBody(){
       html =
         '<div class="reveal-box" id="revealBox">' +
           reportBlock(target, (wizard.statKey === "hp" ? "HP" : "SAN") + "+1", "") +
-          '<button class="confirm-btn" onclick="closeModal()">確認</button>' +
+          resultBtns() +
         '</div>';
     } else {
       const dTxt = wizard.statKey === "hp" ? "HP-1" : "SAN-1";
@@ -5197,7 +5214,7 @@ function renderModalBody(){
       html =
         '<div class="reveal-box' + (wizard.anyDead ? ' kill' : '') + '" id="revealBox">' +
           blocks +
-          '<button class="confirm-btn" onclick="closeModal()">確認</button>' +
+          resultBtns() +
         '</div>';
     }
   } else if(step === "itemSelf"){
@@ -5238,7 +5255,7 @@ function renderModalBody(){
     html =
       '<div class="reveal-box" id="revealBox">' +
         reportBlock(self, (isBandage ? "HP" : "SAN") + "+1", "") +
-        '<button class="confirm-btn" onclick="closeModal()">確認</button>' +
+        resultBtns() +
       '</div>';
   }
 
