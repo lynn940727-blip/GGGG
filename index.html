@@ -358,6 +358,10 @@
   }
   .menu-item.available:hover .num{color:var(--c-crit);}
 
+  .menu-help-item .num b{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border:1px solid var(--blood-dim);border-radius:50%;font-size:10px;font-weight:400;line-height:1;transition:border-color .25s ease,color .25s ease}
+  .menu-help-item:hover{padding-left:6px;}
+  .menu-help-item:hover .label{color:var(--bone);text-shadow:0 0 12px rgba(181,2,15,0.35);}
+  .menu-help-item:hover .num b{color:var(--c-crit);border-color:var(--c-crit);}
   .menu-item.locked{cursor:default;}
   .menu-item.locked .label{color:var(--bone-dim); opacity:0.32;}
   .menu-item.locked .num{opacity:0.32;}
@@ -3015,6 +3019,10 @@
       <span class="num">05</span>
       <span class="label">行動紀錄</span>
     </li>
+    <li class="menu-item menu-help-item" id="menuHelp" title="新手教學">
+      <span class="num"><b>?</b></span>
+      <span class="label">新手教學</span>
+    </li>
   </ul>
 </aside>
 
@@ -3528,6 +3536,16 @@ const SharedStore = (function(){
     if(f === "avatarUrl") return v ? "（已設定）" : "";
     return typeof v === "number" ? v : String(v);
   }
+  // 通知信箱：寫一筆到「對方帳號」的信箱（notifications/<uid>）。自己對自己的操作不通知。
+  function notify(to, kind, msg){
+    try{
+      const d = init(); if(!d || !to) return;
+      const me = window.Auth && Auth.uid();
+      if(!me || me === to) return;
+      d.ref("notifications/" + to).push({ts: firebase.database.ServerValue.TIMESTAMP, k: String(kind || "evt").slice(0, 12),
+        msg: String(msg).slice(0, 300), f: me, r: false}).catch(err => console.warn("notify failed", err));
+    }catch(err){ console.warn("notify failed", err); }
+  }
   // 播報式紀錄：只記「行動、道具、重生」，每一筆是一句完整的話
   function logEvent(msg, opts){
     try{
@@ -3535,6 +3553,7 @@ const SharedStore = (function(){
       opts = opts || {};
       d.ref(LOG_PATH).push({u: (window.Auth&&Auth.uid())||"", n: (window.Auth&&Auth.nick())||"", ts: firebase.database.ServerValue.TIMESTAMP, k: "evt", msg: String(msg),
                             g: opts.g || "", dead: !!opts.dead}).catch(err => console.warn("log failed", err));
+      if(opts.to) notify(opts.to, opts.kind, msg);   // 被行動的角色有綁定者 → 通知他
     }catch(err){ console.warn("log failed", err); }
   }
 
@@ -3669,7 +3688,7 @@ const SharedStore = (function(){
     if(!started) setTimeout(start, 2500);
   }
 
-  return {attach, save, downloadJSON, setCtx, logEvent, logEdit, mountLog};
+  return {attach, save, downloadJSON, setCtx, logEvent, logEdit, mountLog, notify};
 })();
 window.SharedStore = SharedStore;
 
@@ -3684,6 +3703,84 @@ const Auth=(function(){
   // 申請是否已批准：管理員標記過，或這個角色的綁定者已經是自己
   const isApproved=r=>{ if(!r) return false; if(r.approved) return true; if(!user) return false; const s=roster(r.f).find(x=>String(x.id)===String(r.id)); return !!(s&&s.owner===user.uid); };
   let pendRef=null;
+  let tutDone=null;   // null=還不知道；true=這個帳號看過新手教學
+  const localTut=()=>{ try{ return !!user&&localStorage.getItem("bp_tut_"+user.uid)==="1"; }catch(e){ return false; } };
+  function markTutorialDone(){
+    tutDone=true;
+    try{ if(user) localStorage.setItem("bp_tut_"+user.uid,"1"); }catch(e){}
+    try{ if(user) db().ref("users/"+user.uid+"/tut").set(true).catch(()=>{}); }catch(e){}
+  }
+  /* ---------- 信箱（通知） ---------- */
+  let inbox=[],inboxRef=null,inboxUid=null,inboxInit=false,badge=null,toastEl=null,toastT=null;
+  const NOTI={kill:{t:"你的角色被擊殺",c:"bad"},mad:{t:"你的角色陷入瘋狂",c:"bad"},hit:{t:"你的角色受到攻擊",c:"warn"},torture:{t:"你的角色遭到折磨",c:"warn"},accident:{t:"你的角色遭遇醫療事故",c:"warn"},heal:{t:"你的角色受到治療",c:"good"},support:{t:"你的角色獲得資助",c:"good"},sys:{t:"系統通知",c:"sys"},evt:{t:"通知",c:"sys"}};
+  const unread=()=>inbox.filter(x=>!x.r).length;
+  function ensureInboxStyle(){
+    if(document.getElementById("inboxStyle")) return;
+    const st=document.createElement("style"); st.id="inboxStyle";
+    st.textContent=`
+#authBox .au-noti{border:1px solid var(--line);border-left:3px solid var(--bone-dim);background:var(--bg-panel);padding:11px 14px;margin:10px 0;opacity:.62}
+#authBox .au-noti.unread{opacity:1;box-shadow:0 0 0 1px rgba(181,2,15,.25) inset}
+#authBox .au-noti.bad{border-left-color:#c2242f}
+#authBox .au-noti.warn{border-left-color:#d08a2e}
+#authBox .au-noti.good{border-left-color:#4f9d78}
+#authBox .au-noti.sys{border-left-color:#6ca6c9}
+#authBox .au-noti-h{display:flex;justify-content:space-between;gap:10px;font-family:var(--serif);font-size:14px;font-weight:700;color:var(--bone);letter-spacing:.06em;margin-bottom:5px}
+#authBox .au-noti.unread .au-noti-h::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#c2242f;margin-right:7px;align-self:center}
+#authBox .au-noti-h>span:first-child{flex:1}
+#authBox .au-noti-time{font-family:var(--mono);font-size:11px;font-weight:400;opacity:.6;white-space:nowrap}
+#authBox .au-noti-b{font-size:13px;line-height:1.6;color:var(--bone-dim);word-break:break-all}
+.au-toast{position:fixed;left:50%;top:14px;transform:translate(-50%,-140%);z-index:100000;width:min(92vw,420px);box-sizing:border-box;padding:12px 16px;background:rgba(20,4,6,.96);border:1px solid #7a1c1c;border-left:3px solid #c2242f;box-shadow:0 6px 30px rgba(0,0,0,.6);color:#e8dfd0;cursor:pointer;transition:transform .35s ease;font-size:13px;line-height:1.55}
+.au-toast.show{transform:translate(-50%,0)}
+.au-toast b{display:block;font-size:14px;letter-spacing:.06em;margin-bottom:2px;color:#ff9a9a}
+.au-toast span{display:block;opacity:.85;word-break:break-all}`;
+    document.head.appendChild(st);
+  }
+  function updateBadge(){
+    if(!btn) return;
+    const n=unread();
+    if(!badge){ badge=document.createElement("span"); badge.style.cssText="position:absolute;top:2px;right:0;min-width:16px;height:16px;padding:0 4px;box-sizing:border-box;border-radius:8px;background:#c2242f;color:#fff;font-size:10px;line-height:16px;text-align:center;font-family:var(--mono);pointer-events:none;display:none"; btn.appendChild(badge); }
+    badge.textContent=n>99?"99+":String(n); badge.style.display=n?"block":"none";
+  }
+  function toast(title,body){
+    ensureInboxStyle();
+    if(!toastEl){ toastEl=document.createElement("div"); toastEl.className="au-toast"; toastEl.onclick=()=>{ toastEl.classList.remove("show"); openPanel(); view="inbox"; render(); }; document.body.appendChild(toastEl); }
+    toastEl.innerHTML="<b>"+esc(title)+"</b><span>"+esc(body)+"</span>";
+    void toastEl.offsetWidth; toastEl.classList.add("show");
+    clearTimeout(toastT); toastT=setTimeout(()=>{ if(toastEl) toastEl.classList.remove("show"); },6500);
+    try{ if(navigator.vibrate) navigator.vibrate(80); }catch(e){}
+  }
+  function markAllRead(){
+    if(!user) return;
+    const up={}; inbox.forEach(x=>{ if(!x.r) up[x.id+"/r"]=true; });
+    if(Object.keys(up).length) db().ref("notifications/"+user.uid).update(up).catch(e=>console.warn("mark read failed",e));
+  }
+  function watchInbox(){
+    if(!user){
+      if(inboxRef){ try{ inboxRef.off(); }catch(e){} inboxRef=null; }
+      inbox=[]; inboxUid=null; inboxInit=false; updateBadge(); return;
+    }
+    if(inboxRef&&inboxUid===user.uid) return;
+    if(inboxRef){ try{ inboxRef.off(); }catch(e){} inboxRef=null; }
+    inbox=[]; inboxInit=false; inboxUid=user.uid;
+    try{
+      inboxRef=db().ref("notifications/"+user.uid).limitToLast(50);
+      inboxRef.on("value",snap=>{
+        const v=snap.val()||{};
+        const list=Object.keys(v).map(id=>Object.assign({id},v[id])).sort((a,b)=>(b.ts||0)-(a.ts||0));
+        const had=new Set(inbox.map(x=>x.id));
+        const fresh=inboxInit?list.filter(x=>!had.has(x.id)&&!x.r):[];
+        const first=!inboxInit;
+        inbox=list; inboxInit=true; updateBadge();
+        const viewing=isOpen()&&view==="inbox";
+        if(first){ const n=unread(); if(n) toast("信箱","你有 "+n+" 則未讀通知"); }
+        else if(fresh.length&&!viewing){
+          const x=fresh[0], m=NOTI[x.k]||NOTI.evt;
+          toast(m.t+(fresh.length>1?"（共 "+fresh.length+" 則）":""),String(x.msg||"").split("\n")[0]);
+        }
+        if(isOpen()&&(view==="home"||view==="inbox")) render();
+      },e=>console.warn("inbox read failed",e));
+    }catch(e){ console.warn("watch inbox failed",e); }
+  }
   // 即時監聽自己的申請：管理員批准／拒絕後，這台不用重新整理就會更新
   function watchPend(){
     if(pendRef){ try{ pendRef.off(); }catch(e){} pendRef=null; }
@@ -3705,9 +3802,10 @@ const Auth=(function(){
       btn.style.cssText="position:fixed;top:24px;right:24px;z-index:200;width:42px;height:42px;display:flex;align-items:center;justify-content:center;color:var(--bone-dim);background:none;border:none;cursor:pointer;transition:color .3s ease";
       btn.onmouseenter=()=>{btn.style.color="var(--bone)";}; btn.onmouseleave=()=>{btn.style.color="var(--bone-dim)";};
       btn.innerHTML='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"><path d="M12 3.2c-2.3 0-3.7 1.9-3.7 4.3 0 2 .9 3.6 2 4.4-.2 1.3-1.7 1.9-3.7 2.5C4.9 15 3.6 16 3.6 17.6v3h16.8v-3c0-1.6-1.3-2.6-3-3.2-2-.6-3.5-1.2-3.7-2.5 1.1-.8 2-2.4 2-4.4 0-2.4-1.4-4.3-3.7-4.3z"/></svg>';
-      btn.onclick=openPanel; document.body.appendChild(btn);
+      btn.id="authBtn"; btn.onclick=openPanel; document.body.appendChild(btn);
     }
     btn.title=user?(nick||"設定暱稱")+(admin?"（管理員）":""):"登入";
+    updateBadge();
   }
   const localNick=()=>{ try{ return localStorage.getItem("bp_nick_"+(user&&user.uid))||""; }catch(e){ return ""; } };
   const cacheNick=v=>{ try{ if(user) localStorage.setItem("bp_nick_"+user.uid,v); }catch(e){} };
@@ -3776,15 +3874,16 @@ const Auth=(function(){
     document.head.appendChild(st);
   }
   function load(){
-    if(!user){ nick="";admin=false;favs=new Set();pend={};if(pendRef){ try{ pendRef.off(); }catch(e){} pendRef=null; }loaded=true;paint();return Promise.resolve(); }
+    if(!user){ nick="";admin=false;favs=new Set();pend={};tutDone=null;if(pendRef){ try{ pendRef.off(); }catch(e){} pendRef=null; }watchInbox();loaded=true;paint();return Promise.resolve(); }
     loaded=false;
     const d=db();
     return Promise.all([
       d.ref("users/"+user.uid+"/favs").once("value").then(s=>{ const v=s.val(); favs=new Set(v?Object.keys(v):localFavs()); }).catch(()=>{ favs=new Set(localFavs()); }),
       d.ref("users/"+user.uid+"/nick").once("value").then(s=>{ nick=s.val()||localNick(); if(nick) cacheNick(nick); }).catch(e=>{ nick=localNick(); console.warn("nick read failed",e); }),
       d.ref("admins/"+user.uid).once("value").then(s=>{admin=s.val()===true;}).catch(()=>{admin=false;}),
-      d.ref("claimRequests/"+user.uid).once("value").then(s=>{pend=s.val()||{};}).catch(()=>{pend={};})
-    ]).then(()=>{ loaded=true; paint(); watchPend(); });
+      d.ref("claimRequests/"+user.uid).once("value").then(s=>{pend=s.val()||{};}).catch(()=>{pend={};}),
+      d.ref("users/"+user.uid+"/tut").once("value").then(s=>{ tutDone=s.val()===true||localTut(); }).catch(()=>{ tutDone=localTut(); })
+    ]).then(()=>{ loaded=true; paint(); watchPend(); watchInbox(); });
   }
   function init(){
     paint();
@@ -3937,16 +4036,24 @@ const Auth=(function(){
       if(ak.length) h+='<div class="au-pend"><div class="au-pend-h">已批准</div><div class="au-pend-s">角色已綁定到你的帳號，可以在「我的角色」使用</div>'+ak.map(k=>'<div class="au-pend-t">'+esc(pend[k].f)+'　編號 '+esc(pend[k].id)+'　'+esc(pend[k].name)+'</div><button class="au-btn au_cancel" data-c="'+esc(k)+'">知道了</button>').join("")+'</div>';
       if(pk.length) h+='<div class="au-pend"><div class="au-pend-h">等待批准</div><div class="au-pend-s">管理員批准後即可使用角色</div>'+pk.map(k=>'<div class="au-pend-t">'+esc(pend[k].f)+'　編號 '+esc(pend[k].id)+'　'+esc(pend[k].name)+'</div><button class="au-btn au-danger au_cancel" data-c="'+esc(k)+'">取消申請</button>').join("")+'</div>';
       h+='<span class="field-label">陣營</span><select class="pick" id="au_f">'+Object.keys(ST).map(f=>"<option>"+f+"</option>").join("")+'</select><span class="field-label">角色</span><select class="pick" id="au_c" size="5"></select><button class="confirm-btn" id="au_rq">送出申請</button>';
+    }else if(view==="inbox"){
+      ensureInboxStyle();
+      h+='<div class="modal-eyebrow">帳號</div><div class="modal-title" style="font-size:17px">信箱</div>';
+      if(!inbox.length) h+='<div class="au-empty">目前沒有通知。你的角色被攻擊、擊殺、治療時，會顯示在這裡。</div>';
+      else h+=inbox.map(x=>{ const m=NOTI[x.k]||NOTI.evt; const tm=x.ts?new Date(x.ts).toLocaleString("zh-TW",{hour12:false,month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"}):"";
+        return '<div class="au-noti '+(x.r?"":"unread ")+m.c+'"><div class="au-noti-h"><span>'+m.t+'</span><span class="au-noti-time">'+esc(tm)+'</span></div><div class="au-noti-b">'+esc(x.msg).replace(/\n/g,"<br>")+'</div></div>'; }).join("")
+        +'<button class="modify-btn" id="au_clr">清空信箱</button>';
     }else if(view==="admin"){
       h+='<div class="modal-eyebrow">管理員</div><div class="modal-title" style="font-size:17px">待批准的申請</div><div id="au_list" class="modal-note">讀取中…</div>';
     }else if(view==="fav"){
       h+='<div class="modal-eyebrow">帳號</div><div class="modal-title">收藏的實驗體</div><div class="modal-note">收藏後，會在個人檔案顯示他的面板；行動選目標時，他會置頂並標示 ☆。</div>'
         +roster("實驗體").map(x=>{ const on=favs.has(String(x.id)); return '<div class="au-favrow'+(on?" on":"")+'" data-id="'+esc(x.id)+'"><span class="au-star">☆</span><span class="au-fn">編號 '+esc(x.id)+'　'+esc(x.name)+'</span><span class="au-fs">'+(on?"已收藏":"點擊收藏")+'</span></div>'; }).join("");
     }else{
-      const pn=Object.keys(pend).filter(k=>!isApproved(pend[k])).length, an=Object.keys(pend).length-pn;
+      const pn=Object.keys(pend).filter(k=>!isApproved(pend[k])).length, an=Object.keys(pend).length-pn, un=unread();
       h+='<div class="modal-eyebrow">帳號</div><div class="au-head"><div class="au-hrow"><div class="au-hn">'+esc(nick)+'</div><button class="au-edit au_row" data-v="nick" title="編輯暱稱"><svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M19,19V12.31L21,10.31V19A2,2 0 0,1 19,21H5A2,2 0 0,1 3,19V5A2,2 0 0,1 5,3H13.69L11.69,5H5V19H19M21.7,7.35L18.65,4.3L20.07,2.88C20.46,2.5 21.09,2.5 21.48,2.88L23.12,4.5C23.5,4.91 23.5,5.54 23.12,5.93L21.7,7.35M19.94,8.06L10,18H7V15L16.94,5.06L19.94,8.06Z"/></svg></button></div><span class="au-role'+(admin?" adm":"")+'">'+(admin?"管理員":"帳號")+'</span></div>'
         +(an?'<div class="au-pend click au_row" data-v="claim"><div class="au-pend-h">已批准</div><div class="au-pend-s">你有 '+an+' 筆申請已批准，點此查看 ›</div></div>':"")
         +(pn?'<div class="au-pend click au_row" data-v="claim"><div class="au-pend-h">等待批准</div><div class="au-pend-s">你有 '+pn+' 筆申請正在等管理員審核，點此查看／取消 ›</div></div>':"")
+        +row("inbox","信箱",un?'<span class="au-badge amber">未讀 '+un+'</span>':"無新通知")
         +(admin?row("admin","待批准的申請",'<span id="au_admcnt"></span>')+'<div class="au-row" id="au_addchar"><span>新增角色</span><span class="v">›</span></div>':"")
         +'<div class="au-sec"><span>我的角色</span><button class="au-mini au_row" data-v="claim">＋ 申請角色</button></div><div id="au_cards"></div>'
         +'<div class="au-sec"><span>收藏的實驗體</span><button class="au-mini au_row" data-v="fav">＋ 選擇收藏</button></div><div id="au_favcards"></div>'
@@ -3970,6 +4077,11 @@ const Auth=(function(){
       cacheNick(v); db().ref("users/"+user.uid).update({nick:v}).then(()=>{ nick=v; paint(); view="home"; render(); }).catch(e=>alert("儲存失敗："+(e.code||e.message)));
     };
     b.querySelectorAll(".au_cancel").forEach(a=>a.onclick=ev=>{ ev.preventDefault(); const k=a.dataset.c; db().ref("claimRequests/"+user.uid+"/"+k).remove().then(()=>{ delete pend[k]; render(); }); });
+    if(view==="inbox"){
+      if(unread()) setTimeout(()=>{ if(isOpen()&&view==="inbox") markAllRead(); },1500);   // 開著信箱一下就當作看過了
+      const clr=b.querySelector("#au_clr");
+      if(clr) clr.onclick=()=>{ if(!confirm("確定清空所有通知？")) return; db().ref("notifications/"+user.uid).remove().catch(e=>alert("清空失敗："+(e.code||e.message))); };
+    }
     if(view==="claim"){
       const fs=b.querySelector("#au_f"),cs=b.querySelector("#au_c");
       const fill=()=>{ cs.innerHTML=roster(fs.value).filter(s=>!s.owner).map(s=>'<option value="'+esc(s.id)+'">'+esc(s.id)+" "+esc(s.name)+"</option>").join(""); };
@@ -4008,7 +4120,7 @@ const Auth=(function(){
         ev.preventDefault(); const x=rows[+a.dataset.i]; const d=db();
         const done=()=>d.ref("claimRequests/"+x.u+"/"+x.k).remove().then(()=>render());
         // 批准：不刪除申請，改標記「已批准」，申請人那邊才看得到結果
-        const okDone=()=>d.ref("claimRequests/"+x.u+"/"+x.k).update({approved:true,at:firebase.database.ServerValue.TIMESTAMP}).then(()=>render()).catch(()=>done());
+        const okDone=()=>{ SharedStore.notify(x.u,"sys","你的角色申請已批准：「"+x.r.f+" 編號 "+x.r.id+" "+x.r.name+"」，現在可以使用這個角色了。"); return d.ref("claimRequests/"+x.u+"/"+x.k).update({approved:true,at:firebase.database.ServerValue.TIMESTAMP}).then(()=>render()).catch(()=>done()); };
         if(a.dataset.a==="no") return done();
         d.ref(ST[x.r.f][1]+"/s"+x.r.id+"/owner").set(x.u).then(okDone).catch(e=>alert("批准失敗："+(e.code||e.message)));
       });
@@ -4016,7 +4128,9 @@ const Auth=(function(){
   }
   const api={
     init,openPanel,
-    get isOpen(){return isOpen();},
+    get isOpen(){return isOpen()||!!(window.Tutorial&&window.Tutorial.active);},   // 教學進行中也鎖住頁面滾動
+    autoTutorialReady(){ return !!(user&&nick&&loaded&&tutDone===false&&!isOpen()&&!closing); },
+    markTutorialDone,
     favIds:()=>Array.from(favs), isFav:id=>favs.has(String(id)),
     get isAdmin(){return admin;},
     uid:()=>user?user.uid:null, nick:()=>nick,
@@ -4029,6 +4143,112 @@ const Auth=(function(){
   return api;
 })();
 window.Auth=Auth;
+
+/* ---------- 新手教學：第一次登入自動跑一次；目錄裡的「?」可以重看 ---------- */
+const Tutorial=(function(){
+  const PENCIL='<svg viewBox="0 0 24 24" width="16" height="16" style="vertical-align:-3px"><path fill="currentColor" d="M19,19V12.31L21,10.31V19A2,2 0 0,1 19,21H5A2,2 0 0,1 3,19V5A2,2 0 0,1 5,3H13.69L11.69,5H5V19H19M21.7,7.35L18.65,4.3L20.07,2.88C20.46,2.5 21.09,2.5 21.48,2.88L23.12,4.5C23.5,4.91 23.5,5.54 23.12,5.93L21.7,7.35M19.94,8.06L10,18H7V15L16.94,5.06L19.94,8.06Z"/></svg>';
+  const STEPS=[
+    {sel:"#menuToggle",h:"左上角：目錄",b:"點開可以快速跳到各區塊：機構資訊、實驗體名冊、醫療隊名冊、資助者名冊、行動紀錄。目錄裡的「?」可以隨時重看這份教學。"},
+    {sel:"#authBtn",h:"右上角：個人檔案",b:"在這裡登入、設定暱稱、申請認領自己的角色、收藏實驗體。你的角色被攻擊、治療、擊殺時，會收到信箱通知（按鈕上的紅點是未讀數量）。"},
+    {sel:"#rosterNav",show:"#rosterNav",h:"右側：進度條",b:"在名冊頁面滑動時，右邊會出現進度條。點上方箭頭回到該頁首，點下方箭頭跳到該頁尾。"},
+    {sel:"#fab",h:"右下角：行動",b:"要攻擊、治療、資助、使用道具或重生，都從這裡開始，照著畫面一步一步選就可以。需要先登入並設定暱稱。"},
+    {sel:".card .edit-btn",h:"角色卡：編輯鍵",b:"每張角色卡右下角有一個 "+PENCIL+" 編輯鍵，可以修改自己角色的名稱、數值、頭像和隱藏台詞。只能編輯自己認領的角色（管理員可以編輯全部）。"},
+    {sel:"#logRoster",h:"行動紀錄",b:"目錄的「行動紀錄」會記下所有人的每一次行動：誰攻擊、誰治療、誰擊殺了誰，都看得到。"}
+  ];
+  let ov=null,hole=null,card=null,i=0,active=false,shown=null,onKey=null,onResize=null,stop=null;
+  function css(){
+    if(document.getElementById("tutStyle")) return;
+    const s=document.createElement("style"); s.id="tutStyle";
+    s.textContent=`
+.tut-ov{position:fixed;inset:0;z-index:100002;touch-action:none;overscroll-behavior:contain}
+.tut-hole{position:fixed;border-radius:6px;box-shadow:0 0 0 9999px rgba(0,0,0,.8);border:1px solid var(--c-crit);pointer-events:none;transition:all .3s ease}
+.tut-hole.none{border-color:transparent;box-shadow:0 0 0 9999px rgba(0,0,0,.84);left:50%;top:50%;width:0;height:0}
+.tut-card{position:fixed;left:50%;width:min(92vw,380px);box-sizing:border-box;transform:translateX(-50%);background:var(--bg-panel-2);border:1px solid var(--line);border-left:3px solid var(--c-crit);box-shadow:0 10px 40px rgba(0,0,0,.65);padding:18px 18px 14px;color:var(--bone);transition:top .3s ease,bottom .3s ease}
+.tut-step{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--c-crit);margin-bottom:8px}
+.tut-h{font-family:var(--serif);font-size:17px;font-weight:700;letter-spacing:.06em;margin-bottom:8px}
+.tut-b{font-size:13.5px;line-height:1.75;color:var(--bone-dim)}
+.tut-row{display:flex;align-items:center;gap:8px;margin-top:16px}
+.tut-btn{font-family:var(--serif);font-size:14px;letter-spacing:.08em;padding:9px 16px;background:none;border:1px solid var(--line);color:var(--bone);cursor:pointer}
+.tut-btn.main{background:rgba(181,2,15,.22);border-color:var(--c-crit)}
+.tut-btn:disabled{opacity:.3;cursor:default}
+.tut-skip{margin-left:auto;background:none;border:none;color:var(--bone-dim);font-size:12px;letter-spacing:.08em;cursor:pointer;padding:8px 2px;opacity:.75}
+.tut-dots{display:flex;gap:5px;margin-top:12px}
+.tut-dots i{width:6px;height:6px;border-radius:50%;background:var(--line)}
+.tut-dots i.on{background:var(--c-crit)}
+.roster-nav.tut-show{opacity:1!important;visibility:visible!important}`;
+    document.head.appendChild(s);
+  }
+  function visibleRect(sel){
+    const el=document.querySelector(sel); if(!el) return null;
+    const r=el.getBoundingClientRect(); if(r.width<4||r.height<4) return null;
+    const cs=getComputedStyle(el); if(cs.display==="none") return null;
+    if(sel!=="#rosterNav"&&(cs.visibility==="hidden"||+cs.opacity===0)) return null;
+    if(r.bottom<0||r.top>innerHeight||r.right<0||r.left>innerWidth) return null;   // 不在目前畫面上：改成置中說明
+    return r;
+  }
+  function place(){
+    const st=STEPS[i]; const r=visibleRect(st.sel);
+    if(r){
+      const pad=6;
+      hole.className="tut-hole";
+      hole.style.left=(r.left-pad)+"px"; hole.style.top=(r.top-pad)+"px";
+      hole.style.width=(r.width+pad*2)+"px"; hole.style.height=(r.height+pad*2)+"px";
+    }else{ hole.className="tut-hole none"; hole.style.cssText=""; }
+    card.style.top="auto"; card.style.bottom="auto";
+    if(!r){ card.style.top=Math.max(16,(innerHeight-card.offsetHeight)/2)+"px"; return; }
+    const cy=r.top+r.height/2;
+    if(cy<innerHeight/2) card.style.top=Math.min(innerHeight-card.offsetHeight-12,r.bottom+18)+"px";
+    else card.style.bottom=Math.min(innerHeight-card.offsetHeight-12,innerHeight-r.top+18)+"px";
+  }
+  function draw(){
+    const st=STEPS[i];
+    if(shown){ shown.classList.remove("tut-show"); shown=null; }
+    if(st.show){ const el=document.querySelector(st.show); if(el){ el.classList.add("tut-show"); shown=el; } }
+    card.innerHTML='<div class="tut-step">'+(i+1)+' / '+STEPS.length+'</div><div class="tut-h">'+st.h+'</div><div class="tut-b">'+st.b+'</div>'
+      +'<div class="tut-dots">'+STEPS.map((_,k)=>'<i class="'+(k===i?"on":"")+'"></i>').join("")+'</div>'
+      +'<div class="tut-row"><button class="tut-btn" id="tutPrev"'+(i?"":" disabled")+'>上一步</button><button class="tut-btn main" id="tutNext">'+(i===STEPS.length-1?"開始使用":"下一步")+'</button><button class="tut-skip" id="tutSkip">略過</button></div>';
+    card.querySelector("#tutPrev").onclick=()=>{ if(i>0){ i--; draw(); } };
+    card.querySelector("#tutNext").onclick=()=>{ if(i<STEPS.length-1){ i++; draw(); } else finish(); };
+    card.querySelector("#tutSkip").onclick=finish;
+    requestAnimationFrame(place);
+  }
+  function finish(){
+    if(!active) return;
+    active=false;
+    if(shown){ shown.classList.remove("tut-show"); shown=null; }
+    document.removeEventListener("keydown",onKey); window.removeEventListener("resize",onResize);
+    if(ov){ ov.remove(); ov=null; }
+    try{ Auth.markTutorialDone(); }catch(e){}   // 看完或略過都算看過，之後只能從目錄「?」重看
+  }
+  function start(){
+    if(active) return;
+    css();
+    try{ if(typeof closeMenu==="function") closeMenu(); }catch(e){}
+    active=true; i=0;
+    ov=document.createElement("div"); ov.className="tut-ov";
+    hole=document.createElement("div"); hole.className="tut-hole none";
+    card=document.createElement("div"); card.className="tut-card";
+    ov.appendChild(hole); ov.appendChild(card); document.body.appendChild(ov);
+    stop=e=>{ e.preventDefault(); };
+    ov.addEventListener("wheel",stop,{passive:false}); ov.addEventListener("touchmove",stop,{passive:false});
+    onKey=e=>{ if(e.key==="Escape") finish(); else if(e.key==="ArrowRight"||e.key==="Enter"){ const n=card.querySelector("#tutNext"); if(n) n.click(); } else if(e.key==="ArrowLeft"){ const p=card.querySelector("#tutPrev"); if(p&&!p.disabled) p.click(); } };
+    onResize=()=>place();
+    document.addEventListener("keydown",onKey); window.addEventListener("resize",onResize);
+    draw();
+  }
+  // 選單「?」＝重看；第一次登入（設好暱稱、關掉個人檔案視窗後）自動開始
+  window.addEventListener("load",()=>{
+    const h=document.getElementById("menuHelp");
+    if(h) h.addEventListener("click",()=>{ start(); });
+    setInterval(()=>{
+      if(active) return;
+      if(document.querySelector(".modal-overlay.open")) return;
+      try{ if(Auth.autoTutorialReady()) start(); }catch(e){}
+    },1200);
+  });
+  return {start,get active(){return active;}};
+})();
+window.Tutorial=Tutorial;
 window.addEventListener("load",()=>Auth.init());
 window.addEventListener("load", () => SharedStore.mountLog());
 </script>
@@ -5448,10 +5668,10 @@ function applyAction(){
     }
     if(wizard.mode === "medical"){
       SharedStore.logEvent("「" + actorLabel() + "」治療「" + subjLabel(target) + "」\n" + _statTxt + "+1，解除狀態：" +
-        (wizard.removedNow || "無") + "。", {g: wizard.faction});
+        (wizard.removedNow || "無") + "。", {g: wizard.faction, to: target.owner, kind: "heal"});
     } else {
       SharedStore.logEvent("「" + actorLabel() + "」資助「" + subjLabel(target) + "」\n" + _statTxt + "+1（" + wizard.natureLabel + "），解除狀態：" +
-        (wizard.removedNow || "無") + "。", {g: wizard.faction});
+        (wizard.removedNow || "無") + "。", {g: wizard.faction, to: target.owner, kind: "support"});
     }
   } else {
     const lastAddedMap = {};
@@ -5481,7 +5701,8 @@ function applyAction(){
         else if(wizard.mode === "torture"){ msg = A + "折磨" + S + "\n" + statTxt + "，附加狀態：" + addedTxt + "。"; }
         else if(wizard.mode === "accident"){ msg = A + "造成醫療事故，" + S + "\n" + statTxt + "，附加狀態：" + addedTxt + "。"; }
         else { msg = A + "攻擊" + S + "（" + statTxt + "），附加狀態：" + addedTxt + "。"; }
-        SharedStore.logEvent(msg, {g: wizard.faction, dead: dead});
+        SharedStore.logEvent(msg, {g: wizard.faction, dead: dead, to: t.owner,
+          kind: diedNow ? "kill" : madNow ? "mad" : wizard.mode === "torture" ? "torture" : wizard.mode === "accident" ? "accident" : "hit"});
       }
       // 只有「這一下」才讓 HP／SAN 歸零才算擊殺／瘋狂；對已經死亡（或瘋狂）的目標只是普通攻擊／折磨
       const _wasAlive2 = _hp0 > 0 && _san0 > 0;
