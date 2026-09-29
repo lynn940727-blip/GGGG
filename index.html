@@ -4267,6 +4267,9 @@ function mergeRemote(list){
         const nv = r[f] !== undefined ? r[f] : (f in defaults ? defaults[f] : s[f]);
         if(JSON.stringify(s[f]) !== JSON.stringify(nv)){ s[f] = nv; changed = true; }
       });
+      // 隱藏台詞（egg）：以資料庫為準，別的裝置清空也要跟著清空
+      const ne = r.egg || "";
+      if((s.egg || "") !== ne){ if(ne) s.egg = ne; else delete s.egg; changed = true; }
       // 名字：網頁上改過的會保留；但程式裡這個人的名字被改過，就以程式為準
       const nn = (r.name && r.codeName === CODE_NAMES[s.id]) ? r.name : CODE_NAMES[s.id];
       if(s.name !== nn){ s.name = nn; changed = true; }
@@ -4277,6 +4280,7 @@ function mergeRemote(list){
       Object.keys(nv).forEach(f => {
         if(JSON.stringify(s[f]) !== JSON.stringify(nv[f])){ s[f] = nv[f]; changed = true; }
       });
+      if(!r.egg && s.egg){ delete s.egg; changed = true; }   // 別的裝置清空了隱藏台詞
     }
     delete byId[s.id];
   }
@@ -4295,6 +4299,7 @@ function toRecord(s){
   if(s.deleted || !CODE_IDS.has(s.id)) return s;
   const o = {id: s.id, name: s.name, codeName: CODE_NAMES[s.id]};
   RUNTIME_FIELDS.forEach(f => { o[f] = s[f]; });
+  if(s.egg) o.egg = s.egg;   // 隱藏台詞也要同步（空的就不存）
   return o;
 }
 
@@ -6454,6 +6459,9 @@ function mergeRemote(list){
         const nv = r[f] !== undefined ? r[f] : (f in defaults ? defaults[f] : s[f]);
         if(JSON.stringify(s[f]) !== JSON.stringify(nv)){ s[f] = nv; changed = true; }
       });
+      // 隱藏台詞（egg）：以資料庫為準，別的裝置清空也要跟著清空
+      const ne = r.egg || "";
+      if((s.egg || "") !== ne){ if(ne) s.egg = ne; else delete s.egg; changed = true; }
       const nn = (r.name && r.codeName === CODE_NAMES[s.id]) ? r.name : CODE_NAMES[s.id];
       if(s.name !== nn){ s.name = nn; changed = true; }
     } else {
@@ -6462,6 +6470,7 @@ function mergeRemote(list){
       Object.keys(nv).forEach(f => {
         if(JSON.stringify(s[f]) !== JSON.stringify(nv[f])){ s[f] = nv[f]; changed = true; }
       });
+      if(!r.egg && s.egg){ delete s.egg; changed = true; }   // 別的裝置清空了隱藏台詞
     }
     delete byId[s.id];
   }
@@ -6480,6 +6489,7 @@ function toRecord(s){
   if(s.deleted || !CODE_IDS.has(s.id)) return s;
   const o = {id: s.id, name: s.name, codeName: CODE_NAMES[s.id]};
   RUNTIME_FIELDS.forEach(f => { o[f] = s[f]; });
+  if(s.egg) o.egg = s.egg;   // 隱藏台詞也要同步（空的就不存）
   return o;
 }
 
@@ -7098,12 +7108,14 @@ function mergeRemote(list){
       const ow=r.owner!==undefined?r.owner:null;if((s.owner||null)!==ow){s.owner=ow;changed=true}
       const av=r.avatarUrl!==undefined?r.avatarUrl:null;
       if(s.avatarUrl!==av){s.avatarUrl=av;changed=true}
+      const ne=r.egg||"";if((s.egg||"")!==ne){if(ne)s.egg=ne;else delete s.egg;changed=true}
       const nn=(r.name&&r.codeName===CODE_NAMES[s.id])?r.name:CODE_NAMES[s.id];
       if(s.name!==nn){s.name=nn;changed=true}
     }else{
       if(!r){subjects.splice(i,1);changed=true;continue}
       const nv={avatarUrl:null,...r};
       Object.keys(nv).forEach(f=>{if(s[f]!==nv[f]){s[f]=nv[f];changed=true}});
+      if(!r.egg&&s.egg){delete s.egg;changed=true}
     }
     delete byId[s.id];
   }
@@ -7116,7 +7128,7 @@ function mergeRemote(list){
   });
   return changed;
 }
-function toRecord(s){if(s.deleted)return s;return CODE_IDS.has(s.id)?{id:s.id,name:s.name,codeName:CODE_NAMES[s.id],avatarUrl:s.avatarUrl,owner:s.owner}:s}
+function toRecord(s){if(s.deleted)return s;if(!CODE_IDS.has(s.id))return s;const o={id:s.id,name:s.name,codeName:CODE_NAMES[s.id],avatarUrl:s.avatarUrl,owner:s.owner};if(s.egg)o.egg=s.egg;return o}
 function saveState(){
   if(SharedStore.save(KEY,subjects.concat(tombstones),{toRecord,canDelete:id=>!CODE_IDS.has(id)}))return;
   try{localStorage.setItem(KEY,JSON.stringify(subjects.concat(tombstones)))}catch(e){console.warn("local save failed",e)}
