@@ -3392,7 +3392,7 @@ const SharedStore = (function(){
   // 連上某個節點，並在資料變動時呼叫 onRemote(list)。
   // 回傳 Promise：拿到第一份資料 → true；連不上 → false
   function attach(path, onRemote){
-    const st = stores[path] = {ref: null, known: {}, ids: {}, ready: false};
+    const st = stores[path] = {ref: null, known: {}, rec: {}, ids: {}, ready: false};
     const d = init();
     if(!d){
       setBanner("無法載入資料庫，目前的修改只存在這台裝置，不會同步給其他人。");
@@ -3410,12 +3410,14 @@ const SharedStore = (function(){
         const val = snap.val() || {};
         const list = [];
         st.known = {};
+        st.rec = {};
         st.ids = {};
         Object.keys(val).forEach(k => {
           const r = val[k];
           if(!r || typeof r !== "object" || r.id === undefined) return;
           list.push(r);
           st.known[k] = canon(record(r));
+          st.rec[k] = record(r);
           st.ids[k] = r.id;
         });
         st.ready = true;
@@ -3440,41 +3442,56 @@ const SharedStore = (function(){
     opts = opts || {};
     const toRecord = opts.toRecord || (s => s);
     const canDelete = opts.canDelete || (() => true);
-    const updates = {};
     const seen = {};
-    let n = 0;
+    const jobs = [];   // 每個角色各自獨立寫入：某一個被規則拒絕，不會連累其他角色（也不會連累本人的修改）
     list.forEach(s => {
       const k = keyOf(s.id);
       const rec = record(toRecord(s));
       const c = canon(rec);
       seen[k] = true;
       if(st.known[k] !== c){
-        updates[k] = rec;
-        st.known[k] = c;
-        st.ids[k] = s.id;
-        n++;
+        jobs.push({k: k, rec: rec, c: c, id: s.id, old: st.rec[k] || null, oldC: st.known[k], oldId: st.ids[k]});
       }
     });
     Object.keys(st.known).forEach(k => {
       if(!seen[k] && canDelete(st.ids[k])){
-        updates[k] = null;
-        delete st.known[k];
-        n++;
+        jobs.push({k: k, del: true, id: st.ids[k], old: st.rec[k] || null, oldC: st.known[k], oldId: st.ids[k]});
       }
     });
-    if(!n) return true;
-    const undo = () => { Object.keys(updates).forEach(k => { delete st.known[k]; }); };
-    try{
-      const p = st.ref.update(updates);
-      if(p && p.catch) p.catch(e => {
-        console.warn("firebase save failed", e);
+    if(!jobs.length) return true;
+    jobs.forEach(j => {
+      let fields = null;
+      if(!j.del){
+        if(!j.old){ fields = j.rec; }   // 資料庫還沒有這筆：整筆新增
+        else {
+          fields = {};
+          let any = false;
+          Object.keys(j.rec).forEach(f => {
+            if(JSON.stringify(j.rec[f]) !== JSON.stringify(j.old[f])){ fields[f] = j.rec[f]; any = true; }
+          });
+          Object.keys(j.old).forEach(f => { if(!(f in j.rec)){ fields[f] = null; any = true; } });   // 被清空的欄位（例如隱藏台詞）
+          if(!any) fields = null;
+        }
+      }
+      if(!j.del && !fields){ st.known[j.k] = j.c; st.rec[j.k] = j.rec; return; }
+      // 先當作已寫入（避免重複送出）；失敗時還原，下次再試
+      if(j.del){ delete st.known[j.k]; delete st.rec[j.k]; }
+      else { st.known[j.k] = j.c; st.rec[j.k] = j.rec; st.ids[j.k] = j.id; }
+      const undo = () => {
+        if(j.oldC === undefined){ delete st.known[j.k]; delete st.rec[j.k]; }
+        else { st.known[j.k] = j.oldC; st.rec[j.k] = j.old; st.ids[j.k] = j.oldId; }
+      };
+      const fail = e => {
+        console.warn("firebase save failed", j.k, e);
         undo();
-        setBanner("儲存失敗（" + ((e && e.code) || "未知原因") + "），修改可能沒有同步給其他人。");
-      });
-    }catch(e){
-      console.warn("firebase save failed", e);
-      undo();
-    }
+        setBanner("儲存失敗（" + ((e && e.code) || "未知原因") + "）：角色 " + j.id + "。修改可能沒有同步給其他人。");
+      };
+      try{
+        const r = st.ref.child(j.k);
+        const p = j.del ? r.remove() : (j.old ? r.update(fields) : r.set(fields));
+        if(p && p.catch) p.catch(fail);
+      }catch(e){ fail(e); }
+    });
     return true;
   }
 
