@@ -3629,7 +3629,7 @@ const Auth=(function(){
   const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const db=()=>{ if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG); return firebase.database(); };
   const roster=f=>{ try{ return rosterOf(f)||[]; }catch(e){ return []; } };
-  let ov=null,btn=null,reqs=[],pend={},flash=false,view="home",cardsTimer=null,prompted=false,keepY=0,lockUntil=0,lockBound=false,favs=new Set();
+  let ov=null,btn=null,reqs=[],pend={},flash=false,view="home",cardsTimer=null,prompted=false,keepY=0,lockUntil=0,lockBound=false,favs=new Set(),outFlash=false;
   const isOpen=()=>!!(ov&&ov.style.display==="flex");
   function bindLock(){ if(lockBound) return; lockBound=true; window.addEventListener("scroll",()=>{ if(!isOpen()&&Date.now()>lockUntil) return; if(Math.abs(window.scrollY-keepY)>2) window.scrollTo({top:keepY,behavior:"instant"}); },{passive:true}); }
   function paint(){
@@ -3642,6 +3642,8 @@ const Auth=(function(){
     }
     btn.title=user?(nick||"設定暱稱")+(admin?"（管理員）":""):"登入";
   }
+  const localNick=()=>{ try{ return localStorage.getItem("bp_nick_"+(user&&user.uid))||""; }catch(e){ return ""; } };
+  const cacheNick=v=>{ try{ if(user) localStorage.setItem("bp_nick_"+user.uid,v); }catch(e){} };
   const localFavs=()=>{ try{ return JSON.parse(localStorage.getItem("bp_favs_"+(user&&user.uid))||"[]"); }catch(e){ return []; } };
   function saveFavs(){
     if(!user) return;
@@ -3654,47 +3656,49 @@ const Auth=(function(){
     if(document.getElementById("authStyle")) return;
     const st=document.createElement("style"); st.id="authStyle";
     st.textContent=`
-#authBox .au-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:15px 16px;margin-bottom:8px;border:1px solid var(--line);border-left:3px solid #7a1015;background:var(--bg-panel-2);border-radius:8px;cursor:pointer;font-size:15px;transition:border-color .2s,background .2s}
-#authBox .au-row:hover{border-color:var(--bone-dim);border-left-color:#b5020f;background:#211918}
-#authBox .au-row .v{opacity:.8;font-size:13px;white-space:nowrap}
+#authBox .au-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:13px 14px;margin-bottom:8px;border:1px solid var(--line);border-left:2px solid var(--c-crit);background:var(--bg-panel);border-radius:0;cursor:pointer;font-size:14px;transition:border-color .2s,background .2s}
+#authBox .au-row:hover{border-color:var(--bone-dim);border-left-color:var(--c-crit);background:#211918}
+#authBox .au-row .v{opacity:.8;font-size:12px;white-space:nowrap;font-family:var(--mono);letter-spacing:.06em}
 #authBox .au-sec{display:flex;justify-content:space-between;align-items:center;margin:26px 0 6px;padding-bottom:8px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:12px;letter-spacing:.16em;color:var(--bone)}
-#authBox .au-sec>span:first-child::before{content:'◆';color:#b5020f;font-size:8px;margin-right:8px;vertical-align:middle}
-#authBox .au-badge{display:inline-block;background:#b5020f;color:#fff;font-size:13px;font-weight:700;padding:3px 12px;border-radius:12px;margin-right:6px;letter-spacing:0}
-#authBox .au-badge.amber{background:#d9a62e;color:#1a1200;box-shadow:0 0 0 3px rgba(217,166,46,.25);animation:auPulse 1.8s ease-in-out infinite}
-@keyframes auPulse{0%,100%{box-shadow:0 0 0 3px rgba(217,166,46,.25)}50%{box-shadow:0 0 0 6px rgba(217,166,46,.08)}}
-#authBox .au-mini{background:none;border:1px solid var(--line);color:var(--bone);font-size:12px;padding:4px 10px;border-radius:4px;cursor:pointer;font-family:var(--sans);letter-spacing:0}
-#authBox .au-mini:hover{border-color:var(--bone-dim)}
-#authBox .au-btn{flex:1;padding:14px 16px;border-radius:8px;font-size:16px;cursor:pointer;border:1px solid;font-family:inherit;font-weight:700;letter-spacing:.06em;transition:background .2s,transform .1s}
-#authBox .au-btn:active{transform:scale(.98)}
-#authBox .au-ok{background:#2f7a4f;border-color:#4aa171;color:#fff;box-shadow:0 2px 10px rgba(47,122,79,.35)}
-#authBox .au-ok:hover{background:#3a7f55}
-#authBox .au-danger{background:#8f0a16;border-color:#c8202e;color:#fff}
-#authBox .au-danger:hover{background:#b5020f}
-#authBox .au-pend{border:2px solid #d9a62e;background:linear-gradient(180deg,rgba(217,166,46,.18),rgba(217,166,46,.06));border-radius:10px;padding:16px;margin:14px 0;box-shadow:0 0 18px rgba(217,166,46,.15)}
+#authBox .au-sec>span:first-child::before{content:'\\25C6';color:var(--c-crit);font-size:8px;margin-right:8px;vertical-align:middle}
+#authBox .au-badge{display:inline-block;background:rgba(181,2,15,.32);border:1px solid var(--c-crit);color:var(--bone);font-family:var(--mono);font-size:11px;letter-spacing:.08em;padding:2px 8px;border-radius:0;margin-right:6px}
+#authBox .au-badge.amber{animation:auPulse 2s ease-in-out infinite}
+@keyframes auPulse{0%,100%{opacity:1}50%{opacity:.55}}
+@keyframes auBlink{0%,100%{opacity:1}50%{opacity:.25}}
+#authBox .au-mini{background:none;border:1px solid var(--line);color:var(--bone-dim);font-size:11px;padding:4px 10px;border-radius:0;cursor:pointer;font-family:var(--mono);letter-spacing:.06em}
+#authBox .au-mini:hover{border-color:var(--bone-dim);color:var(--bone)}
+#authBox .au-btn{flex:1;padding:12px 14px;border-radius:0;font-size:13px;cursor:pointer;border:1px solid;font-family:var(--mono);letter-spacing:.08em;transition:background .2s,color .2s,border-color .2s}
+#authBox .au-ok{background:rgba(181,2,15,.32);border-color:var(--c-crit);color:var(--bone)}
+#authBox .au-ok:hover{background:rgba(181,2,15,.5)}
+#authBox .au-danger{background:transparent;border-color:var(--line);color:var(--bone-dim)}
+#authBox .au-danger:hover{border-color:var(--c-warn);color:var(--bone);background:rgba(194,68,82,.12)}
+#authBox .au-pend{border:1px solid var(--blood-dim);border-left:3px solid var(--c-crit);background:rgba(181,2,15,.07);border-radius:0;padding:14px 16px;margin:14px 0}
 #authBox .au-pend.click{cursor:pointer}
-#authBox .au-pend-h{font-size:32px;font-weight:900;margin-bottom:6px;color:#ffd166;letter-spacing:.08em;line-height:1.2}
-#authBox .au-pend-s{font-size:12px;color:#d9c48a;opacity:.85;margin-bottom:4px}
-#authBox .au-pend-t{font-size:17px;font-weight:700;margin:12px 0 10px;word-break:break-all;color:var(--bone)}
+#authBox .au-pend.click:hover{background:rgba(181,2,15,.13)}
+#authBox .au-pend-h{font-family:var(--serif);font-size:16px;font-weight:700;margin-bottom:4px;color:var(--bone);letter-spacing:.08em}
+#authBox .au-pend-h::before{content:'\\25C6';color:var(--c-crit);font-size:8px;margin-right:8px;vertical-align:middle;animation:auBlink 1.6s ease-in-out infinite}
+#authBox .au-pend-s{font-size:12px;color:var(--bone-dim);margin-bottom:4px}
+#authBox .au-pend-t{font-size:15px;font-weight:700;margin:12px 0 10px;word-break:break-all;color:var(--bone)}
 #authBox .au-pend .au-btn{width:100%}
-#authBox .au-req{border:1px solid #d9a62e;background:linear-gradient(180deg,rgba(217,166,46,.10),var(--bg-panel-2));border-radius:10px;padding:16px;margin:12px 0}
-#authBox .au-req-n{font-size:20px;font-weight:700;word-break:break-all}
-#authBox .au-req-t{font-size:15px;opacity:.85;margin:4px 0 12px;word-break:break-all}
+#authBox .au-req{border:1px solid var(--line);border-left:3px solid var(--c-crit);background:var(--bg-panel);border-radius:0;padding:14px 16px;margin:12px 0}
+#authBox .au-req-n{font-family:var(--serif);font-size:18px;font-weight:700;word-break:break-all}
+#authBox .au-req-t{font-size:13px;color:var(--bone-dim);margin:4px 0 12px;word-break:break-all}
 #authBox .au-req-b{display:flex;gap:10px}
-#authBox .au-logout{background:#8f0a16;border:1px solid #c8202e;color:#fff;font-size:12px;padding:6px 22px;border-radius:5px;cursor:pointer;font-family:inherit;letter-spacing:.1em}
-#authBox .au-logout:hover{background:#b5020f}
+#authBox .au-logout{background:transparent;border:1px solid rgba(194,68,82,.45);color:rgba(194,68,82,.85);font-size:11px;padding:7px 22px;border-radius:0;cursor:pointer;font-family:var(--mono);letter-spacing:.1em;transition:background .2s,color .2s,border-color .2s}
+#authBox .au-logout:hover{background:rgba(194,68,82,.18);color:#e8b3ba;border-color:#c24452}
 #authBox .au-outwrap{text-align:center;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
-#authBox .au-head{display:flex;align-items:center;gap:14px;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--line)}
-#authBox .au-ava{width:52px;height:52px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;font-family:var(--serif);color:var(--bone);background:radial-gradient(circle at 30% 25%,#7a1015,#2a0a0c);border:1px solid #b5020f;box-shadow:0 0 14px rgba(181,2,15,.35)}
+#authBox .au-head{margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--line)}
 #authBox .au-hn{font-size:22px;font-weight:700;font-family:var(--serif);word-break:break-all;line-height:1.25}
-#authBox .au-role{display:inline-block;margin-top:4px;font-family:var(--mono);font-size:10px;letter-spacing:.16em;padding:2px 8px;border:1px solid var(--line);color:var(--bone-dim)}
-#authBox .au-role.adm{border-color:#d9a62e;color:#ffd166}
-#authBox .au-favrow{display:flex;align-items:center;gap:10px;padding:12px 14px;margin:8px 0;border:1px solid var(--line);background:var(--bg-panel-2);border-radius:6px;cursor:pointer}
+#authBox .au-role{display:inline-block;margin-top:6px;font-family:var(--mono);font-size:10px;letter-spacing:.16em;padding:2px 8px;border:1px solid var(--line);color:var(--bone-dim)}
+#authBox .au-role.adm{border-color:var(--c-crit);color:var(--c-warn)}
+#authBox .au-flash{font-family:var(--mono);font-size:12px;letter-spacing:.1em;color:var(--clinical);border:1px solid var(--clinical-dim);padding:8px 12px;margin-bottom:14px}
+#authBox .au-favrow{display:flex;align-items:center;gap:10px;padding:12px 14px;margin:8px 0;border:1px solid var(--line);background:var(--bg-panel);border-radius:0;cursor:pointer}
 #authBox .au-favrow:hover{border-color:var(--bone-dim)}
-#authBox .au-favrow.on{border-color:#f2cec0;background:#2a1a17}
-#authBox .au-star{font-size:18px}
+#authBox .au-favrow.on{border-color:var(--c-warn);background:rgba(181,2,15,.1)}
+#authBox .au-star{font-size:16px}
 #authBox .au-fn{flex:1;word-break:break-all}
-#authBox .au-fs{font-size:12px;opacity:.75}
-#authBox .au-empty{padding:14px;border:1px dashed var(--line);border-radius:6px;font-size:13px;opacity:.7}`;
+#authBox .au-fs{font-size:11px;opacity:.75;font-family:var(--mono)}
+#authBox .au-empty{padding:14px;border:1px dashed var(--line);border-radius:0;font-size:13px;opacity:.7}`;
     document.head.appendChild(st);
   }
   function load(){
@@ -3702,7 +3706,7 @@ const Auth=(function(){
     const d=db();
     return Promise.all([
       d.ref("users/"+user.uid+"/favs").once("value").then(s=>{ const v=s.val(); favs=new Set(v?Object.keys(v):localFavs()); }).catch(()=>{ favs=new Set(localFavs()); }),
-      d.ref("users/"+user.uid+"/nick").once("value").then(s=>{nick=s.val()||"";}).catch(()=>{}),
+      d.ref("users/"+user.uid+"/nick").once("value").then(s=>{ nick=s.val()||localNick(); if(nick) cacheNick(nick); }).catch(e=>{ nick=localNick(); console.warn("nick read failed",e); }),
       d.ref("admins/"+user.uid).once("value").then(s=>{admin=s.val()===true;}).catch(()=>{admin=false;}),
       d.ref("claimRequests/"+user.uid).once("value").then(s=>{pend=s.val()||{};}).catch(()=>{pend={};})
     ]).then(paint);
@@ -3727,13 +3731,13 @@ const Auth=(function(){
     if(!ov){
       ov=document.createElement("div");
       ov.style.cssText="position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;padding:16px;overscroll-behavior:contain";
-      ov.innerHTML='<div id="authBox" style="background:var(--bg-panel);border:1px solid var(--line);border-radius:12px;width:100%;max-width:420px;max-height:88vh;overflow:auto;overscroll-behavior:contain;padding:22px"></div>';
+      ov.innerHTML='<div id="authBox" style="background:var(--bg-panel-2);border:1px solid var(--c-warn);border-radius:0;box-shadow:0 0 40px rgba(0,0,0,.6);width:100%;max-width:420px;max-height:88vh;overflow:auto;overscroll-behavior:contain;padding:28px 24px 24px"></div>';
       ov.addEventListener("click",e=>{ if(e.target===ov) hide(); });
       document.body.appendChild(ov);
     }
     return document.getElementById("authBox");
   }
-  const hide=()=>{ lockUntil=Date.now()+1500; if(ov) ov.style.display="none"; window.scrollTo({top:keepY,behavior:"instant"}); if(cardsTimer){ clearInterval(cardsTimer); cardsTimer=null; } };
+  const hide=()=>{ outFlash=false; lockUntil=Date.now()+1500; if(ov) ov.style.display="none"; window.scrollTo({top:keepY,behavior:"instant"}); if(cardsTimer){ clearInterval(cardsTimer); cardsTimer=null; } };
   function openPanel(){ const b=box(); if(!isOpen()){ keepY=window.scrollY; view="home"; } bindLock(); ov.style.display="flex"; render(b); }
   const row=(id,label,val)=>'<div class="au_row au-row" data-v="'+id+'"><span>'+label+'</span><span class="v">'+val+' ›</span></div>';
   function myChars(){ const o=[]; Object.keys(ST).forEach(f=>roster(f).forEach(s=>{ if(user&&s.owner===user.uid) o.push({f,s}); })); return o; }
@@ -3801,13 +3805,13 @@ const Auth=(function(){
     b=b||box();
     if(cardsTimer){ clearInterval(cardsTimer); cardsTimer=null; }
     if(!user){
-      b.innerHTML='<div class="modal-eyebrow">帳號</div><div class="modal-title">登入後才能行動、使用道具</div><button class="confirm-btn" id="au_in">用 Google 帳號登入</button><button class="modify-btn" id="au_x">關閉</button>';
-      b.querySelector("#au_in").onclick=()=>firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>alert("登入失敗："+(e.code||e.message)));
+      b.innerHTML=(outFlash?'<div class="au-flash">✓ 登出成功</div>':"")+'<div class="modal-eyebrow">帳號</div><div class="modal-title">登入後才能行動、使用道具</div><button class="confirm-btn" id="au_in">用 Google 帳號登入</button><button class="modify-btn" id="au_x">關閉</button>';
+      b.querySelector("#au_in").onclick=()=>{ outFlash=false; return firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>alert("登入失敗："+(e.code||e.message))); };
       b.querySelector("#au_x").onclick=hide; return;
     }
     if(!nick) view="nick";
     const keep=b.dataset.view===view?b.scrollTop:0; b.dataset.view=view;
-    let h=flash?'<div class="modal-note" style="color:#8fbf8f;margin-bottom:10px">✓ 登入成功</div>':"";
+    let h=flash?'<div class="au-flash">✓ 登入成功</div>':"";
     if(view==="nick"){
       h+='<div class="modal-title">'+(nick?"修改暱稱":"先取個暱稱吧")+'</div><span class="field-label">暱稱（1–20 字）</span><input class="text-input" id="au_nick" maxlength="20" value="'+esc(nick)+'"><button class="confirm-btn" id="au_sn">儲存</button>';
     }else if(view==="claim"){
@@ -3822,7 +3826,7 @@ const Auth=(function(){
         +roster("實驗體").map(x=>{ const on=favs.has(String(x.id)); return '<div class="au-favrow'+(on?" on":"")+'" data-id="'+esc(x.id)+'"><span class="au-star">☆</span><span class="au-fn">編號 '+esc(x.id)+'　'+esc(x.name)+'</span><span class="au-fs">'+(on?"已收藏":"點擊收藏")+'</span></div>'; }).join("");
     }else{
       const pn=Object.keys(pend).length;
-      h+='<div class="au-head"><div class="au-ava">'+esc(Array.from(nick)[0]||"?")+'</div><div><div class="au-hn">'+esc(nick)+'</div><span class="au-role'+(admin?" adm":"")+'">'+(admin?"管理員":"帳號")+'</span></div></div>'
+      h+='<div class="modal-eyebrow">帳號</div><div class="au-head"><div class="au-hn">'+esc(nick)+'</div><span class="au-role'+(admin?" adm":"")+'">'+(admin?"管理員":"帳號")+'</span></div>'
         +(pn?'<div class="au-pend click au_row" data-v="claim"><div class="au-pend-h">等待批准</div><div class="au-pend-s">你有 '+pn+' 筆申請正在等管理員審核，點此查看／取消 ›</div></div>':"")
         +row("nick","暱稱",esc(nick))
         +row("claim","申請認領角色",pn?'<span class="au-badge amber">待批准 '+pn+'</span>':"")
@@ -3837,11 +3841,11 @@ const Auth=(function(){
     b.querySelector("#au_x").onclick=()=>{ if(view!=="home"&&nick){ view="home"; render(); } else hide(); };
     b.querySelectorAll(".au_row").forEach(r=>r.onclick=()=>{ view=r.dataset.v; render(); });
     b.querySelectorAll(".au-favrow").forEach(r=>r.onclick=()=>{ const id=r.dataset.id; if(favs.has(id)) favs.delete(id); else favs.add(id); saveFavs(); render(); });
-    const out=b.querySelector("#au_out"); if(out) out.onclick=()=>{ firebase.auth().signOut(); hide(); };
+    const out=b.querySelector("#au_out"); if(out) out.onclick=()=>{ outFlash=true; view="home"; firebase.auth().signOut().then(()=>{ if(isOpen()) render(); }).catch(e=>{ outFlash=false; alert("登出失敗："+(e.code||e.message)); }); };
     const sn=b.querySelector("#au_sn");
     if(sn) sn.onclick=()=>{
       const v=b.querySelector("#au_nick").value.trim(); if(!v||v.length>20) return alert("暱稱需為 1–20 字");
-      db().ref("users/"+user.uid).update({nick:v}).then(()=>{ nick=v; paint(); view="home"; render(); }).catch(e=>alert("儲存失敗："+(e.code||e.message)));
+      cacheNick(v); db().ref("users/"+user.uid).update({nick:v}).then(()=>{ nick=v; paint(); view="home"; render(); }).catch(e=>alert("儲存失敗："+(e.code||e.message)));
     };
     b.querySelectorAll(".au_cancel").forEach(a=>a.onclick=ev=>{ ev.preventDefault(); const k=a.dataset.c; db().ref("claimRequests/"+user.uid+"/"+k).remove().then(()=>{ delete pend[k]; render(); }); });
     if(view==="claim"){
