@@ -387,9 +387,9 @@
   .menu-help-item:hover{padding-left:6px;}
   .menu-help-item:hover .label{color:var(--bone);text-shadow:0 0 12px rgba(181,2,15,0.35);}
   .menu-help-item:hover .num b{color:var(--c-crit);border-color:var(--c-crit);}
-  .menu-help-btn{position:absolute;left:24px;bottom:calc(24px + env(safe-area-inset-bottom,0px));width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.06);border:1px solid rgba(244,238,228,.8);color:#f4eee4;font-family:var(--mono);font-size:17px;font-weight:600;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;opacity:0;transform:translateY(8px);transition:opacity .3s ease,transform .3s ease,background .25s ease,box-shadow .25s ease}
-  .menu-panel.open .menu-help-btn{opacity:1;transform:none;transition:opacity .4s ease .5s,transform .4s ease .5s,background .25s ease,box-shadow .25s ease}
-  .menu-help-btn:hover{background:rgba(255,255,255,.18);box-shadow:0 0 14px rgba(244,238,228,.4)}
+  .menu-help-btn{position:absolute;left:26px;bottom:calc(26px + env(safe-area-inset-bottom,0px));width:24px;height:24px;border-radius:50%;background:transparent;border:1px solid var(--blood-dim);color:var(--bone-dim);font-family:var(--mono);font-size:12px;font-weight:400;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;opacity:0;transform:translateY(8px);transition:opacity .3s ease,transform .3s ease,background .25s ease,box-shadow .25s ease,color .25s ease,border-color .25s ease}
+  .menu-panel.open .menu-help-btn{opacity:.6;transform:none;transition:opacity .4s ease .5s,transform .4s ease .5s,background .25s ease,box-shadow .25s ease}
+  .menu-help-btn:hover{opacity:1;color:var(--bone);border-color:var(--c-crit);box-shadow:0 0 10px rgba(181,2,15,.35)}
   .menu-item.locked{cursor:default;}
   .menu-item.locked .label{color:var(--bone-dim); opacity:0.32;}
   .menu-item.locked .num{opacity:0.32;}
@@ -2693,6 +2693,23 @@
 .eye-cell svg{width:100%;height:100%;display:block;filter:drop-shadow(0 0 4px rgba(255,20,30,.6))}
 .haunt-overlay.eyes .haunt-line{position:relative;z-index:2;padding:.12em .4em;background:rgba(0,0,0,.78);border-radius:10px;text-shadow:0 0 22px rgba(255,20,30,.85),0 0 5px rgba(255,20,30,.95)}
 
+/* ---------- 匿名情感收容室 ---------- */
+.emo-form{position:relative;max-width:1180px;margin:0 auto 38px;display:flex;flex-direction:column;gap:10px}
+.emo-form textarea{width:100%;box-sizing:border-box;min-height:96px;resize:vertical;background:#0e0b0a;border:1px solid var(--line);color:var(--bone);font-family:var(--sans);font-size:14px;line-height:1.7;padding:12px 14px;transition:border-color .25s ease}
+.emo-form textarea:focus{outline:none;border-color:var(--blood-dim)}
+.emo-row{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.emo-count{font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--clinical)}
+.emo-send{font-family:var(--mono);font-size:12px;letter-spacing:.14em;color:var(--bone);background:rgba(181,2,15,.16);border:1px solid rgba(181,2,15,.5);padding:9px 22px;cursor:pointer;transition:background .3s ease,border-color .3s ease,opacity .3s ease}
+.emo-send:hover{background:rgba(181,2,15,.3);border-color:var(--c-crit)}
+.emo-send:disabled{opacity:.4;cursor:default}
+.emo-grid .card{padding:24px 24px 26px;gap:16px;animation:bpBodyIn .5s ease both}
+.emo-text{font-family:var(--sans);font-size:15px;line-height:1.8;color:var(--bone);white-space:pre-wrap;word-break:break-word}
+.emo-del{position:absolute;right:10px;bottom:8px;background:none;border:none;color:var(--bone-dim);font-size:14px;cursor:pointer;opacity:.6;display:none}
+.emo-del:hover{opacity:1;color:var(--c-warn)}
+.emo-empty{grid-column:1/-1;text-align:center;font-family:var(--mono);font-size:12px;letter-spacing:.12em;color:var(--clinical-dim);padding:40px 0}
+@media (max-width:900px){.emo-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){.emo-grid{grid-template-columns:minmax(0,1fr)}}
+
 /* ---------- 全站視窗淡入淡出 ---------- */
 .modal-overlay,.medic-page .modal-overlay,.sponsor-page .modal-overlay{
   opacity:0;
@@ -3070,6 +3087,10 @@
       <span class="num">05</span>
       <span class="label">行動紀錄</span>
     </li>
+    <li class="menu-item available" data-target="6">
+      <span class="num">06</span>
+      <span class="label">匿名情感收容室</span>
+    </li>
   </ul>
   <button class="menu-help-btn" id="menuHelp" title="新手教學" aria-label="新手教學">?</button>
 </aside>
@@ -3264,6 +3285,20 @@
   <p>一切數據如有異常，請勿嘗試介入</p>
   <button class="admin-entry-btn" id="logAdminBtn">⚙ 一鍵編輯（管理員）</button>
 </footer>
+
+<section class="roster snap-section" id="emoRoom">
+  <div class="roster-eyebrow">檔案 ⁄ 情感收容</div>
+  <div class="roster-head">
+    <h2>匿名情感收容室</h2>
+    <div class="roster-head-right"><div class="meta" id="emoMeta">收容數量 000</div></div>
+  </div>
+  <div class="roster-divider"></div>
+  <div class="emo-form">
+    <textarea id="emoText" maxlength="200" rows="3" placeholder="把說不出口的話放在這裡。不會顯示你的名字。"></textarea>
+    <div class="emo-row"><span class="emo-count" id="emoCount">0 / 200</span><button class="emo-send" id="emoSend">匿名投遞</button></div>
+  </div>
+  <div class="grid emo-grid" id="emoGrid"></div>
+</section>
 
 <div class="modal-overlay" id="logAdminOverlay">
   <div class="modal-box log-admin-box">
@@ -4409,12 +4444,12 @@ const Tutorial=(function(){
     {sel:"#authBtn",h:"個人檔案",b:"• 首次使用請先點此「登入」，並申請角色。"},
     {sel:"#fab",h:"行動",b:"• 執行動作的主按鈕。<br>• 攻擊、醫療、重生、使用道具等。"},
     {sel:"#rosterNav",show:"#rosterNav",h:"進度條",b:"• 點擊「上、下箭頭」可快速「跳轉頁首或頁尾」。"},
-    {sel:"#menuToggle",h:"試試看：打開「目錄」",b:"• 請點擊左上角的目錄按鈕。",interactive:true,gated:true,hint:"請先點開目錄",wait:"#menuToggle",enter:closeM},
-    {sel:'.menu-item[data-target="5"]',lit:"#menuPanel",h:"行動紀錄",b:"• 記錄全站所有玩家的行動。",enter:openM},
-    {sel:"#menuHelp",lit:"#menuPanel",h:"新手教學",b:"• 點擊左下角「?」可隨時重看教學。",enter:openM},
-    {sel:'.menu-item[data-target="2"]',h:"試試看：點擊「實驗體名冊」",b:"• 點擊進入角色列表。",interactive:true,gated:true,hint:"請先點擊「實驗體名冊」",lit:"#menuPanel",wait:'.menu-item[data-target="2"]',enter:openM},
-    {sel:"#card-001 .edit-btn",alt:".card .edit-btn",litClosest:".card",h:"角色卡：編輯鍵",b:"• 點擊角色卡右下角 "+PENCIL+" 可修改資訊。<br>• 僅能編輯自己的角色。",enter:gotoRoster},
-    {sel:"#authBtn",h:"最後一步：申請角色",b:"• 點擊右上角個人檔案，選擇「＋ 申請角色」。<br>• 審核通過後即可開始行動。",interactive:true,wait:"#authBtn",end:true,delay:150,nextLabel:"完成"}
+    {sel:"#menuToggle",h:"試試看：打開「目錄」",b:"• 請點擊左上角的目錄按鈕。",interactive:true,pulse:true,corner:true,wait:"#menuToggle",delay:0,enter:closeM},
+    {sel:"#menuHelp",lit:"#menuPanel",corner:true,h:"新手教學",b:"• 點擊左下角「?」可隨時重看教學。",enter:openM},
+    {sel:'.menu-item[data-target="5"]',lit:"#menuPanel",corner:true,h:"行動紀錄",b:"• 記錄全站所有玩家的行動。",enter:openM},
+    {sel:'.menu-item[data-target="2"]',h:"試試看：點擊「實驗體名冊」",b:"• 點擊進入角色列表。",interactive:true,pulse:true,corner:true,lit:"#menuPanel",delay:0,wait:'.menu-item[data-target="2"]',enter:openM},
+    {sel:"#card-001 .edit-btn",litSel:"#card-001",avoidLit:true,pulse:true,h:"角色卡：編輯鍵",b:"• 點擊角色卡右下角 "+PENCIL+" 可修改資訊。<br>• 僅能編輯自己的角色。",enter:gotoRoster},
+    {sel:"#authBtn",h:"最後一步：申請角色",b:"• 點擊右上角個人檔案，選擇「＋ 申請角色」。<br>• 審核通過後即可開始行動。",interactive:true,pulse:true,wait:"#authBtn",end:true,delay:150,nextLabel:"完成"}
   ];
   let ov=null,hole=null,card=null,blocks=[],i=0,active=false,shown=null,onKey=null,onResize=null,onScroll=null,stopAll=null,raf=0,timers=[],waitEl=null,waitFn=null,ring=null,toastEl2=null,toastT2=null,stepDone=false,lastEl=null;
   function css(){
@@ -4444,6 +4479,16 @@ const Tutorial=(function(){
 .tut-hole.lit{border-color:rgba(230,221,207,.12)}
 .tut-ring{position:fixed;display:none;border:2px solid var(--c-crit);border-radius:6px;box-shadow:0 0 14px rgba(181,2,15,.85);pointer-events:none;transition:all .3s ease}
 .tut-btn.dis{opacity:.32}
+@keyframes tutPulse{0%,100%{box-shadow:0 0 6px rgba(181,2,15,.5);border-color:rgba(181,2,15,.55)}50%{box-shadow:0 0 22px 4px rgba(255,50,65,.95);border-color:#ff4a58}}
+@keyframes tutPulseHole{0%,100%{box-shadow:0 0 0 9999px rgba(0,0,0,.8),0 0 6px rgba(181,2,15,.5);border-color:rgba(181,2,15,.55)}50%{box-shadow:0 0 0 9999px rgba(0,0,0,.8),0 0 22px 4px rgba(255,50,65,.95);border-color:#ff4a58}}
+.tut-ring.pulse{animation:tutPulse 1.1s ease-in-out infinite}
+.tut-hole.pulse{animation:tutPulseHole 1.1s ease-in-out infinite}
+.tut-card.corner{left:auto;right:12px;top:auto!important;bottom:calc(12px + env(safe-area-inset-bottom,0px))!important;transform:none;width:min(54vw,215px);padding:11px 12px 9px;transition:none}
+.tut-card.corner .tut-step,.tut-card.corner .tut-dots{display:none}
+.tut-card.corner .tut-h{font-size:14px;margin-bottom:4px}
+.tut-card.corner .tut-b{font-size:12px;line-height:1.6}
+.tut-card.corner .tut-row{margin-top:9px;gap:6px}
+.tut-card.corner .tut-btn{font-size:12px;padding:6px 10px}
 .tut-toast{position:fixed;left:50%;bottom:16%;transform:translate(-50%,16px);opacity:0;pointer-events:none;background:var(--bg-panel-2);border:1px solid var(--c-crit);color:var(--bone);font-size:14px;letter-spacing:.08em;padding:10px 20px;box-shadow:0 8px 28px rgba(0,0,0,.7);transition:opacity .3s ease,transform .3s ease;white-space:nowrap}
 .tut-toast.show{opacity:1;transform:translate(-50%,0)}`;
     document.head.appendChild(s);
@@ -4466,7 +4511,7 @@ const Tutorial=(function(){
     // 「整塊亮起來、只圈住目標」：選單／角色卡全亮，目標另外用紅框圈起
     let lr=null;
     if(r&&st.lit) lr=visibleRect(st.lit);
-    else if(r&&st.litClosest&&tEl){ const c=tEl.closest(st.litClosest); if(c) lr=c.getBoundingClientRect(); }
+    else if(r&&st.litSel){ const c=document.querySelector(st.litSel); if(c) lr=c.getBoundingClientRect(); }
     if(r&&lr){
       hole.className="tut-hole lit";
       hole.style.left=(lr.left-2)+"px"; hole.style.top=(lr.top-2)+"px";
@@ -4474,12 +4519,14 @@ const Tutorial=(function(){
       ring.style.display="block";
       ring.style.left=(r.left-4)+"px"; ring.style.top=(r.top-4)+"px";
       ring.style.width=(r.width+8)+"px"; ring.style.height=(r.height+8)+"px";
+      ring.classList.toggle("pulse",!!st.pulse);
     }else{
-      ring.style.display="none";
+      ring.style.display="none"; ring.classList.remove("pulse");
       if(r){
         hole.className="tut-hole";
         hole.style.left=(r.left-pad)+"px"; hole.style.top=(r.top-pad)+"px";
         hole.style.width=(r.width+pad*2)+"px"; hole.style.height=(r.height+pad*2)+"px";
+        if(st.pulse) hole.classList.add("pulse");
       }else{ hole.className="tut-hole none"; hole.style.cssText=""; }
     }
     // 互動步驟：只有亮起來的那塊可以點，其他地方用透明擋板擋住
@@ -4490,7 +4537,16 @@ const Tutorial=(function(){
       const rects=[[0,0,innerWidth,T],[0,B,innerWidth,innerHeight-B],[0,T,L,B-T],[R,T,innerWidth-R,B-T]];
       blocks.forEach((d,k)=>{ const q=rects[k]; d.style.display="block"; d.style.left=q[0]+"px"; d.style.top=q[1]+"px"; d.style.width=Math.max(0,q[2])+"px"; d.style.height=Math.max(0,q[3])+"px"; });
     }else blocks.forEach(d=>{ d.style.display="none"; });
+    card.classList.toggle("corner",!!st.corner);
+    if(st.corner) return;
     card.style.top="auto"; card.style.bottom="auto";
+    if(st.avoidLit&&lr){   // 教學卡片不能蓋住亮起的角色卡：優先放下方，其次上方，都放不下才縮成右下角小卡
+      const ch=card.offsetHeight;
+      if(innerHeight-lr.bottom-12>=ch+8){ card.classList.remove("corner"); card.style.top=(lr.bottom+10)+"px"; }
+      else if(lr.top-12>=ch+8){ card.classList.remove("corner"); card.style.bottom=(innerHeight-lr.top+10)+"px"; }
+      else card.classList.add("corner");
+      return;
+    }
     if(!r){ card.style.top=Math.max(16,(innerHeight-card.offsetHeight)/2)+"px"; return; }
     const cy=r.top+r.height/2;
     if(cy<innerHeight/2) card.style.top=Math.min(innerHeight-card.offsetHeight-12,r.bottom+18)+"px";
@@ -4512,10 +4568,10 @@ const Tutorial=(function(){
     const last=i===STEPS.length-1;
     stepDone=false;
     card.classList.remove("tut-in"); void card.offsetWidth; card.classList.add("tut-in");
-    const gated=!!st.gated;
+    const gated=false, autoStep=!!(st.wait&&!st.end);
     card.innerHTML='<div class="tut-step">'+(i+1)+' / '+STEPS.length+'</div><div class="tut-h">'+st.h+'</div><div class="tut-b">'+st.b+'</div>'
       +'<div class="tut-dots">'+STEPS.map((_,k)=>'<i class="'+(k===i?"on":"")+'"></i>').join("")+'</div>'
-      +'<div class="tut-row"><button class="tut-btn" id="tutPrev"'+(i?"":" disabled")+'>上一步</button><button class="tut-btn '+(gated?"soft dis":"main")+'" id="tutNext">'+(st.nextLabel||(last?"完成":"下一步"))+'</button>'+(last?"":'<button class="tut-skip" id="tutSkip">略過</button>')+'</div>';
+      +'<div class="tut-row"><button class="tut-btn" id="tutPrev"'+(i?"":" disabled")+'>上一步</button><button class="tut-btn main" id="tutNext"'+(autoStep?' style="display:none"':'')+'>'+(st.nextLabel||(last?"完成":"下一步"))+'</button>'+(last?"":'<button class="tut-skip" id="tutSkip">略過</button>')+'</div>';
     card.querySelector("#tutPrev").onclick=()=>{ if(i>0){ i--; draw(); } };
     card.querySelector("#tutNext").onclick=()=>{
       if(gated&&!stepDone){ toast(st.hint||"請先完成這一步"); return; }
@@ -4529,14 +4585,8 @@ const Tutorial=(function(){
         waitFn=()=>{ const cur=i; setTimeout(()=>{
           if(!active||i!==cur) return;
           if(st.end){ finish(); return; }
-          if(gated){   // 做完了：下一步恢復可以點，不自動跳
-            stepDone=true;
-            const nb=card.querySelector("#tutNext"); if(nb){ nb.classList.remove("dis","soft"); nb.classList.add("main"); }
-            if(toastEl2) toastEl2.classList.remove("show");
-            return;
-          }
           if(i<STEPS.length-1){ i++; draw(); }
-        },st.delay||150); };
+        },st.delay==null?150:st.delay); };
         el.addEventListener("click",waitFn);
       }
     }
@@ -5136,6 +5186,7 @@ const FORWARD_MODE = {
   2: "none",   // experiment roster -> medic roster (button only)
   3: "none",   // medic roster -> sponsor roster (button only)
   4: "none",   // sponsor roster -> action log (button only)
+  5: "none",   // action log -> 匿名情感收容室 (plain scrolling only; keeps the log footer / ? egg untouched)
 };
 
 function canForward(idx, distFromTop, distToNext){
@@ -8021,6 +8072,69 @@ document.addEventListener("click",e=>{
 });
 
 window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSubject,openDeleteConfirm,confirmDeleteSubject,saveEdit,closeModal,loadCrop,onZoom,confirmCrop,removeAvatar,exitAvatar,search,jumpTo,checkPass,goStep,addSubject,delSubject,saveNames,resetAvatars};
+})();
+</script>
+
+<script>
+/* ---------- 匿名情感收容室：匿名投遞、卡片牆（不顯示、也不儲存投遞者身分） ---------- */
+(function(){
+  const PATH="emotion_room_v1";
+  const grid=document.getElementById("emoGrid"), meta=document.getElementById("emoMeta"),
+        ta=document.getElementById("emoText"), cnt=document.getElementById("emoCount"), send=document.getElementById("emoSend");
+  if(!grid||!ta||!send) return;
+  let db=null, ref=null, list=[], lastSend=0;
+  const esc=t=>String(t==null?"":t).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const pad=(n,l)=>String(n).padStart(l,"0");
+  function getDb(){
+    if(db) return db;
+    try{ if(typeof firebase==="undefined") return null; if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG); db=firebase.database(); }catch(e){ console.warn("emo db failed",e); }
+    return db;
+  }
+  function fmt(ts){ if(!ts) return "—"; const d=new Date(ts); return pad(d.getMonth()+1,2)+"/"+pad(d.getDate(),2)+" "+pad(d.getHours(),2)+":"+pad(d.getMinutes(),2); }
+  function render(){
+    meta.textContent="收容數量 "+pad(list.length,3);
+    if(!list.length){ grid.innerHTML='<div class="emo-empty">收容室目前是空的。</div>'; return; }
+    grid.innerHTML=list.slice().reverse().map(x=>
+      '<div class="card ok" data-k="'+esc(x.k)+'"><div class="card-top"><span class="id-num">匿名　編號 <b>'+pad(x.n,4)+'</b></span><span class="status ok">'+esc(fmt(x.ts))+'</span></div><div class="emo-text">'+esc(x.t)+'</div><button class="emo-del" title="刪除（管理員）">✕</button></div>'
+    ).join("");
+    syncAdmin();
+  }
+  function syncAdmin(){
+    const a=!!(window.Auth&&Auth.isAdmin);
+    grid.querySelectorAll(".emo-del").forEach(b=>{ b.style.display=a?"block":"none"; });
+  }
+  function subscribe(){
+    const d=getDb(); if(!d){ setTimeout(subscribe,1500); return; }
+    ref=d.ref(PATH);
+    ref.limitToLast(200).on("value",snap=>{
+      const v=snap.val()||{}, arr=Object.keys(v).map(k=>({k,t:String(v[k].t||""),ts:v[k].ts||0}));
+      arr.sort((a,b)=>a.ts-b.ts||(a.k<b.k?-1:1));
+      arr.forEach((x,i)=>{ x.n=i+1; });
+      list=arr; render();
+    },err=>{ grid.innerHTML='<div class="emo-empty">暫時無法讀取收容室。</div>'; console.warn("emo read failed",err); });
+  }
+  ta.addEventListener("input",()=>{ cnt.textContent=ta.value.length+" / 200"; });
+  send.addEventListener("click",()=>{
+    if(!window.Auth||!Auth.requireLogin()) return;
+    const t=ta.value.trim();
+    if(!t){ ta.focus(); return; }
+    if(Date.now()-lastSend<8000){ alert("投遞太頻繁了，請稍後再試"); return; }
+    const d=getDb(); if(!d) return alert("暫時無法連線");
+    send.disabled=true;
+    d.ref(PATH).push({t:t.slice(0,200),ts:firebase.database.ServerValue.TIMESTAMP})
+      .then(()=>{ lastSend=Date.now(); ta.value=""; cnt.textContent="0 / 200"; })
+      .catch(e=>alert("投遞失敗："+(e.code||e.message)))
+      .then(()=>{ send.disabled=false; });
+  });
+  grid.addEventListener("click",e=>{
+    const b=e.target.closest&&e.target.closest(".emo-del"); if(!b) return;
+    if(!(window.Auth&&Auth.isAdmin)) return;
+    const k=b.closest(".card").dataset.k;
+    if(!confirm("確定刪除這則投遞？")) return;
+    getDb().ref(PATH+"/"+k).remove().catch(er=>alert("刪除失敗："+(er.code||er.message)));
+  });
+  setInterval(syncAdmin,1500);
+  window.addEventListener("load",()=>setTimeout(subscribe,300));
 })();
 </script>
 </body>
