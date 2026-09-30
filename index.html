@@ -2713,6 +2713,30 @@
 .emo-mode button{flex:1;font-family:var(--mono);font-size:12px;letter-spacing:.1em;color:var(--bone-dim);background:transparent;border:1px solid var(--line);padding:9px 10px;cursor:pointer;transition:background .25s ease,border-color .25s ease,color .25s ease}
 .emo-mode button.on{color:var(--bone);background:rgba(181,2,15,.16);border-color:rgba(181,2,15,.5)}
 .emo-mode-hint{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--clinical);min-height:1.4em;margin-bottom:16px}
+.emo-actions{display:flex;align-items:center;gap:22px;margin-top:-4px}
+.emo-act{display:inline-flex;align-items:center;gap:8px;background:none;border:none;padding:4px 0;color:var(--bone-dim);font-family:var(--mono);font-size:14px;letter-spacing:.04em;cursor:pointer;transition:color .2s ease}
+.emo-act svg{width:22px;height:22px;display:block}
+.emo-act:hover{color:var(--bone)}
+.emo-like.on{color:#c4202c}
+.emo-like.on svg path{fill:currentColor}
+.emo-like.pop svg{animation:emoPop .28s ease}
+@keyframes emoPop{50%{transform:scale(1.25)}}
+.emo-grid .card{cursor:pointer}
+.emo-post-box{width:min(560px,94vw);max-height:88vh;padding:34px 26px 24px}
+.emo-post-box .emo-text{margin:6px 0 10px}
+.emo-ptime{font-family:var(--mono);font-size:11px;color:var(--bone-dim);margin-bottom:14px}
+.emo-cdivider{height:1px;background:var(--line);margin:14px 0}
+.emo-clist{display:flex;flex-direction:column;gap:14px;margin-bottom:18px}
+.emo-c{border-left:2px solid var(--line);padding:2px 0 2px 12px;position:relative}
+.emo-c-head{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--clinical);margin-bottom:4px}
+.emo-c-head .t{color:var(--bone-dim);letter-spacing:0}
+.emo-c-body{font-family:var(--sans);font-size:14px;line-height:1.7;color:var(--bone);white-space:pre-wrap;word-break:break-word}
+.emo-c-del{margin-left:auto;background:none;border:none;color:var(--bone-dim);font-family:var(--mono);font-size:11px;cursor:pointer;padding:0}
+.emo-c-del:hover{color:#c4202c}
+.emo-cempty{text-align:center;font-family:var(--mono);font-size:12px;letter-spacing:.12em;color:var(--clinical-dim);padding:14px 0}
+.emo-cform .text-input{resize:vertical;line-height:1.6;margin-bottom:6px}
+.emo-cform .emo-count{text-align:right;margin-bottom:12px}
+#emoCSend:disabled{opacity:.4;cursor:default}
 .emo-empty{grid-column:1/-1;text-align:center;font-family:var(--mono);font-size:12px;letter-spacing:.12em;color:var(--clinical-dim);padding:40px 0}
 
 /* ---------- 全站視窗淡入淡出 ---------- */
@@ -3323,6 +3347,25 @@
       <button class="confirm-btn" id="emoSend">投遞</button>
       <button class="modify-btn" id="emoCancel">取消</button>
       <button class="danger-btn" id="emoDel" style="display:none">刪除此投遞</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="emoPostOverlay">
+  <div class="modal-box emo-post-box">
+    <button class="modal-close" id="emoPostClose">×</button>
+    <div class="modal-eyebrow" id="emoPEyebrow"></div>
+    <div class="emo-text" id="emoPText"></div>
+    <div class="emo-ptime" id="emoPTime"></div>
+    <div class="emo-actions" id="emoPActs"></div>
+    <div class="emo-cdivider"></div>
+    <div class="emo-clist" id="emoPList"></div>
+    <div class="emo-cform">
+      <div class="emo-mode" id="emoCMode"><button type="button" data-m="anon" class="on">匿名留言</button><button type="button" data-m="named">實名留言</button></div>
+      <div class="emo-mode-hint" id="emoCHint"></div>
+      <textarea class="text-input" id="emoCText" maxlength="200" rows="3" placeholder="寫下留言…"></textarea>
+      <div class="emo-count" id="emoCCount">0 / 200</div>
+      <button class="confirm-btn" id="emoCSend">送出留言</button>
     </div>
   </div>
 </div>
@@ -8144,6 +8187,8 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
         ta=document.getElementById("emoText"), cnt=document.getElementById("emoCount"), send=document.getElementById("emoSend");
   if(!grid||!ta||!send) return;
   const delBtn=document.getElementById("emoDel"), cancelBtn=document.getElementById("emoCancel"), eyebrowEl=document.getElementById("emoEyebrow"), modeLabel=document.getElementById("emoModeLabel"), modeBox=document.getElementById("emoMode"), modeHint=document.getElementById("emoModeHint"), titleEl=document.getElementById("emoTitle");
+  const LIKES="emotion_likes", CMT="emotion_comments", COWN="emotion_comment_owners", CMINE="emotion_comment_mine";
+  let likeMap={}, cmtMap={}, curPost=null, cmode="anon", cMine=new Set(), cMineUid=null, cMineRef=null, lastC=0;
   let db=null, ref=null, list=[], lastSend=0, mode="anon", editKey=null, mineSet=new Set(), mineUid=null, mineRef=null;
   const esc=t=>String(t==null?"":t).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const pad=(n,l)=>String(n).padStart(l,"0");
@@ -8166,7 +8211,7 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
     meta.textContent="收容數量 "+pad(list.length,3);
     if(!list.length){ grid.innerHTML='<div class="emo-empty">收容室目前是空的。</div>'; return; }
     grid.innerHTML=list.slice().reverse().map(x=>
-      '<div class="card ok" data-k="'+esc(x.k)+'"><div class="card-top"><span class="id-num">編號 <b>'+pad(x.n,4)+'</b></span><span class="status ok">'+(x.nm?esc(x.nm):"匿名")+'</span></div><div class="emo-text">'+esc(x.t)+'</div><div class="emo-time">'+esc(fmt(x.ts))+'</div><button class="edit-btn" title="編輯"><svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M19,19V12.31L21,10.31V19A2,2 0 0,1 19,21H5A2,2 0 0,1 3,19V5A2,2 0 0,1 5,3H13.69L11.69,5H5V19H19M21.7,7.35L18.65,4.3L20.07,2.88C20.46,2.5 21.09,2.5 21.48,2.88L23.12,4.5C23.5,4.91 23.5,5.54 23.12,5.93L21.7,7.35M19.94,8.06L10,18H7V15L16.94,5.06L19.94,8.06Z"/></svg></button></div>'
+      '<div class="card ok" data-k="'+esc(x.k)+'"><div class="card-top"><span class="id-num">編號 <b>'+pad(x.n,4)+'</b></span><span class="status ok">'+(x.nm?esc(x.nm):"匿名")+'</span></div><div class="emo-text">'+esc(x.t)+'</div>'+actionsHtml(x.k)+'<div class="emo-time">'+esc(fmt(x.ts))+'</div><button class="edit-btn" title="編輯"><svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M19,19V12.31L21,10.31V19A2,2 0 0,1 19,21H5A2,2 0 0,1 3,19V5A2,2 0 0,1 5,3H13.69L11.69,5H5V19H19M21.7,7.35L18.65,4.3L20.07,2.88C20.46,2.5 21.09,2.5 21.48,2.88L23.12,4.5C23.5,4.91 23.5,5.54 23.12,5.93L21.7,7.35M19.94,8.06L10,18H7V15L16.94,5.06L19.94,8.06Z"/></svg></button></div>'
     ).join("");
     syncAdmin();
   }
@@ -8190,6 +8235,8 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
   function subscribe(){
     const d=getDb(); if(!d){ setTimeout(subscribe,1500); return; }
     ref=d.ref(PATH);
+    d.ref(LIKES).on("value",sn=>{ likeMap=sn.val()||{}; updateCards(); if(curPost) renderPost(); },er=>console.warn("emo likes read failed",er));
+    d.ref(CMT).on("value",sn=>{ cmtMap=sn.val()||{}; updateCards(); if(curPost) renderPost(); },er=>console.warn("emo comments read failed",er));
     ref.limitToLast(200).on("value",snap=>{
       const v=snap.val()||{}, arr=Object.keys(v).map(k=>({k,t:String(v[k].t||""),ts:v[k].ts||0,nm:v[k].n?String(v[k].n):""}));
       arr.sort((a,b)=>a.ts-b.ts||(a.k<b.k?-1:1));
@@ -8255,7 +8302,7 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
     if(!confirm("確定刪除這則投遞？")) return;
     const d=getDb(); if(!d) return;
     const fail=er=>alert("刪除失敗："+(er.code||er.message));
-    const done=()=>{ closeForm(); };
+    const done=()=>{ closeForm(); cascadeDelete(k); };
     if(isAdmin()){
       // 管理員：先查出投遞者，才能一併清掉他的索引
       d.ref(OWN+"/"+k).once("value").then(sn=>{
@@ -8267,6 +8314,138 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
       d.ref().update(up).then(done).catch(fail);
     }
   });
+
+  /* ===== 按讚／留言（類似臉書）=====
+     emotion_likes/<postKey>/<uid> = true
+     emotion_comments/<postKey>/<commentKey> = {t, ts, n(只有實名才有)}
+     emotion_comment_owners/<commentKey> = uid（只有管理員讀得到）
+     emotion_comment_mine/<uid>/<commentKey> = true（只有本人讀得到） */
+  const HEART='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 20.5s-7.5-4.6-9.3-9.4C1.5 7.7 3.4 4.5 6.7 4.5c2 0 3.6 1.1 5.3 3.2 1.7-2.1 3.3-3.2 5.3-3.2 3.3 0 5.2 3.2 4 6.6-1.8 4.8-9.3 9.4-9.3 9.4z"/></svg>';
+  const BUBBLE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3.5c4.7 0 8.5 3.3 8.5 7.6 0 4.2-3.6 7.6-8.1 7.6-.9 0-1.7-.1-2.5-.4L5 20l1-3.3C4.5 15.4 3.5 13.4 3.5 11.1 3.5 6.8 7.3 3.5 12 3.5z"/></svg>';
+  const cmtOv=document.getElementById("emoPostOverlay"), pEyebrow=document.getElementById("emoPEyebrow"), pText=document.getElementById("emoPText"),
+        pTime=document.getElementById("emoPTime"), pActs=document.getElementById("emoPActs"), pList=document.getElementById("emoPList"),
+        cModeBox=document.getElementById("emoCMode"), cHint=document.getElementById("emoCHint"), cTa=document.getElementById("emoCText"),
+        cCnt=document.getElementById("emoCCount"), cSend=document.getElementById("emoCSend");
+  const uidNow=()=>(window.Auth&&Auth.uid&&Auth.uid())||null;
+  const likeCount=k=>likeMap[k]?Object.keys(likeMap[k]).length:0;
+  const iLiked=k=>{ const u=uidNow(); return !!(u&&likeMap[k]&&likeMap[k][u]); };
+  function cmtList(k){
+    const v=cmtMap[k]||{};
+    return Object.keys(v).map(ck=>({k:ck,t:String(v[ck].t||""),ts:v[ck].ts||0,nm:v[ck].n?String(v[ck].n):""})).sort((a,b)=>a.ts-b.ts||(a.k<b.k?-1:1));
+  }
+  function actionsHtml(k){
+    return '<div class="emo-actions"><button type="button" class="emo-act emo-like'+(iLiked(k)?' on':'')+'" title="讚">'+HEART+'<span>'+likeCount(k)+'</span></button><button type="button" class="emo-act emo-cmt" title="留言">'+BUBBLE+'<span>'+cmtList(k).length+'</span></button></div>';
+  }
+  function updateCards(){
+    grid.querySelectorAll(".card").forEach(c=>{
+      const k=c.dataset.k, l=c.querySelector(".emo-like"), m=c.querySelector(".emo-cmt span");
+      if(l){ l.classList.toggle("on",iLiked(k)); l.querySelector("span").textContent=likeCount(k); }
+      if(m) m.textContent=cmtList(k).length;
+    });
+  }
+  function toggleLike(k,btn){
+    if(!window.Auth||!Auth.requireLogin()) return;
+    const d=getDb(), uid=uidNow(); if(!d||!uid) return;
+    const r=d.ref(LIKES+"/"+k+"/"+uid);
+    if(iLiked(k)){
+      // 先在本地更新，畫面立即反應
+      if(likeMap[k]) delete likeMap[k][uid]; updateCards(); if(curPost) renderPost();
+      r.remove().catch(er=>alert("操作失敗："+(er.code||er.message)));
+    }else{
+      (likeMap[k]=likeMap[k]||{})[uid]=true; updateCards(); if(curPost) renderPost();
+      if(btn){ btn.classList.add("pop"); setTimeout(()=>btn.classList.remove("pop"),300); }
+      r.set(true).catch(er=>alert("操作失敗："+(er.code||er.message)));
+    }
+  }
+  function setCMode(m){
+    cmode=m;
+    cModeBox.querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.m===m));
+    const nk=(window.Auth&&Auth.nick&&Auth.nick())||"";
+    cHint.textContent=m==="named"?("留言會顯示你的暱稱："+nk):"留言只會顯示「匿名」。";
+  }
+  cModeBox.addEventListener("click",e=>{ const b=e.target.closest&&e.target.closest("button"); if(b) setCMode(b.dataset.m); });
+  const canManageC=ck=>isAdmin()||cMine.has(ck);
+  function renderPost(){
+    const it=list.find(x=>x.k===curPost);
+    if(!it){ closePost(); return; }
+    pEyebrow.textContent="編號 "+pad(it.n,4)+" ／ "+(it.nm?it.nm:"匿名");
+    pText.textContent=it.t; pTime.textContent=fmt(it.ts);
+    pActs.innerHTML=actionsHtml(it.k).replace(/^<div class="emo-actions">|<\/div>$/g,"");
+    const cs=cmtList(it.k);
+    pList.innerHTML=cs.length?cs.map(c=>
+      '<div class="emo-c" data-ck="'+esc(c.k)+'"><div class="emo-c-head"><span>'+(c.nm?esc(c.nm):"匿名")+'</span><span class="t">'+esc(fmt(c.ts))+'</span>'+(canManageC(c.k)?'<button type="button" class="emo-c-del">刪除</button>':'')+'</div><div class="emo-c-body">'+esc(c.t)+'</div></div>'
+    ).join(""):'<div class="emo-cempty">還沒有留言。</div>';
+  }
+  function openPost(k){
+    curPost=k; setCMode(cmode); cTa.value=""; cCnt.textContent="0 / 200";
+    renderPost(); cmtOv.classList.add("open"); pList.scrollTop=0;
+  }
+  function closePost(){ curPost=null; cmtOv.classList.remove("open"); }
+  document.getElementById("emoPostClose").addEventListener("click",closePost);
+  cmtOv.addEventListener("click",e=>{ if(e.target===cmtOv) closePost(); });
+  cTa.addEventListener("input",()=>{ cCnt.textContent=cTa.value.length+" / 200"; });
+  // 卡片：按讚／進入貼文
+  grid.addEventListener("click",e=>{
+    const card=e.target.closest&&e.target.closest(".card"); if(!card) return;
+    if(e.target.closest(".edit-btn")) return;
+    const like=e.target.closest(".emo-like");
+    if(like){ toggleLike(card.dataset.k,like); return; }
+    if(window.getSelection&&String(window.getSelection()).length) return;
+    openPost(card.dataset.k);
+  });
+  // 貼文視窗：按讚、刪除留言
+  cmtOv.addEventListener("click",e=>{
+    const like=e.target.closest&&e.target.closest(".emo-like");
+    if(like&&curPost){ toggleLike(curPost,like); return; }
+    const del=e.target.closest&&e.target.closest(".emo-c-del");
+    if(del){ const row=del.closest(".emo-c"); if(row) deleteComment(curPost,row.dataset.ck); }
+  });
+  cSend.addEventListener("click",()=>{
+    if(!window.Auth||!Auth.requireLogin()) return;
+    const t=cTa.value.trim();
+    if(!t||!curPost){ cTa.focus(); return; }
+    const d=getDb(); if(!d) return alert("暫時無法連線");
+    if(Date.now()-lastC<4000){ alert("留言太頻繁了，請稍後再試"); return; }
+    const uid=uidNow(); if(!uid) return;
+    const pk=curPost, ck=d.ref(CMT+"/"+pk).push().key;
+    const rec={t:t.slice(0,200),ts:firebase.database.ServerValue.TIMESTAMP};
+    if(cmode==="named"){ const nk=(Auth.nick()||"").slice(0,50); if(nk) rec.n=nk; }
+    const up={}; up[CMT+"/"+pk+"/"+ck]=rec; up[COWN+"/"+ck]=uid; up[CMINE+"/"+uid+"/"+ck]=true;
+    cSend.disabled=true;
+    d.ref().update(up).then(()=>{ lastC=Date.now(); cTa.value=""; cCnt.textContent="0 / 200"; })
+      .catch(er=>alert("留言失敗："+(er.code||er.message)))
+      .then(()=>{ cSend.disabled=false; });
+  });
+  function deleteComment(pk,ck){
+    if(!pk||!ck||!canManageC(ck)) return;
+    if(!confirm("確定刪除這則留言？")) return;
+    const d=getDb(); if(!d) return;
+    const fail=er=>alert("刪除失敗："+(er.code||er.message));
+    const base={}; base[CMT+"/"+pk+"/"+ck]=null; base[COWN+"/"+ck]=null;
+    if(isAdmin()){
+      d.ref(COWN+"/"+ck).once("value").then(sn=>{ const ou=sn.val(), up=Object.assign({},base); if(ou) up[CMINE+"/"+ou+"/"+ck]=null; return d.ref().update(up); }).catch(fail);
+    }else{
+      const up=Object.assign({},base); up[CMINE+"/"+cMineUid+"/"+ck]=null;
+      d.ref().update(up).catch(fail);
+    }
+  }
+  // 刪除貼文後，順手清掉它的讚與留言（失敗也不影響貼文本身的刪除）
+  function cascadeDelete(pk){
+    if(curPost===pk) closePost();
+    const d=getDb(); if(!d) return;
+    const up={}; up[LIKES+"/"+pk]=null; up[CMT+"/"+pk]=null;
+    Object.keys(cmtMap[pk]||{}).forEach(ck=>{ up[COWN+"/"+ck]=null; });
+    d.ref().update(up).catch(er=>console.warn("emo cascade delete skipped",er));
+  }
+  function watchCMine(uid){
+    const d=getDb(); if(!d) return;
+    if(cMineRef){ cMineRef.off(); cMineRef=null; }
+    cMineUid=uid; cMine=new Set();
+    if(!uid) return;
+    cMineRef=d.ref(CMINE+"/"+uid);
+    cMineRef.on("value",sn=>{ cMine=new Set(Object.keys(sn.val()||{})); if(curPost) renderPost(); },er=>console.warn("emo cmine read failed",er));
+  }
+  setInterval(()=>{ const u=uidNow(); if(u!==cMineUid) watchCMine(u); updateCards(); },1500);
   setInterval(syncAdmin,1500);
   window.addEventListener("load",()=>setTimeout(subscribe,300));
 })();
