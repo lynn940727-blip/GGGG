@@ -4284,6 +4284,10 @@ const Auth=(function(){
     if(!fs.length) return '<span class="au-role">帳號</span>';
     return fs.map(f=>'<span class="au-role" style="margin-right:6px">'+esc(FSHORT[f]||f)+'</span>').join("");
   }
+  /* 記錄手指／滑鼠「按下」的位置：只有按在頭像或編輯鍵上，之後的 click 才算數 */
+  (function(){ const rec=e=>{ const t=e.target&&e.target.closest?e.target:null; window.__lastDown={t:Date.now(),ok:!!(t&&t.closest(".avatar-shape,.edit-btn,.admin-thumb"))}; };
+    document.addEventListener("touchstart",rec,{capture:true,passive:true});
+    document.addEventListener("pointerdown",rec,{capture:true,passive:true}); })();
   function myChars(){ const o=[]; Object.keys(ST).forEach(f=>roster(f).forEach(s=>{ if(user&&s.owner===user.uid) o.push({f,s}); })); return o; }
   const TH={
     "實驗體":{bg:"#331915",glow:"none",ok:"#f2cec0",pill:"#622f2d",txt:"#e6ddcf",dim:"#a89f92"},
@@ -4552,7 +4556,10 @@ const Auth=(function(){
     newOwner:()=>(user&&!admin)?user.uid:null,
     requireLogin(){ if(user&&nick) return true; openPanel(); return false; },
     requireAdmin(){ if(!user){ openPanel(); return false; } if(!admin){ alert("需要管理員身份"); return false; } return true; },
-    canEdit(s){ if(!api.requireLogin()) return false; if(admin||(s&&s.owner===user.uid)) return true; alert("只有角色本人或管理員可以編輯"); return false; },
+    canEdit(s){ if(!api.requireLogin()) return false;
+      if(!api.tapOnTarget()) return false;   // 手指沒有真的按在頭像／編輯鍵上（例如 iOS 點卡片時重繪造成的誤觸）→ 直接忽略
+      if(admin||(s&&s.owner===user.uid)) return true; alert("只有角色本人或管理員可以編輯"); return false; },
+    tapOnTarget(){ const d=window.__lastDown; if(!d||Date.now()-d.t>1500) return true; return d.ok; },
     mine(f,list){ return admin?list:list.filter(s=>user&&s.owner===user.uid); }
   };
   return api;
