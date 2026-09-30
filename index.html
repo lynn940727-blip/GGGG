@@ -55,6 +55,11 @@
   }
 
   ::selection{background:var(--c-crit); color:#0a0706;}
+  @keyframes auGlowPulse{
+    0%,100%{color:#b5020f; filter:drop-shadow(0 0 2px rgba(181,2,15,.45));}
+    50%{color:#ff5a66; filter:drop-shadow(0 0 7px rgba(255,50,65,.95)) drop-shadow(0 0 16px rgba(181,2,15,.75));}
+  }
+  #authBtn.au-glow{animation:auGlowPulse 1.6s ease-in-out infinite;}
   ::placeholder{color:rgba(230,221,207,0.2) !important; opacity:1 !important;}
   ::-webkit-input-placeholder{color:rgba(230,221,207,0.2) !important; opacity:1 !important;}
   ::-moz-placeholder{color:rgba(230,221,207,0.2) !important; opacity:1 !important;}
@@ -3892,6 +3897,7 @@ const Auth=(function(){
       btn.innerHTML='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"><path d="M12 3.2c-2.3 0-3.7 1.9-3.7 4.3 0 2 .9 3.6 2 4.4-.2 1.3-1.7 1.9-3.7 2.5C4.9 15 3.6 16 3.6 17.6v3h16.8v-3c0-1.6-1.3-2.6-3-3.2-2-.6-3.5-1.2-3.7-2.5 1.1-.8 2-2.4 2-4.4 0-2.4-1.4-4.3-3.7-4.3z"/></svg>';
       btn.id="authBtn"; btn.onclick=openPanel; document.body.appendChild(btn);
     }
+    btn.classList.toggle("au-glow",!user&&authReady);   // 還沒登入：一直閃紅光提醒
     btn.title=user?(nick||"設定暱稱")+(admin?"（管理員）":""):"登入";
     updateBadge();
   }
@@ -3971,7 +3977,8 @@ const Auth=(function(){
 #authBox .au-stick .au-back{margin:0}
 #authBox .au-stick>.au-back.top{display:block;margin:0 0 8px}
 #authBox>*:first-child:not(.au-stick){margin-top:28px}
-#authBox .au-stick .au-head{margin-bottom:0;padding-bottom:14px}`;
+#authBox .au-stick .au-head{margin-bottom:0;padding-bottom:14px}
+#authBox #au_nick::placeholder{font-size:clamp(9px,calc((min(420px,100vw - 32px) - 84px)/30),12px) !important;letter-spacing:0 !important}`;
     document.head.appendChild(st);
   }
   function load(){
@@ -4170,7 +4177,7 @@ const Auth=(function(){
     const keep=b.dataset.view===view?b.scrollTop:0; b.dataset.view=view;
     let h="";
     if(view==="nick"){
-      h+=(nick?BACK:"")+'<div class="modal-title">'+(nick?"修改暱稱":"先取個暱稱吧")+'</div><span class="field-label">暱稱（1–50 字）</span><input class="text-input" id="au_nick" maxlength="50" placeholder="暱稱｜陣營｜角色名，ex：汪汪｜主辦方/實驗體｜十字，同DC暱稱" value="'+esc(nick)+'"><button class="confirm-btn" id="au_sn">儲存</button>';
+      h+=(nick?BACK:"")+'<div class="modal-title">'+(nick?"修改暱稱":"先取個暱稱吧")+'</div><span class="field-label">暱稱（1–50 字）</span><input class="text-input" id="au_nick" maxlength="50" placeholder="暱稱｜陣營｜角色名，ex：汪汪｜實驗體｜十字，同DC暱稱" value="'+esc(nick)+'"><button class="confirm-btn" id="au_sn">儲存</button>';
     }else if(view==="claim"){
       h+=BACK+'<div class="modal-title" style="font-size:17px">申請認領角色</div>';
       const pk=Object.keys(pend).filter(k=>!isApproved(pend[k])), ak=Object.keys(pend).filter(k=>isApproved(pend[k]));
@@ -4239,7 +4246,7 @@ const Auth=(function(){
     }
     const out=b.querySelector("#au_out"); if(out) out.onclick=()=>{
       working="登出中…"; view="home"; render();
-      setTimeout(()=>{ firebase.auth().signOut().catch(e=>{ working=""; notice=""; if(isOpen()) render(); alert("登出失敗："+(e.code||e.message)); }); },900);
+      setTimeout(()=>{ firebase.auth().signOut().then(()=>{ try{ window.scrollTo(0,0); }catch(e){} location.reload(); }).catch(e=>{ working=""; notice=""; if(isOpen()) render(); alert("登出失敗："+(e.code||e.message)); }); },900);
     };
     const sn=b.querySelector("#au_sn");
     if(sn) sn.onclick=()=>{
@@ -4352,15 +4359,15 @@ const Tutorial=(function(){
     }catch(e){}
   };
   const STEPS=[
-    {sel:"#menuToggle",h:"左上角：目錄",b:"點開可以快速跳到各區塊：機構資訊、實驗體名冊、醫療隊名冊、資助者名冊、行動紀錄。目錄裡的「?」可以隨時重看這份教學。"},
-    {sel:"#authBtn",h:"右上角：個人檔案",b:"第一次使用請先點這裡設定暱稱，之後才能行動。也可以在這裡申請認領自己的角色、收藏實驗體。你的角色被攻擊、治療、擊殺時，會收到信箱通知（按鈕上的紅點是未讀數量）。"},
-    {sel:"#rosterNav",show:"#rosterNav",h:"右側：進度條",b:"在名冊頁面滑動時，右邊會出現進度條。點上方箭頭回到該頁首，點下方箭頭跳到該頁尾。"},
-    {sel:"#fab",h:"右下角：行動",b:"要攻擊、治療、資助、使用道具或重生，都從這裡開始，照著畫面一步一步選就可以。需要先登入並設定暱稱。"},
-    {sel:"#logRoster",h:"行動紀錄",b:"目錄的「行動紀錄」會記下所有人的每一次行動：誰攻擊、誰治療、誰擊殺了誰，都看得到。"},
-    {sel:"#menuToggle",h:"試試看：打開目錄",b:"請點一下發亮的目錄按鈕。",interactive:true,wait:"#menuToggle",delay:650,nextLabel:"略過這步",enter:closeM},
-    {sel:'.menu-item[data-target="2"]',h:"再點「實驗體名冊」",b:"點一下發亮的「實驗體名冊」，就會跳到所有實驗體的名冊。",interactive:true,wait:'.menu-item[data-target="2"]',delay:1100,nextLabel:"略過這步",enter:openM},
-    {sel:".card .edit-btn",h:"角色卡：編輯鍵",b:"每張角色卡右下角有一個 "+PENCIL+" 編輯鍵，可以編輯角色的名稱、數值、頭像和隱藏台詞。但只能編輯自己的角色（管理員可以編輯全部）。",enter:gotoRoster},
-    {sel:"#authBtn",h:"最後一步：申請角色",b:"教學到這裡就結束了！請點開右上角的個人檔案，選「＋ 申請角色」，等管理員批准後，你就能編輯自己的角色、開始行動了。",interactive:true,wait:"#authBtn",end:true,delay:150,nextLabel:"完成"}
+    {sel:"#menuToggle",h:"目錄",b:"• 點擊快速切換頁面。<br>• 點選目錄內的「新手教學」可隨時重看教學。"},
+    {sel:"#authBtn",h:"個人檔案",b:"• 首次使用請先點此「登入」，並申請角色。"},
+    {sel:"#fab",h:"行動",b:"• 執行動作的主按鈕。<br>• 攻擊、醫療、重生、使用道具等。"},
+    {sel:"#rosterNav",show:"#rosterNav",h:"進度條",b:"• 點擊「上、下箭頭」可快速「跳轉頁首或頁尾」。"},
+    {sel:"#menuToggle",h:"試試看：打開「目錄」",b:"• 請點擊左上角的目錄按鈕。",interactive:true,wait:"#menuToggle",delay:650,nextLabel:"略過這步",enter:closeM},
+    {sel:'.menu-item[data-target="5"]',h:"行動紀錄",b:"• 記錄全站所有玩家的行動。",enter:openM},
+    {sel:'.menu-item[data-target="2"]',h:"試試看：點擊「實驗體名冊」",b:"• 點擊進入角色列表。",interactive:true,wait:'.menu-item[data-target="2"]',delay:1100,nextLabel:"略過這步",enter:openM},
+    {sel:".card .edit-btn",h:"角色卡：編輯鍵",b:"• 點擊角色卡右下角 "+PENCIL+" 可修改資訊。<br>• 僅能編輯自己的角色。",enter:gotoRoster},
+    {sel:"#authBtn",h:"最後一步：申請角色",b:"• 點擊右上角個人檔案，選擇「＋ 申請角色」。<br>• 審核通過後即可開始行動。",interactive:true,wait:"#authBtn",end:true,delay:150,nextLabel:"完成"}
   ];
   let ov=null,hole=null,card=null,blocks=[],i=0,active=false,shown=null,onKey=null,onResize=null,onScroll=null,stopAll=null,raf=0,timers=[],waitEl=null,waitFn=null;
   function css(){
