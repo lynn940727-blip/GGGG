@@ -2742,8 +2742,8 @@
 @keyframes emoPop{50%{transform:scale(1.25)}}
 .emo-grid .card{cursor:pointer}
 .emo-post-box{width:min(560px,100vw);height:min(86vh,760px);max-height:none;padding:0;display:flex;flex-direction:column;overflow:hidden}
-.emo-ptop{flex:none;display:flex;align-items:center;min-height:56px;padding:0 60px 0 20px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:13px;letter-spacing:.3em;color:var(--bone)}
-.emo-post-box .modal-close{top:10px;right:10px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;z-index:2}
+.emo-ptop{flex:none;display:flex;align-items:center;min-height:76px;padding:0 76px 0 22px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:13px;letter-spacing:.3em;color:var(--bone)}
+.emo-post-box .modal-close{top:20px;right:16px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;z-index:2}
 #emoPostOverlay{-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
 .emo-pscroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:18px 20px 40px;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
 .emo-phead{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}
@@ -2763,9 +2763,20 @@
 .emo-c-bar button{background:none;border:1px solid var(--line);border-radius:16px;color:var(--bone-dim);font-family:var(--sans);font-size:13px;letter-spacing:.08em;padding:6px 16px;cursor:pointer}
 .emo-c-bar button:hover{color:var(--bone);border-color:var(--bone-dim)}
 .emo-c-bar button.go{color:var(--bone);border-color:var(--bone);background:rgba(181,2,15,.25)}
-.emo-act:focus-visible,.emo-more:focus-visible,.emo-post-btn:focus-visible,.emo-cmodebtn:focus-visible,.emo-csend:focus-visible{outline:1px solid var(--bone-dim);outline-offset:2px}
+.emo-act:focus-visible,.emo-more:focus-visible,.emo-post-btn:focus-visible,.emo-cmodebtn:focus-visible,.emo-cmodes button:focus-visible,.emo-csend:focus-visible{outline:1px solid var(--bone-dim);outline-offset:2px}
 .emo-cempty{text-align:center;font-family:var(--mono);font-size:12px;letter-spacing:.12em;color:var(--clinical-dim);padding:36px 0}
 .emo-composer{flex:none;display:flex;align-items:flex-end;gap:8px;margin:8px 14px calc(12px + env(safe-area-inset-bottom,0px));padding:5px 6px 5px 6px;background:rgba(255,255,255,.07);border-radius:26px}
+.emo-cmodes{flex:none;display:flex;gap:8px;margin:10px 14px 0}
+@media (min-width:601px){.emo-cmodes{margin-left:20px;margin-right:20px}}
+.emo-cmodes button{flex:1;min-width:0;height:34px;padding:0 8px;border-radius:17px;border:1px solid var(--line);background:transparent;color:var(--bone-dim);font-family:var(--mono);font-size:12px;letter-spacing:.12em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;transition:all .2s ease}
+.emo-cmodes button:hover{color:var(--bone);border-color:var(--bone-dim)}
+.emo-cmodes button.on{color:var(--bone);background:rgba(181,2,15,.25);border-color:var(--bone)}
+.emo-cmodes+.emo-composer{margin-top:8px}
+.emo-rolepick{position:fixed;z-index:1100;min-width:210px;max-width:min(320px,92vw);max-height:46vh;overflow-y:auto;padding:6px;background:#1c1514;border:1px solid rgba(230,221,207,.16);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.6);animation:emoMenuIn .14s ease}
+.emo-rolepick .hd{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--clinical);padding:6px 10px 8px}
+.emo-rolepick button{display:flex;align-items:baseline;justify-content:space-between;gap:14px;width:100%;background:none;border:none;border-radius:8px;color:var(--bone);font-family:var(--sans);font-size:15px;padding:11px 12px;text-align:left;cursor:pointer}
+.emo-rolepick button small{font-family:var(--mono);font-size:11px;color:var(--bone-dim);white-space:nowrap}
+.emo-rolepick button:hover,.emo-rolepick button:focus-visible{background:rgba(230,221,207,.09);outline:none}
 .emo-cmodebtn{flex:none;align-self:center;height:32px;padding:0 14px;border-radius:16px;border:1px solid var(--bone);background:transparent;color:var(--bone);font-family:var(--mono);font-size:12px;letter-spacing:.12em;cursor:pointer;transition:all .2s ease}
 .emo-cmodebtn.on{color:var(--bone);background:rgba(181,2,15,.25);border-color:var(--bone)}
 .emo-composer:focus-within{background:rgba(255,255,255,.1)}
@@ -2777,7 +2788,7 @@
 .emo-csend:hover{color:#c4202c}
 .emo-csend:disabled{opacity:.35;cursor:default}
 .emo-csend svg{width:24px;height:24px}
-@media (max-width:600px){#emoPostOverlay{padding:0}.emo-post-box{width:100vw;height:100dvh;border:none}}
+@media (max-width:600px){#emoPostOverlay{padding:0}.emo-post-box{width:100vw;height:100dvh;border:none}.emo-ptop{padding-top:env(safe-area-inset-top,0px);min-height:calc(76px + env(safe-area-inset-top,0px))}.emo-post-box .modal-close{top:calc(20px + env(safe-area-inset-top,0px))}}
 .emo-empty{grid-column:1/-1;text-align:center;font-family:var(--mono);font-size:12px;letter-spacing:.12em;color:var(--clinical-dim);padding:40px 0}
 
 /* ---------- 全站視窗淡入淡出 ---------- */
@@ -3368,7 +3379,11 @@
   <div class="roster-divider"></div>
   <div class="grid emo-grid" id="emoGrid"></div>
 
-  <div style="text-align:center; margin-top:56px;">
+  <div style="text-align:center; margin-top:40px;">
+    <button class="admin-entry-btn" id="emoAdminBtn" style="display:none">⚙ 一鍵編輯（管理員）</button>
+  </div>
+
+  <div style="text-align:center; margin-top:32px;">
     <button class="observe-btn observe-btn-ominous" id="ominousBtn" title="？">？</button>
   </div>
 </section>
@@ -3380,7 +3395,7 @@
     <div class="modal-title" id="emoTitle">投遞</div>
     <div class="emo-form">
       <span class="field-label" id="emoModeLabel">投遞身分</span>
-      <div class="emo-mode" id="emoMode"><button type="button" data-m="anon" class="on">匿名</button><button type="button" data-m="named">實名</button></div>
+      <div class="emo-mode" id="emoMode"><button type="button" data-m="anon" class="on">匿名</button><button type="button" data-m="named">實名</button><button type="button" data-m="role">角色</button></div>
       <div class="emo-mode-hint" id="emoModeHint"></div>
       <span class="field-label">內容（最多 200 字）</span>
       <textarea class="text-input" id="emoText" maxlength="200" rows="5" placeholder="把說不出口的話放在這裡。"></textarea>
@@ -3402,12 +3417,19 @@
       <div class="emo-actions" id="emoPActs"></div>
       <div class="emo-clist" id="emoPList"></div>
     </div>
+    <div class="emo-cmodes" id="emoCModes"><button type="button" data-m="anon" class="on">匿名</button><button type="button" data-m="named">實名</button><button type="button" data-m="role">角色</button></div>
     <div class="emo-composer" id="emoComposer">
-      <button type="button" class="emo-cmodebtn" id="emoCModeBtn" title="切換匿名／實名">匿名</button>
       <textarea id="emoCText" maxlength="200" rows="1" placeholder="以匿名身分留言…"></textarea>
       <span class="emo-ccount" id="emoCCount"></span>
       <button type="button" class="emo-csend" id="emoCSend" title="送出留言"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M3.5 11.2 20.5 3.5l-5.6 17-3.3-7.2-8.1-2.1z"/><path d="M11.6 13.3 20.5 3.5"/></svg></button>
     </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="emoAdminOverlay">
+  <div class="modal-box">
+    <button class="modal-close" id="emoAdminClose">×</button>
+    <div id="emoAdminBody"></div>
   </div>
 </div>
 
@@ -4516,6 +4538,7 @@ const Auth=(function(){
     get isAdmin(){return admin;},
     onBack(){ if(!isOpen()) return false; if(view!=="home"&&nick){ view="home"; render(); } else hide(); return true; },
     uid:()=>user?user.uid:null, nick:()=>nick,
+    myChars:()=>myChars().map(x=>({f:x.f,id:String(x.s.id),name:String(x.s.name||"")})),
     newOwner:()=>(user&&!admin)?user.uid:null,
     requireLogin(){ if(user&&nick) return true; openPanel(); return false; },
     requireAdmin(){ if(!user){ openPanel(); return false; } if(!admin){ alert("需要管理員身份"); return false; } return true; },
@@ -8231,6 +8254,7 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
   const LIKES="emotion_likes", CMT="emotion_comments", COWN="emotion_comment_owners", CMINE="emotion_comment_mine";
   let editingC=null, editDraft="", focusEdit=false;
   let likeMap={}, cmtMap={}, curPost=null, cmode="anon", cMine=new Set(), cMineUid=null, cMineRef=null, lastC=0;
+  let picker=null, cRole=null, pRole=null;
   let db=null, ref=null, list=[], lastSend=0, mode="anon", editKey=null, mineSet=new Set(), mineUid=null, mineRef=null;
   const esc=t=>String(t==null?"":t).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const pad=(n,l)=>String(n).padStart(l,"0");
@@ -8246,9 +8270,36 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
     mode=m;
     modeBox.querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.m===m));
     const nk=(window.Auth&&Auth.nick&&Auth.nick())||"";
-    modeHint.textContent=m==="named"?("卡片上會顯示你的暱稱："+nk):"卡片上只會顯示「匿名」。";
+    modeHint.textContent=m==="named"?("卡片上會顯示你的暱稱："+nk):m==="role"?("卡片上會顯示角色名："+(pRole?pRole.name:"")):"卡片上只會顯示「匿名」。";
+    const rb=modeBox.querySelector('[data-m="role"]'); if(rb) rb.textContent=(m==="role"&&pRole)?pRole.name:"角色";
   }
-  modeBox.addEventListener("click",e=>{ const b=e.target.closest&&e.target.closest("button"); if(b) setMode(b.dataset.m); });
+  modeBox.addEventListener("click",e=>{
+    const b=e.target.closest&&e.target.closest("button"); if(!b) return;
+    if(b.dataset.m==="role"){ pickRole(b,r=>{ pRole=r; setMode("role"); }); return; }
+    closePicker(); setMode(b.dataset.m);
+  });
+
+  /* ===== 角色身分：從「我的角色」挑一個來發言（只有 1 個就直接用，不跳選單）===== */
+  function myRoles(){ try{ return (window.Auth&&Auth.myChars&&Auth.myChars())||[]; }catch(e){ return []; } }
+  const roleValid=r=>!!(r&&myRoles().some(x=>x.f===r.f&&x.id===r.id));
+  function closePicker(){ if(picker){ picker.remove(); picker=null; } }
+  function pickRole(anchor,cb){
+    closePicker();
+    if(!window.Auth||!Auth.requireLogin()) return;
+    const rs=myRoles();
+    if(!rs.length){ alert("你還沒有角色，請先到個人檔案申請角色，管理員批准後就能使用。"); return; }
+    if(rs.length===1){ cb(rs[0]); return; }
+    const p=document.createElement("div"); p.className="emo-rolepick";
+    p.innerHTML='<div class="hd">選擇要發言的角色</div>'+rs.map((r,i)=>'<button type="button" data-i="'+i+'"><span>'+esc(r.name)+'</span><small>'+esc(r.f)+' '+esc(r.id)+'</small></button>').join("");
+    document.body.appendChild(p);
+    const ar=anchor.getBoundingClientRect(), pr=p.getBoundingClientRect();
+    p.style.left=Math.min(Math.max(8,ar.left),Math.max(8,innerWidth-pr.width-8))+"px";
+    let top=ar.top-pr.height-8; if(top<8) top=ar.bottom+8;
+    p.style.top=top+"px";
+    p.addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b) return; const r=rs[+b.dataset.i]; closePicker(); if(r) cb(r); });
+    picker=p;
+  }
+  document.addEventListener("click",e=>{ if(picker&&!picker.contains(e.target)&&!(e.target.closest&&e.target.closest('[data-m="role"]'))) closePicker(); },true);
   const PEN='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg>';
   const BIN='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V4.5h6V7"/><path d="M6.5 7l1 13h9l1-13"/><path d="M10 11v6M14 11v6"/></svg>';
   const DOTS='<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>';
@@ -8282,6 +8333,7 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
     syncAdmin();
   }
   function syncAdmin(){
+    const ab=document.getElementById("emoAdminBtn"); if(ab) ab.style.display=isAdmin()?"":"none";
     const uid=(window.Auth&&Auth.uid&&Auth.uid())||null;
     if(uid!==mineUid) watchMine(uid);
     grid.querySelectorAll(".card").forEach(c=>{
@@ -8323,11 +8375,11 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
       ta.value=""; cnt.textContent="0 / 200";
       titleEl.textContent="投遞"; eyebrowEl.textContent="匿名情感收容室"; send.textContent="投遞";
       modeBox.style.display=""; modeHint.style.display=""; modeLabel.style.display=""; delBtn.style.display="none";
-      setMode("anon");
+      pRole=null; setMode("anon");
     }
     ov.classList.add("open"); setTimeout(()=>ta.focus(),50);
   }
-  const closeForm=()=>{ ov.classList.remove("open"); editKey=null; };
+  const closeForm=()=>{ ov.classList.remove("open"); editKey=null; closePicker(); };
   if(addBtn){
     addBtn.addEventListener("click",()=>openForm(null));
   }
@@ -8348,10 +8400,12 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
       job=d.ref(PATH+"/"+editKey).update({t:t.slice(0,200)});
     }else{
       if(Date.now()-lastSend<8000){ send.disabled=false; alert("投遞太頻繁了，請稍後再試"); return; }
+      if(mode==="role"&&!roleValid(pRole)){ send.disabled=false; pRole=null; setMode("anon"); alert("找不到這個角色，請重新選擇。"); return; }
       const uid=Auth.uid(); if(!uid){ send.disabled=false; return; }
       const key=d.ref(PATH).push().key;
       const rec={t:t.slice(0,200),ts:firebase.database.ServerValue.TIMESTAMP};
       if(mode==="named"){ const nk=(Auth.nick()||"").slice(0,50); if(nk) rec.n=nk; }
+      else if(mode==="role"&&pRole){ rec.n=String(pRole.name).slice(0,50); }
       const up={}; up[PATH+"/"+key]=rec; up[OWN+"/"+key]=uid; up[MINE+"/"+uid+"/"+key]=true;
       job=d.ref().update(up).then(()=>{ lastSend=Date.now(); });
     }
@@ -8388,7 +8442,7 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
   const cmtOv=document.getElementById("emoPostOverlay"), pName=document.getElementById("emoPName"), pText=document.getElementById("emoPText"),
         pTime=document.getElementById("emoPTime"), pActs=document.getElementById("emoPActs"), pList=document.getElementById("emoPList"),
         pScroll=document.getElementById("emoPScroll"), composer=document.getElementById("emoComposer"),
-        cModeBtn=document.getElementById("emoCModeBtn"), cTa=document.getElementById("emoCText"),
+        cModes=document.getElementById("emoCModes"), cTa=document.getElementById("emoCText"),
         cCnt=document.getElementById("emoCCount"), cSend=document.getElementById("emoCSend");
   const uidNow=()=>(window.Auth&&Auth.uid&&Auth.uid())||null;
   const likeCount=k=>likeMap[k]?Object.keys(likeMap[k]).length:0;
@@ -8424,13 +8478,17 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
   }
   function setCMode(m){
     cmode=m;
-    cModeBtn.textContent=m==="named"?"實名":"匿名";
-    cModeBtn.classList.toggle("on",m==="named");
+    cModes.querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.m===m));
     const nk=(window.Auth&&Auth.nick&&Auth.nick())||"";
-    cTa.placeholder=m==="named"?"點擊左邊實名按鈕切換為匿名":"點擊左邊匿名按鈕切換為實名";
-    cModeBtn.title=m==="named"?("目前以「"+(nk||"暱稱")+"」留言"):"目前以匿名留言";
+    const rb=cModes.querySelector('[data-m="role"]');
+    if(rb){ rb.textContent=(m==="role"&&cRole)?cRole.name:"角色"; rb.title=(m==="role"&&cRole)?("目前以角色「"+cRole.name+"」留言，點擊可更換"):"以角色身分留言"; }
+    cTa.placeholder=m==="named"?("以「"+(nk||"暱稱")+"」留言…"):m==="role"?("以「"+(cRole?cRole.name:"角色")+"」留言…"):"以匿名身分留言…";
   }
-  cModeBtn.addEventListener("click",()=>setCMode(cmode==="anon"?"named":"anon"));
+  cModes.addEventListener("click",e=>{
+    const b=e.target.closest&&e.target.closest("button"); if(!b) return;
+    if(b.dataset.m==="role"){ pickRole(b,r=>{ cRole=r; setCMode("role"); }); return; }
+    closePicker(); setCMode(b.dataset.m);
+  });
   function fitComposer(){
     cTa.style.height="auto";
     const h=cTa.scrollHeight; if(h>0) cTa.style.height=Math.min(Math.max(h,38),120)+"px";
@@ -8460,11 +8518,11 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
     }
   }
   function openPost(k){
-    curPost=k; editingC=null; setCMode(cmode); cTa.value="";
+    curPost=k; editingC=null; if(cmode==="role"&&!roleValid(cRole)){ cRole=null; cmode="anon"; } setCMode(cmode); cTa.value="";
     renderPost(); cmtOv.classList.add("open"); pScroll.scrollTop=0;
     lockScroll(true); fitComposer();
   }
-  function closePost(){ curPost=null; editingC=null; cmtOv.classList.remove("open"); lockScroll(false); }
+  function closePost(){ curPost=null; editingC=null; closePicker(); cmtOv.classList.remove("open"); lockScroll(false); }
   function lockScroll(on){
     document.documentElement.style.overflow=on?"hidden":"";
     document.body.style.overflow=on?"hidden":"";
@@ -8530,8 +8588,10 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
     if(Date.now()-lastC<4000){ alert("留言太頻繁了，請稍後再試"); return; }
     const uid=uidNow(); if(!uid) return;
     const pk=curPost, ck=d.ref(CMT+"/"+pk).push().key;
+    if(cmode==="role"&&!roleValid(cRole)){ cRole=null; setCMode("anon"); alert("找不到這個角色，請重新選擇。"); return; }
     const rec={t:t.slice(0,200),ts:firebase.database.ServerValue.TIMESTAMP};
     if(cmode==="named"){ const nk=(Auth.nick()||"").slice(0,50); if(nk) rec.n=nk; }
+    else if(cmode==="role"&&cRole){ rec.n=String(cRole.name).slice(0,50); }
     const up={}; up[CMT+"/"+pk+"/"+ck]=rec; up[COWN+"/"+ck]=uid; up[CMINE+"/"+uid+"/"+ck]=true;
     cSend.disabled=true;
     d.ref().update(up).then(()=>{ lastC=Date.now(); cTa.value=""; fitComposer(); setTimeout(()=>{ pScroll.scrollTop=pScroll.scrollHeight; },250); })
@@ -8596,6 +8656,55 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
     cMineRef=d.ref(CMINE+"/"+uid);
     cMineRef.on("value",sn=>{ cMine=new Set(Object.keys(sn.val()||{})); if(curPost) renderPost(); },er=>console.warn("emo cmine read failed",er));
   }
+  /* ===== 管理員：一鍵刪除全部貼文（連同讚、留言與索引一起清掉）===== */
+  (function(){
+    const aOv=document.getElementById("emoAdminOverlay"), aBody=document.getElementById("emoAdminBody"), aBtn=document.getElementById("emoAdminBtn");
+    if(!aOv||!aBody||!aBtn) return;
+    let step="panel", busy=false;
+    const close=()=>{ if(busy) return; aOv.classList.remove("open"); };
+    function render(){
+      if(step==="panel"){
+        aBody.innerHTML='<div class="modal-eyebrow">管理員模式</div><div class="modal-title">收容室貼文管理</div>'+
+          '<div class="modal-note">目前共 '+list.length+(list.length>=200?'+':'')+' 則貼文。</div>'+
+          '<button class="danger-btn solid" id="emoAdmAll"'+(list.length?'':' disabled')+'>刪除全部貼文</button>'+
+          '<button class="modify-btn" data-a="close">關閉</button>';
+        document.getElementById("emoAdmAll").onclick=()=>{ step="confirm"; render(); };
+      }else{
+        aBody.innerHTML='<div class="modal-eyebrow">管理員模式</div><div class="modal-title">確定要刪除全部貼文嗎？</div>'+
+          '<div class="modal-note">所有貼文的按讚與留言也會一併刪除，所有人重新整理都看不到，此動作無法復原。</div>'+
+          '<button class="danger-btn solid" id="emoAdmGo"'+(busy?' disabled':'')+'>'+(busy?'刪除中…':'確認全部刪除')+'</button>'+
+          '<button class="modify-btn" id="emoAdmBack"'+(busy?' disabled':'')+'>取消</button>';
+        document.getElementById("emoAdmBack").onclick=()=>{ if(busy) return; step="panel"; render(); };
+        document.getElementById("emoAdmGo").onclick=doDelete;
+      }
+    }
+    function doDelete(){
+      if(busy||!Auth.requireAdmin()) return;
+      const d=getDb(); if(!d) return alert("暫時無法連線");
+      busy=true; render();
+      Promise.all([PATH,OWN,LIKES,CMT,COWN].map(p=>d.ref(p).once("value"))).then(r=>{
+        const posts=r[0].val()||{}, own=r[1].val()||{}, likes=r[2].val()||{}, cmts=r[3].val()||{}, cown=r[4].val()||{};
+        const up={};
+        Object.keys(posts).forEach(k=>{ up[PATH+"/"+k]=null; });
+        Object.keys(own).forEach(k=>{ up[OWN+"/"+k]=null; if(own[k]) up[MINE+"/"+own[k]+"/"+k]=null; });
+        Object.keys(likes).forEach(k=>{ up[LIKES+"/"+k]=null; });
+        Object.keys(cmts).forEach(pk=>{ up[CMT+"/"+pk]=null; });
+        Object.keys(cown).forEach(ck=>{ up[COWN+"/"+ck]=null; if(cown[ck]) up[CMINE+"/"+cown[ck]+"/"+ck]=null; });
+        const keys=Object.keys(up), jobs=[];
+        for(let i=0;i<keys.length;i+=200){ const part={}; keys.slice(i,i+200).forEach(k=>{ part[k]=null; }); jobs.push(d.ref().update(part)); }
+        return Promise.all(jobs);
+      }).then(()=>{
+        busy=false; step="panel"; if(curPost) closePost(); aOv.classList.remove("open");
+      }).catch(er=>{
+        busy=false; step="panel"; render();
+        alert("刪除失敗（"+((er&&er.code)||"未知原因")+"），請檢查 Firebase 規則是否允許管理員刪除。");
+      });
+    }
+    aBtn.addEventListener("click",()=>{ if(!Auth.requireAdmin()) return; step="panel"; render(); aOv.classList.add("open"); });
+    document.getElementById("emoAdminClose").addEventListener("click",close);
+    aBody.addEventListener("click",e=>{ if(e.target.closest&&e.target.closest("[data-a='close']")) close(); });
+    aOv.addEventListener("click",e=>{ if(e.target===aOv) close(); });
+  })();
   setInterval(()=>{ const u=uidNow(); if(u!==cMineUid) watchCMine(u); updateCards(); },1500);
   setInterval(syncAdmin,1500);
   window.addEventListener("load",()=>setTimeout(subscribe,300));
