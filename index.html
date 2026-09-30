@@ -3727,7 +3727,7 @@ const Auth=(function(){
   let inbox=[],inboxRef=null,inboxUid=null,inboxInit=false,badge=null,toastEl=null,toastT=null;
   const NOTI={kill:{t:"你的角色被擊殺",c:"bad"},mad:{t:"你的角色陷入瘋狂",c:"bad"},hit:{t:"你的角色受到攻擊",c:"warn"},torture:{t:"你的角色遭到折磨",c:"warn"},accident:{t:"你的角色遭遇醫療事故",c:"warn"},heal:{t:"你的角色受到治療",c:"good"},support:{t:"你的角色獲得資助",c:"good"},sys:{t:"系統通知",c:"sys"},evt:{t:"通知",c:"sys"}};
   const unread=()=>inbox.filter(x=>!x.r).length;
-  const BACK='<button class="au-back au_back">‹ 返回</button>';   // 子頁面左上角：返回個人檔案首頁
+  const BACK='<div class="au-stick bk"><button class="au-back au_back">‹ 返回</button></div>';   // 子頁面左上角：返回個人檔案首頁
   /* ---------- 綁定一覽（管理員） ---------- */
   let bindFilter="all",bindShow="all",bindSort=false,nickCache={};   // nickCache：uid → 暱稱（undefined=沒查過、null=查詢中、""=沒有暱稱）
   const FSHORT={"實驗體":"實驗體","醫療清潔部隊":"醫療隊","資助者":"資助者"};
@@ -3962,7 +3962,11 @@ const Auth=(function(){
 #authBox .au-cta .confirm-btn{margin:0;width:100%;padding:15px 14px;font-size:15px}
 #authBox .au-back{display:inline-block;margin:0 0 12px -4px;padding:4px 10px 4px 4px;background:none;border:none;color:var(--clinical);font-family:var(--mono);font-size:13px;letter-spacing:.1em;cursor:pointer}
 #authBox .au-back:hover{color:var(--bone)}
-#authBox .au-empty.small{padding:9px 12px;font-size:12px;opacity:.5}`;
+#authBox .au-empty.small{padding:9px 12px;font-size:12px;opacity:.5}
+#authBox .au-stick{position:sticky;top:0;z-index:6;background:var(--bg-panel-2);margin:-28px -24px 16px;padding:28px 24px 0}
+#authBox .au-stick.bk{padding-bottom:8px;border-bottom:1px solid var(--line)}
+#authBox .au-stick .au-back{margin:0}
+#authBox .au-stick .au-head{margin-bottom:0;padding-bottom:14px}`;
     document.head.appendChild(st);
   }
   function load(){
@@ -4155,7 +4159,7 @@ const Auth=(function(){
     const keep=b.dataset.view===view?b.scrollTop:0; b.dataset.view=view;
     let h="";
     if(view==="nick"){
-      h+='<div class="modal-title">'+(nick?"修改暱稱":"先取個暱稱吧")+'</div><span class="field-label">暱稱（1–50 字）</span><input class="text-input" id="au_nick" maxlength="50" placeholder="暱稱｜陣營｜角色名，ex：汪汪｜主辦方/實驗體｜十字，同DC暱稱" value="'+esc(nick)+'"><button class="confirm-btn" id="au_sn">儲存</button>';
+      h+=(nick?BACK:"")+'<div class="modal-title">'+(nick?"修改暱稱":"先取個暱稱吧")+'</div><span class="field-label">暱稱（1–50 字）</span><input class="text-input" id="au_nick" maxlength="50" placeholder="暱稱｜陣營｜角色名，ex：汪汪｜主辦方/實驗體｜十字，同DC暱稱" value="'+esc(nick)+'"><button class="confirm-btn" id="au_sn">儲存</button>';
     }else if(view==="claim"){
       h+=BACK+'<div class="modal-title" style="font-size:17px">申請認領角色</div>';
       const pk=Object.keys(pend).filter(k=>!isApproved(pend[k])), ak=Object.keys(pend).filter(k=>isApproved(pend[k]));
@@ -4190,11 +4194,13 @@ const Auth=(function(){
     }else if(view==="admin"){
       h+=BACK+'<div class="modal-title" style="font-size:17px">待批准的申請</div><div id="au_list" class="modal-note">讀取中…</div>';
     }else if(view==="fav"){
-      h+=BACK+'<div class="modal-title">收藏的實驗體</div><div class="modal-note">收藏後，會在個人檔案顯示他的面板；行動選目標時，他會置頂並標示 ☆。</div>'
-        +roster("實驗體").map(x=>{ const on=favs.has(String(x.id)); return '<div class="au-favrow'+(on?" on":"")+'" data-id="'+esc(x.id)+'"><span class="au-star">☆</span><span class="au-fn">編號 '+esc(x.id)+'　'+esc(x.name)+'</span><span class="au-fs">'+(on?"已收藏":"點擊收藏")+'</span></div>'; }).join("");
+      h+=BACK+'<div class="modal-title" style="font-size:17px">收藏的實驗體</div><div class="modal-note">收藏後，會在個人檔案顯示他的面板；行動選目標時，他會置頂並標示 ☆。</div>'
+        +'<span class="field-label">陣營</span><select class="pick" id="au_ff" disabled><option>實驗體</option></select><span class="field-label">角色（☆ ＝已收藏）</span><select class="pick" id="au_fc" size="5">'
+        +roster("實驗體").map(x=>'<option value="'+esc(x.id)+'">'+(favs.has(String(x.id))?"☆ ":"")+esc(x.id)+" "+esc(x.name)+'</option>').join("")
+        +'</select><button class="confirm-btn" id="au_fb">收藏</button>';
     }else{
       const pn=Object.keys(pend).filter(k=>!isApproved(pend[k])).length, an=Object.keys(pend).length-pn, un=unread();
-      h+='<div class="modal-eyebrow">帳號</div><div class="au-head"><div class="au-hrow"><div class="au-hn">'+esc(nick)+'</div><button class="au-edit au_row" data-v="nick" title="編輯暱稱"><svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M19,19V12.31L21,10.31V19A2,2 0 0,1 19,21H5A2,2 0 0,1 3,19V5A2,2 0 0,1 5,3H13.69L11.69,5H5V19H19M21.7,7.35L18.65,4.3L20.07,2.88C20.46,2.5 21.09,2.5 21.48,2.88L23.12,4.5C23.5,4.91 23.5,5.54 23.12,5.93L21.7,7.35M19.94,8.06L10,18H7V15L16.94,5.06L19.94,8.06Z"/></svg></button></div><span class="au-role'+(admin?" adm":"")+'">'+(admin?"管理員":"帳號")+'</span></div>'
+      h+='<div class="au-stick"><div class="modal-eyebrow">帳號</div><div class="au-head"><div class="au-hrow"><div class="au-hn">'+esc(nick)+'</div><button class="au-edit au_row" data-v="nick" title="編輯暱稱"><svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M19,19V12.31L21,10.31V19A2,2 0 0,1 19,21H5A2,2 0 0,1 3,19V5A2,2 0 0,1 5,3H13.69L11.69,5H5V19H19M21.7,7.35L18.65,4.3L20.07,2.88C20.46,2.5 21.09,2.5 21.48,2.88L23.12,4.5C23.5,4.91 23.5,5.54 23.12,5.93L21.7,7.35M19.94,8.06L10,18H7V15L16.94,5.06L19.94,8.06Z"/></svg></button></div><span class="au-role'+(admin?" adm":"")+'">'+(admin?"管理員":"帳號")+'</span></div></div>'
         +(an?'<div class="au-pend click au_row" data-v="claim"><div class="au-pend-h">已批准</div><div class="au-pend-s">你有 '+an+' 筆申請已批准，點此查看 ›</div></div>':"")
         +(pn?'<div class="au-pend click au_row" data-v="claim"><div class="au-pend-h">等待批准</div><div class="au-pend-s">你有 '+pn+' 筆申請正在等管理員審核，點此查看／取消 ›</div></div>':"")
         +row("inbox",MAIL_ICON,un?'<span class="au-badge amber">未讀 '+un+'</span>':"無新通知")
@@ -4203,15 +4209,22 @@ const Auth=(function(){
         +'<div class="au-sec"><span>收藏的實驗體</span><button class="au-mini au_row" data-v="fav">＋ 選擇收藏</button></div><div id="au_favcards"></div>'
         +(admin?"":'<div class="modal-note" style="word-break:break-all;font-size:11px;opacity:.5;margin-top:16px">UID：'+user.uid+"</div>");
     }
-    h+='<button class="modify-btn" id="au_x">關閉</button>';
+    if(!nick) h+='<button class="modify-btn" id="au_x">關閉</button>';
     if(view==="home"||!nick) h+='<div class="au-outwrap"><button class="au-logout" id="au_out">登出</button></div>';
     b.innerHTML=h; b.scrollTop=keep;
-    b.querySelector("#au_x").onclick=()=>{ if(view!=="home"&&nick){ view="home"; render(); } else hide(); };
+    const ax=b.querySelector("#au_x"); if(ax) ax.onclick=hide;
     b.querySelectorAll(".au_back").forEach(x=>x.onclick=()=>{ view="home"; render(); });
     b.querySelectorAll(".au_row").forEach(r=>r.onclick=()=>{ if(r.dataset.v==="bind") nickCache={}; view=r.dataset.v; render(); });
     const addc=b.querySelector("#au_addchar");
     if(addc) addc.onclick=()=>{ if(!admin){ alert("只有管理員可以新增角色"); return; } hide(); openAddCharacter(); };
-    b.querySelectorAll(".au-favrow").forEach(r=>r.onclick=()=>{ const id=r.dataset.id; if(favs.has(id)) favs.delete(id); else favs.add(id); saveFavs(); render(); });
+    if(view==="fav"){
+      const fc=b.querySelector("#au_fc"), fb=b.querySelector("#au_fb");
+      const lab=()=>{ fb.textContent=fc.value?(favs.has(String(fc.value))?"取消收藏":"收藏"):"收藏"; };
+      fc.onchange=lab; lab();
+      fb.onclick=()=>{ const id=fc.value; if(!id) return alert("請選擇角色");
+        if(favs.has(id)) favs.delete(id); else favs.add(id); saveFavs();
+        const st=fc.scrollTop; render(); const n=b.querySelector("#au_fc"); if(n){ n.value=id; n.scrollTop=st; n.onchange(); } };
+    }
     const out=b.querySelector("#au_out"); if(out) out.onclick=()=>{
       working="登出中…"; view="home"; render();
       setTimeout(()=>{ firebase.auth().signOut().catch(e=>{ working=""; notice=""; if(isOpen()) render(); alert("登出失敗："+(e.code||e.message)); }); },900);
@@ -5367,8 +5380,10 @@ function renderAddFactionStep(){
     '<div class="modal-eyebrow">新增角色</div>' +
     '<div class="modal-title">要新增哪個陣營的角色？</div>' +
     ADD_FACTIONS.map((f, i) => '<button class="choice-btn" onclick="renderAddNameStep(' + i + ')">' + f.label + '</button>').join("") +
-    '<button class="modify-btn" onclick="closeModal()">取消</button>';
+    '<button class="modify-btn" onclick="backToProfile()">取消</button>';
 }
+
+function backToProfile(){ closeModal(); try{ Auth.openPanel(); }catch(e){} }
 
 function renderAddNameStep(i){
   addFactionIdx = i;
@@ -5399,7 +5414,7 @@ function renderAddDoneStep(){
     '<div class="modal-title">已新增到' + f.roster + '</div>' +
     '<div class="modal-note">' + f.label + '名冊裡多了一位新角色（編號 ' + addedRef.id + '）。</div>' +
     '<button class="confirm-btn" onclick="goToAddedCharacter()">前往查看</button>' +
-    '<button class="modify-btn" onclick="closeModal()">關閉</button>';
+    '<button class="modify-btn" onclick="backToProfile()">關閉</button>';
 }
 
 function goToAddedCharacter(){
