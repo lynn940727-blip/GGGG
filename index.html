@@ -2769,6 +2769,11 @@
 .emo-cl{flex:none;width:36px;display:flex;flex-direction:column;align-items:center}
 .emo-cav{flex:none;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--bone);font-family:var(--sans);font-size:15px;font-weight:600}
 .emo-cav.sm{width:28px;height:28px;font-size:12px}
+.emo-cav.anon{background:#5c0d14;border:1px solid rgba(255,59,71,.38);color:#ff3b47;font-weight:800;font-size:19px;line-height:1}
+.emo-cav.anon.sm{font-size:15px}
+.emo-cav.role-empty{background:rgba(255,255,255,.07);border:1.5px dashed var(--bone-dim)}
+.emo-cav.role-img{background:rgba(255,255,255,.07);overflow:hidden}
+.emo-cav.role-img img{width:100%;height:100%;object-fit:cover;display:block;border-radius:50%}
 .emo-cline{flex:1;width:2px;margin-top:6px;background:rgba(230,221,207,.2);border-radius:1px}
 .emo-cm{flex:1;min-width:0}
 .emo-clabel{font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--bone-dim);margin-bottom:2px}
@@ -8537,6 +8542,16 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
     cCnt.textContent=cTa.value.length+"/200";
   }
   const canManageC=ck=>isAdmin()||cMine.has(ck);
+  // 依名稱在三個陣營的名冊裡找角色（留言只存名稱），取得該角色上傳的頭像
+  function roleByName(nm){
+    const name=String(nm||"").trim(); if(!name) return null;
+    let hit=null;
+    ["實驗體","醫療清潔部隊","資助者"].forEach(f=>{
+      if(hit) return;
+      try{ const arr=(typeof rosterOf==="function"?rosterOf(f):[])||[]; hit=arr.find(x=>x&&!x.deleted&&String(x.name||"").trim()===name)||null; }catch(e){}
+    });
+    return hit;
+  }
   function renderPost(){
     const it=list.find(x=>x.k===curPost);
     if(!it){ closePost(); return; }
@@ -8552,9 +8567,20 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
     cs.forEach(c=>{ byKey[c.k]=c; });
     cs.forEach(c=>{ if(c.p&&c.p!==c.k&&byKey[c.p]) (kids[c.p]=kids[c.p]||[]).push(c); else tops.push(c); });
     const flat=k=>{ let o=[]; (kids[k]||[]).forEach(x=>{ o.push(x); o=o.concat(flat(x.k)); }); return o.sort((a,b)=>a.ts-b.ts||(a.k<b.k?-1:1)); };
-    const avatar=(nm,sm)=>{ const ch=Array.from(nm||"匿")[0]; let bg="rgba(230,221,207,.16)";
-      if(nm){ let h=0; for(const x of nm) h=(h*31+x.charCodeAt(0))%360; bg="hsl("+h+",38%,30%)"; }
-      return '<div class="emo-cav'+(sm?" sm":"")+'" style="background:'+bg+'">'+esc(ch)+'</div>'; };
+    const avatar=(nm,sm)=>{
+      const cls="emo-cav"+(sm?" sm":"");
+      // 匿名：統一紅底亮紅問號
+      if(!nm) return '<div class="'+cls+' anon">?</div>';
+      // 角色：換成該角色的頭像；沒上傳頭像就是虛線底色（沒有加號）
+      const r=roleByName(nm);
+      if(r){
+        return r.avatarUrl
+          ? '<div class="'+cls+' role-img"><img src="'+esc(r.avatarUrl)+'" alt=""></div>'
+          : '<div class="'+cls+' role-empty"></div>';
+      }
+      // 實名：維持原本的首字頭像
+      const ch=Array.from(nm)[0]; let h=0; for(const x of nm) h=(h*31+x.charCodeAt(0))%360;
+      return '<div class="'+cls+'" style="background:hsl('+h+',38%,30%)">'+esc(ch)+'</div>'; };
     // 一則留言（含它底下的回覆）。超過三層的回覆不再往內縮，改成同一層並標註「回覆誰」
     const one=(c,depth,label)=>{
       const mng=canManageC(c.k), ed=(editingC===c.k);
