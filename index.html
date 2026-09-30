@@ -2702,18 +2702,26 @@
 @media (max-width:520px){#emoRoom .roster-head-right{width:100%;align-items:center}}
 .emo-grid .card{gap:18px;animation:bpBodyIn .5s ease both}
 .emo-grid .card-top .status{max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.emo-grid .card{padding:24px 26px 20px;gap:14px}
+.emo-grid .card{padding:24px 26px 20px;gap:14px;min-width:0}
+.emo-grid .emo-text{overflow-wrap:anywhere}
+@media (min-width:641px){#emoRoom .emo-grid{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}}
+@media (max-width:640px){#emoRoom .emo-grid{grid-template-columns:minmax(0,1fr)}}
+@media (min-width:601px){.emo-post-box{border-radius:14px}.emo-composer{margin-left:20px;margin-right:20px}}
 .emo-head{display:flex;align-items:baseline;gap:8px;position:relative;padding-right:34px;min-height:24px}
 .emo-name{font-family:var(--sans);font-size:15px;font-weight:600;color:var(--bone);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .emo-when{font-family:var(--mono);font-size:11px;color:var(--bone-dim);white-space:nowrap;flex:none}
 .emo-more{position:absolute;right:-8px;top:-6px;width:34px;height:34px;display:none;align-items:center;justify-content:center;background:none;border:none;color:var(--bone-dim);cursor:pointer;transition:color .2s ease}
 .emo-more:hover{color:var(--bone)}
 .emo-more svg{width:20px;height:20px;display:block}
-.emo-menu{display:none;position:absolute;right:-4px;top:30px;z-index:6;min-width:104px;background:var(--bg-panel-2);border:1px solid var(--line);box-shadow:0 8px 24px rgba(0,0,0,.55)}
-.emo-menu.open{display:block}
-.emo-menu button{display:block;width:100%;background:none;border:none;color:var(--bone);font-family:var(--mono);font-size:13px;letter-spacing:.1em;padding:11px 16px;text-align:left;cursor:pointer}
-.emo-menu button:hover{background:rgba(181,2,15,.16)}
-.emo-menu button[data-a="del"]{color:#c4202c}
+.emo-menu{display:none;position:absolute;right:-4px;top:32px;z-index:6;min-width:140px;padding:6px;background:#1c1514;border:1px solid rgba(230,221,207,.16);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.6);transform-origin:top right}
+.emo-menu.open{display:block;animation:emoMenuIn .14s ease}
+@keyframes emoMenuIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:none}}
+.emo-menu button{display:flex;align-items:center;gap:12px;width:100%;background:none;border:none;border-radius:8px;color:var(--bone);font-family:var(--sans);font-size:15px;letter-spacing:.06em;padding:11px 12px;text-align:left;cursor:pointer;transition:background .15s ease}
+.emo-menu button svg{width:18px;height:18px;flex:none}
+.emo-menu button:hover,.emo-menu button:focus-visible{background:rgba(230,221,207,.09);outline:none}
+.emo-menu button[data-a="del"]{color:#e0555e}
+.emo-menu button[data-a="del"]:hover{background:rgba(224,85,94,.12)}
+.emo-menu button+button{margin-top:2px}
 .emo-grid .edit-btn{display:none}
 .emo-text{font-family:var(--sans);font-size:15px;line-height:1.8;color:var(--bone);white-space:pre-wrap;word-break:break-word}
 .emo-form{display:block}
@@ -2734,10 +2742,10 @@
 @keyframes emoPop{50%{transform:scale(1.25)}}
 .emo-grid .card{cursor:pointer}
 .emo-post-box{width:min(560px,100vw);height:min(86vh,760px);max-height:none;padding:0;display:flex;flex-direction:column;overflow:hidden}
-.emo-ptop{flex:none;position:relative;display:flex;align-items:center;justify-content:center;padding:14px 16px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:13px;letter-spacing:.3em;color:var(--bone)}
-.emo-pclose{position:absolute;left:6px;top:50%;transform:translateY(-50%);width:40px;height:40px;background:none;border:none;color:var(--bone-dim);font-size:26px;line-height:1;cursor:pointer}
-.emo-pclose:hover{color:var(--bone)}
-.emo-pscroll{flex:1;min-height:0;overflow-y:auto;padding:18px 20px 40px}
+.emo-ptop{flex:none;display:flex;align-items:center;min-height:56px;padding:0 60px 0 20px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:13px;letter-spacing:.3em;color:var(--bone)}
+.emo-post-box .modal-close{top:10px;right:10px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;z-index:2}
+#emoPostOverlay{-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+.emo-pscroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:18px 20px 40px;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
 .emo-phead{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}
 .emo-phead .emo-name{font-size:16px}
 .emo-pscroll>.emo-text{font-size:16px;margin-bottom:14px}
@@ -2747,12 +2755,22 @@
 .emo-c:last-child{border-bottom:none}
 .emo-chead{display:flex;align-items:baseline;gap:8px;position:relative;padding-right:34px;min-height:22px;margin-bottom:4px}
 .emo-c-body{font-family:var(--sans);font-size:15px;line-height:1.7;color:var(--bone);white-space:pre-wrap;word-break:break-word}
+.emo-c-body{overflow-wrap:anywhere}
+.emo-c-edit textarea{width:100%;box-sizing:border-box;min-height:74px;resize:vertical;background:rgba(255,255,255,.07);border:1px solid var(--line);border-radius:10px;outline:none;color:var(--bone);font-family:var(--sans);font-size:15px;line-height:1.6;padding:10px 12px}
+.emo-c-edit textarea:focus{border-color:var(--bone-dim)}
+.emo-c-bar{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:8px}
+.emo-c-bar .n{margin-right:auto;font-family:var(--mono);font-size:11px;color:var(--clinical)}
+.emo-c-bar button{background:none;border:1px solid var(--line);border-radius:16px;color:var(--bone-dim);font-family:var(--sans);font-size:13px;letter-spacing:.08em;padding:6px 16px;cursor:pointer}
+.emo-c-bar button:hover{color:var(--bone);border-color:var(--bone-dim)}
+.emo-c-bar button.go{color:var(--bone);border-color:var(--bone);background:rgba(181,2,15,.25)}
+.emo-act:focus-visible,.emo-more:focus-visible,.emo-post-btn:focus-visible,.emo-cmodebtn:focus-visible,.emo-csend:focus-visible{outline:1px solid var(--bone-dim);outline-offset:2px}
 .emo-cempty{text-align:center;font-family:var(--mono);font-size:12px;letter-spacing:.12em;color:var(--clinical-dim);padding:36px 0}
 .emo-composer{flex:none;display:flex;align-items:flex-end;gap:8px;margin:8px 14px calc(12px + env(safe-area-inset-bottom,0px));padding:5px 6px 5px 6px;background:rgba(255,255,255,.07);border-radius:26px}
-.emo-cmodebtn{flex:none;align-self:center;height:32px;padding:0 14px;border-radius:16px;border:1px solid var(--line);background:transparent;color:var(--bone-dim);font-family:var(--mono);font-size:12px;letter-spacing:.12em;cursor:pointer;transition:all .2s ease}
-.emo-cmodebtn.on{color:var(--bone);background:rgba(181,2,15,.22);border-color:rgba(181,2,15,.55)}
-.emo-composer textarea{flex:1;min-width:0;resize:none;background:transparent;border:none;outline:none;color:var(--bone);font-family:var(--sans);font-size:15px;line-height:1.5;padding:7px 4px;max-height:120px}
-.emo-composer textarea::placeholder{color:var(--bone-dim)}
+.emo-cmodebtn{flex:none;align-self:center;height:32px;padding:0 14px;border-radius:16px;border:1px solid var(--bone);background:transparent;color:var(--bone);font-family:var(--mono);font-size:12px;letter-spacing:.12em;cursor:pointer;transition:all .2s ease}
+.emo-cmodebtn.on{color:var(--bone);background:rgba(181,2,15,.25);border-color:var(--bone)}
+.emo-composer:focus-within{background:rgba(255,255,255,.1)}
+.emo-composer textarea{flex:1;min-width:0;min-height:38px;height:38px;box-sizing:border-box;resize:none;background:transparent;border:none;outline:none;color:var(--bone);font-family:var(--sans);font-size:15px;line-height:1.5;padding:7px 4px;max-height:120px}
+.emo-composer textarea::placeholder{color:var(--bone-dim);opacity:1;font-size:14px}
 .emo-ccount{display:none;align-self:center;font-family:var(--mono);font-size:11px;color:var(--clinical);white-space:nowrap}
 .emo-composer.typing .emo-ccount{display:block}
 .emo-csend{flex:none;align-self:center;width:38px;height:38px;border-radius:50%;border:none;background:none;color:var(--bone);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:color .2s ease}
@@ -3376,7 +3394,8 @@
 
 <div class="modal-overlay" id="emoPostOverlay">
   <div class="modal-box emo-post-box">
-    <div class="emo-ptop"><button type="button" class="emo-pclose" id="emoPostClose" title="關閉">×</button>貼文</div>
+    <button class="modal-close" id="emoPostClose" title="關閉">×</button>
+    <div class="emo-ptop">貼文</div>
     <div class="emo-pscroll" id="emoPScroll">
       <div class="emo-phead"><span class="emo-name" id="emoPName"></span><span class="emo-when" id="emoPTime"></span></div>
       <div class="emo-text" id="emoPText"></div>
@@ -8210,6 +8229,7 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
   if(!grid||!ta||!send) return;
   const delBtn=document.getElementById("emoDel"), cancelBtn=document.getElementById("emoCancel"), eyebrowEl=document.getElementById("emoEyebrow"), modeLabel=document.getElementById("emoModeLabel"), modeBox=document.getElementById("emoMode"), modeHint=document.getElementById("emoModeHint"), titleEl=document.getElementById("emoTitle");
   const LIKES="emotion_likes", CMT="emotion_comments", COWN="emotion_comment_owners", CMINE="emotion_comment_mine";
+  let editingC=null, editDraft="", focusEdit=false;
   let likeMap={}, cmtMap={}, curPost=null, cmode="anon", cMine=new Set(), cMineUid=null, cMineRef=null, lastC=0;
   let db=null, ref=null, list=[], lastSend=0, mode="anon", editKey=null, mineSet=new Set(), mineUid=null, mineRef=null;
   const esc=t=>String(t==null?"":t).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -8229,6 +8249,8 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
     modeHint.textContent=m==="named"?("卡片上會顯示你的暱稱："+nk):"卡片上只會顯示「匿名」。";
   }
   modeBox.addEventListener("click",e=>{ const b=e.target.closest&&e.target.closest("button"); if(b) setMode(b.dataset.m); });
+  const PEN='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg>';
+  const BIN='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V4.5h6V7"/><path d="M6.5 7l1 13h9l1-13"/><path d="M10 11v6M14 11v6"/></svg>';
   const DOTS='<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>';
   // 名字太長：「名字｜陣營/…｜…」只留到陣營為止（汪汪｜主辦方……）；沒有分隔符但超過 6 字則只留前 4 字
   function shortName(nm){
@@ -8255,7 +8277,7 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
     meta.textContent="收容數量 "+pad(list.length,3);
     if(!list.length){ grid.innerHTML='<div class="emo-empty">收容室目前是空的。</div>'; return; }
     grid.innerHTML=list.slice().reverse().map(x=>
-      '<div class="card ok" data-k="'+esc(x.k)+'"><div class="emo-head"><span class="emo-name">'+esc(shortName(x.nm))+'</span><span class="emo-when" data-ts="'+(x.ts||0)+'" title="'+esc(fmt(x.ts))+'">'+esc(ago(x.ts))+'</span><button type="button" class="emo-more" title="更多">'+DOTS+'</button><div class="emo-menu"><button type="button" data-a="edit">編輯</button><button type="button" data-a="del">刪除</button></div></div><div class="emo-text">'+esc(x.t)+'</div>'+actionsHtml(x.k)+'</div>'
+      '<div class="card ok" data-k="'+esc(x.k)+'"><div class="emo-head"><span class="emo-name">'+esc(shortName(x.nm))+'</span><span class="emo-when" data-ts="'+(x.ts||0)+'" title="'+esc(fmt(x.ts))+'">'+esc(ago(x.ts))+'</span><button type="button" class="emo-more" title="更多">'+DOTS+'</button><div class="emo-menu"><button type="button" data-a="edit">'+PEN+'編輯</button><button type="button" data-a="del">'+BIN+'刪除</button></div></div><div class="emo-text">'+esc(x.t)+'</div>'+actionsHtml(x.k)+'</div>'
     ).join("");
     syncAdmin();
   }
@@ -8405,11 +8427,13 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
     cModeBtn.textContent=m==="named"?"實名":"匿名";
     cModeBtn.classList.toggle("on",m==="named");
     const nk=(window.Auth&&Auth.nick&&Auth.nick())||"";
-    cTa.placeholder=m==="named"?("以「"+(nk||"暱稱")+"」留言…"):"以匿名身分留言…";
+    cTa.placeholder=m==="named"?"點擊左邊實名按鈕切換為匿名":"點擊左邊匿名按鈕切換為實名";
+    cModeBtn.title=m==="named"?("目前以「"+(nk||"暱稱")+"」留言"):"目前以匿名留言";
   }
   cModeBtn.addEventListener("click",()=>setCMode(cmode==="anon"?"named":"anon"));
   function fitComposer(){
-    cTa.style.height="auto"; cTa.style.height=Math.min(cTa.scrollHeight,120)+"px";
+    cTa.style.height="auto";
+    const h=cTa.scrollHeight; if(h>0) cTa.style.height=Math.min(Math.max(h,38),120)+"px";
     composer.classList.toggle("typing",cTa.value.length>0);
     cCnt.textContent=cTa.value.length+"/200";
   }
@@ -8422,15 +8446,29 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
     pText.textContent=it.t;
     pActs.innerHTML=actionsHtml(it.k).replace(/^<div class="emo-actions">|<\/div>$/g,"");
     const cs=cmtList(it.k);
-    pList.innerHTML=cs.length?cs.map(c=>
-      '<div class="emo-c" data-ck="'+esc(c.k)+'"><div class="emo-chead"><span class="emo-name">'+esc(shortName(c.nm))+'</span><span class="emo-when" title="'+esc(fmt(c.ts))+'">'+esc(ago(c.ts))+'</span>'+(canManageC(c.k)?'<button type="button" class="emo-more" style="display:flex" title="更多">'+DOTS+'</button><div class="emo-menu"><button type="button" data-a="del">刪除</button></div>':'')+'</div><div class="emo-c-body">'+esc(c.t)+'</div></div>'
-    ).join(""):'<div class="emo-cempty">還沒有留言，來說點什麼。</div>';
+    const hadFocus=!!(document.activeElement&&document.activeElement.classList&&document.activeElement.classList.contains("emo-c-edit-ta"));
+    if(editingC&&!cs.some(c=>c.k===editingC)) editingC=null;
+    pList.innerHTML=cs.length?cs.map(c=>{
+      const mng=canManageC(c.k), ed=(editingC===c.k);
+      return '<div class="emo-c" data-ck="'+esc(c.k)+'"><div class="emo-chead"><span class="emo-name">'+esc(shortName(c.nm))+'</span><span class="emo-when" title="'+esc(fmt(c.ts))+'">'+esc(ago(c.ts))+'</span>'+(mng&&!ed?'<button type="button" class="emo-more" style="display:flex" title="更多">'+DOTS+'</button><div class="emo-menu"><button type="button" data-a="cedit">'+PEN+'編輯</button><button type="button" data-a="cdel">'+BIN+'刪除</button></div>':'')+'</div>'+
+        (ed?'<div class="emo-c-edit"><textarea class="emo-c-edit-ta" maxlength="200">'+esc(editDraft)+'</textarea><div class="emo-c-bar"><span class="n">'+editDraft.length+'/200</span><button type="button" data-a="ccancel">取消</button><button type="button" class="go" data-a="csave">儲存</button></div></div>':'<div class="emo-c-body">'+esc(c.t)+'</div>')+'</div>';
+    }).join(""):'<div class="emo-cempty">還沒有留言，來說點什麼。</div>';
+    if(editingC&&(hadFocus||focusEdit)){
+      const ta2=pList.querySelector(".emo-c-edit-ta");
+      if(ta2){ ta2.focus(); ta2.setSelectionRange(ta2.value.length,ta2.value.length); }
+      focusEdit=false;
+    }
   }
   function openPost(k){
-    curPost=k; setCMode(cmode); cTa.value=""; fitComposer();
+    curPost=k; editingC=null; setCMode(cmode); cTa.value="";
     renderPost(); cmtOv.classList.add("open"); pScroll.scrollTop=0;
+    lockScroll(true); fitComposer();
   }
-  function closePost(){ curPost=null; cmtOv.classList.remove("open"); }
+  function closePost(){ curPost=null; editingC=null; cmtOv.classList.remove("open"); lockScroll(false); }
+  function lockScroll(on){
+    document.documentElement.style.overflow=on?"hidden":"";
+    document.body.style.overflow=on?"hidden":"";
+  }
   document.getElementById("emoPostClose").addEventListener("click",closePost);
   cmtOv.addEventListener("click",e=>{ if(e.target===cmtOv) closePost(); });
   cTa.addEventListener("input",fitComposer);
@@ -8468,8 +8506,20 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
       const was=mn.classList.contains("open"); closeMenus(); if(!was) mn.classList.add("open");
       return;
     }
-    const del=e.target.closest&&e.target.closest(".emo-menu button[data-a='del']");
-    if(del){ const row=del.closest(".emo-c"); closeMenus(); if(row) deleteComment(curPost,row.dataset.ck); return; }
+    const act=e.target.closest&&e.target.closest(".emo-menu button, .emo-c-bar button");
+    if(act){
+      const row=act.closest(".emo-c"), ck=row&&row.dataset.ck, a=act.dataset.a; closeMenus();
+      if(!ck) return;
+      if(a==="cdel") deleteComment(curPost,ck);
+      else if(a==="cedit"){
+        if(!canManageC(ck)) return;
+        const c=cmtList(curPost).find(x=>x.k===ck); if(!c) return;
+        editingC=ck; editDraft=c.t; focusEdit=true; renderPost();
+      }
+      else if(a==="ccancel"){ editingC=null; renderPost(); }
+      else if(a==="csave") saveCommentEdit(curPost,ck);
+      return;
+    }
     if(!(e.target.closest&&e.target.closest(".emo-menu"))) closeMenus();
   });
   cSend.addEventListener("click",()=>{
@@ -8487,6 +8537,36 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
     d.ref().update(up).then(()=>{ lastC=Date.now(); cTa.value=""; fitComposer(); setTimeout(()=>{ pScroll.scrollTop=pScroll.scrollHeight; },250); })
       .catch(er=>alert("留言失敗："+(er.code||er.message)))
       .then(()=>{ cSend.disabled=false; });
+  });
+  pList.addEventListener("input",e=>{
+    const t=e.target;
+    if(t&&t.classList&&t.classList.contains("emo-c-edit-ta")){
+      editDraft=t.value;
+      const n=t.closest(".emo-c-edit").querySelector(".n"); if(n) n.textContent=t.value.length+"/200";
+    }
+  });
+  function saveCommentEdit(pk,ck){
+    if(!canManageC(ck)) return;
+    const t=editDraft.trim();
+    if(!t){ alert("留言不能是空的"); return; }
+    const d=getDb(); if(!d) return alert("暫時無法連線");
+    d.ref(CMT+"/"+pk+"/"+ck).update({t:t.slice(0,200)})
+      .then(()=>{ editingC=null; renderPost(); })
+      .catch(er=>alert("儲存失敗："+(er.code||er.message)));
+  }
+  // 鍵盤：Esc 關閉選單／視窗；Ctrl／Cmd + Enter 送出留言或儲存編輯
+  document.addEventListener("keydown",e=>{
+    if(!cmtOv.classList.contains("open")) return;
+    if(e.key==="Escape"){
+      if(document.querySelector(".emo-menu.open")) closeMenus();
+      else if(editingC){ editingC=null; renderPost(); }
+      else { const c=document.getElementById("emoPostClose"); if(c) c.click(); }
+      return;
+    }
+    if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)){
+      if(e.target===cTa){ e.preventDefault(); cSend.click(); }
+      else if(e.target.classList&&e.target.classList.contains("emo-c-edit-ta")){ e.preventDefault(); saveCommentEdit(curPost,editingC); }
+    }
   });
   function deleteComment(pk,ck){
     if(!pk||!ck||!canManageC(ck)) return;
