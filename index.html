@@ -1549,14 +1549,14 @@
     text-shadow:0 0 6px rgba(210,32,46,.45);
   }
 
-  .result-actions{display:flex;gap:10px;margin-top:4px;}
-  .result-actions .modify-btn, .result-actions .confirm-btn{flex:1;width:auto;margin:0;padding:13px 8px;white-space:nowrap;}
-  .result-actions .modify-btn{flex:1.15;}
-  /* 顏色對調：「查看行動紀錄」變紅色，「確認」變半透明 */
-  .result-actions .modify-btn{background:rgba(181,2,15,0.32);border:1px solid var(--c-crit);color:var(--bone);}
-  .result-actions .modify-btn:hover{background:rgba(181,2,15,0.5);color:var(--bone);}
-  .result-actions .confirm-btn{background:transparent;border:1px solid var(--line);color:var(--bone-dim);}
-  .result-actions .confirm-btn:hover{background:rgba(255,255,255,0.05);color:var(--bone);}
+  .result-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:4px;}
+  .result-actions button{width:auto;margin:0;padding:13px 8px;white-space:nowrap;font-family:var(--mono);letter-spacing:0.08em;font-size:13px;cursor:pointer;transition:background 0.2s ease,color 0.2s ease;}
+  /* 第一排：前往查看（紅）｜查看行動紀錄（半透明）；第二排：確認（整排） */
+  .result-actions .rb-go{flex:1 1 calc(50% - 5px);background:rgba(181,2,15,0.32);border:1px solid var(--c-crit);color:var(--bone);}
+  .result-actions .rb-go:hover{background:rgba(181,2,15,0.5);}
+  .result-actions .rb-log{flex:1 1 calc(50% - 5px);background:transparent;border:1px solid var(--line);color:var(--bone-dim);}
+  .result-actions .rb-ok{flex:1 1 100%;background:transparent;border:1px solid var(--line);color:var(--bone-dim);}
+  .result-actions .rb-log:hover,.result-actions .rb-ok:hover{background:rgba(255,255,255,0.05);color:var(--bone);}
 
   /* ---------- MEDIC SQUAD PAGE (scoped) ---------- */
 
@@ -5193,9 +5193,28 @@ function openItemModal(){
 
 function resultBtns(){
   return '<div class="result-actions">' +
-    '<button class="modify-btn" onclick="viewActionLog()">查看行動紀錄</button>' +
-    '<button class="confirm-btn" onclick="closeModal()">確認</button>' +
+    '<button class="rb-go" onclick="viewResultChar()">前往查看</button>' +
+    '<button class="rb-log" onclick="viewActionLog()">查看行動紀錄</button>' +
+    '<button class="rb-ok" onclick="closeModal()">確認</button>' +
   '</div>';
+}
+// 前往查看：關掉視窗，捲到這次行動的角色卡（攻擊／治療／資助＝被行動的角色；重生／道具＝自己的角色）
+function viewResultChar(){
+  let f = "實驗體", id = null;
+  if(wizard.step === "actionResult"){
+    id = (wizard.targetIds && wizard.targetIds.length) ? wizard.targetIds[0] : wizard.targetId;
+  } else {
+    id = wizard.selfId; f = wizard.faction || "實驗體";
+  }
+  closeModal();
+  if(id == null) return;
+  setTimeout(() => {
+    try{
+      if(f === "醫療清潔部隊") medicApp.jumpToSubject(id);
+      else if(f === "資助者") sponsorApp.jumpTo(id);
+      else jumpToSubject(id);
+    }catch(e){ console.warn("view char failed", e); }
+  }, 60);
 }
 function viewActionLog(){
   closeModal();
