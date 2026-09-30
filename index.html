@@ -3965,13 +3965,16 @@ const Auth=(function(){
 #authBox .au-chip.on{border-color:var(--c-crit);color:var(--bone);background:rgba(181,2,15,.22)}
 #authBox .au-bsum{font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--bone-dim);margin:10px 0 4px}
 #authBox .au-brow{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:10px 12px;margin:7px 0;border:1px solid var(--line)}
-#authBox .au-brow.bound{background:rgba(79,157,120,.13);border-color:rgba(79,157,120,.5);border-left:4px solid #4f9d78}
-#authBox .au-brow.bound .au-bo{color:#8fd0b0}
+#authBox .au-brow.bound{background:rgba(181,2,15,.16);border-color:rgba(181,2,15,.55);border-left:4px solid var(--c-crit)}
+#authBox .au-brow.bound .au-bo{color:#e8737c}
 #authBox .au-brow.free{opacity:.45;border-style:dashed;background:transparent}
 #authBox .au-bn{font-size:15px;color:var(--bone);word-break:break-all}
 #authBox .au-bo{font-size:11px;margin-top:3px;color:var(--bone-dim);letter-spacing:.04em;word-break:break-all}
 #authBox .au-bo.none{color:#d08a2e}
-#authBox .au-bf{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--bone-dim);opacity:.7;white-space:nowrap;padding-top:3px}`;
+#authBox .au-bf{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--bone-dim);opacity:.7;white-space:nowrap;padding-top:3px}
+#authBox .au-br{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+#authBox .au-bunb{font-family:var(--mono);font-size:11px;letter-spacing:.08em;padding:4px 10px;border:1px solid rgba(181,2,15,.7);color:#e8737c;background:none;cursor:pointer}
+#authBox .au-bunb:hover{background:rgba(181,2,15,.3);color:var(--bone)}`;
     document.head.appendChild(st);
   }
   const MAIL_ICON='<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" style="vertical-align:-4px" role="img" aria-label="信箱"><title>信箱</title><rect x="3" y="5.5" width="18" height="13" rx="1.5"/><path d="M3.5 7l8.5 6.5L20.5 7"/></svg>';
@@ -4410,7 +4413,7 @@ const Auth=(function(){
           const u=x.s.owner; let sub;
           if(!u) sub='<div class="au-bo none">未綁定</div>';
           else{ const n=nickCache[u]; sub='<div class="au-bo">'+(n===undefined||n===null?"讀取中…":(n?esc(n):"已綁定（對方尚未設定暱稱）"))+'</div>'; }
-          return '<div class="au-brow '+(u?"bound":"free")+'"><div><div class="au-bn">編號 '+esc(x.s.id)+'　'+esc(x.s.name)+'</div>'+sub+'</div><span class="au-bf">'+FSHORT[x.f]+'</span></div>';
+          return '<div class="au-brow '+(u?"bound":"free")+'"><div><div class="au-bn">編號 '+esc(x.s.id)+'　'+esc(x.s.name)+'</div>'+sub+'</div><div class="au-br"><span class="au-bf">'+FSHORT[x.f]+'</span>'+(u?'<button class="au-bunb au_bunb" data-f="'+esc(x.f)+'" data-id="'+esc(x.s.id)+'">解綁</button>':"")+'</div></div>';
         }).join(""):'<div class="au-empty">'+(bindShow==="unbound"?"沒有未綁定的角色。":bindShow==="bound"?"沒有已綁定的角色。":"沒有角色。")+'</div>');
     }else if(view==="inbox"){
       ensureInboxStyle();
@@ -4478,6 +4481,13 @@ const Auth=(function(){
         else if(k==="sort") bindSort=!bindSort;
         else bindFilter=k;
         render(); });
+      b.querySelectorAll(".au_bunb").forEach(a=>a.onclick=()=>{
+        const f=a.dataset.f,id=a.dataset.id,s=roster(f).find(x=>String(x.id)===id);
+        if(!s||!s.owner) return;
+        const n=nickCache[s.owner];
+        if(!confirm("確定要解除「"+s.name+"」與"+(n?"「"+n+"」":"對方")+"的綁定嗎？對方需要重新申請並由管理員批准。")) return;
+        db().ref(ST[f][1]+"/s"+id+"/owner").remove().then(()=>{ s.owner=null; render(); }).catch(e=>alert("解綁失敗："+(e.code||e.message)));
+      });
       loadNicks(bindItems().list);
     }
     if(view==="inbox"){
