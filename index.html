@@ -3727,6 +3727,36 @@ const Auth=(function(){
   let inbox=[],inboxRef=null,inboxUid=null,inboxInit=false,badge=null,toastEl=null,toastT=null;
   const NOTI={kill:{t:"你的角色被擊殺",c:"bad"},mad:{t:"你的角色陷入瘋狂",c:"bad"},hit:{t:"你的角色受到攻擊",c:"warn"},torture:{t:"你的角色遭到折磨",c:"warn"},accident:{t:"你的角色遭遇醫療事故",c:"warn"},heal:{t:"你的角色受到治療",c:"good"},support:{t:"你的角色獲得資助",c:"good"},sys:{t:"系統通知",c:"sys"},evt:{t:"通知",c:"sys"}};
   const unread=()=>inbox.filter(x=>!x.r).length;
+  /* ---------- 綁定一覽（管理員） ---------- */
+  let bindFilter="all",bindOnly=false,nickCache={};   // nickCache：uid → 暱稱（undefined=沒查過、null=查詢中、""=沒有暱稱）
+  const FSHORT={"實驗體":"實驗體","醫療清潔部隊":"醫療隊","資助者":"資助者"};
+  function bindItems(){
+    const all=[];
+    Object.keys(ST).forEach(f=>{ if(bindFilter==="all"||bindFilter===f) roster(f).forEach(s=>all.push({f,s})); });
+    return {all,list:bindOnly?all.filter(x=>!x.s.owner):all};
+  }
+  function loadNicks(list){
+    const need=[...new Set(list.map(x=>x.s.owner).filter(u=>u&&nickCache[u]===undefined))];
+    if(!need.length) return;
+    need.forEach(u=>{ nickCache[u]=null; });
+    Promise.all(need.map(u=>db().ref("users/"+u+"/nick").once("value").then(s=>{ nickCache[u]=s.val()||""; }).catch(()=>{ nickCache[u]=""; })))
+      .then(()=>{ if(isOpen()&&view==="bind") render(); });
+  }
+  function ensureBindStyle(){
+    if(document.getElementById("bindStyle")) return;
+    const st=document.createElement("style"); st.id="bindStyle";
+    st.textContent=`
+#authBox .au-chips{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 6px}
+#authBox .au-chip{font-family:var(--mono);font-size:12px;letter-spacing:.08em;padding:6px 12px;border:1px solid var(--line);color:var(--bone-dim);background:none;cursor:pointer}
+#authBox .au-chip.on{border-color:var(--c-crit);color:var(--bone);background:rgba(181,2,15,.22)}
+#authBox .au-bsum{font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--bone-dim);margin:10px 0 4px}
+#authBox .au-brow{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:10px 2px;border-bottom:1px solid var(--line)}
+#authBox .au-bn{font-size:15px;color:var(--bone);word-break:break-all}
+#authBox .au-bo{font-size:11px;margin-top:3px;color:var(--bone-dim);letter-spacing:.04em;word-break:break-all}
+#authBox .au-bo.none{color:#d08a2e}
+#authBox .au-bf{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--bone-dim);opacity:.7;white-space:nowrap;padding-top:3px}`;
+    document.head.appendChild(st);
+  }
   const MAIL_ICON='<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" style="vertical-align:-4px" role="img" aria-label="信箱"><title>信箱</title><rect x="3" y="5.5" width="18" height="13" rx="1.5"/><path d="M3.5 7l8.5 6.5L20.5 7"/></svg>';
   function ensureInboxStyle(){
     if(document.getElementById("inboxStyle")) return;
@@ -4067,6 +4097,21 @@ const Auth=(function(){
       if(ak.length) h+='<div class="au-pend"><div class="au-pend-h">已批准</div><div class="au-pend-s">角色已綁定到你的帳號，可以在「我的角色」使用</div>'+ak.map(k=>'<div class="au-pend-t">'+esc(pend[k].f)+'　編號 '+esc(pend[k].id)+'　'+esc(pend[k].name)+'</div><button class="au-btn au_cancel" data-c="'+esc(k)+'">知道了</button>').join("")+'</div>';
       if(pk.length) h+='<div class="au-pend"><div class="au-pend-h">等待批准</div><div class="au-pend-s">管理員批准後即可使用角色</div>'+pk.map(k=>'<div class="au-pend-t">'+esc(pend[k].f)+'　編號 '+esc(pend[k].id)+'　'+esc(pend[k].name)+'</div><button class="au-btn au-danger au_cancel" data-c="'+esc(k)+'">取消申請</button>').join("")+'</div>';
       h+='<span class="field-label">陣營</span><select class="pick" id="au_f">'+Object.keys(ST).map(f=>"<option>"+f+"</option>").join("")+'</select><span class="field-label">角色</span><select class="pick" id="au_c" size="5"></select><button class="confirm-btn" id="au_rq">送出申請</button>';
+    }else if(view==="bind"){
+      if(!admin){ view="home"; render(); return; }
+      ensureBindStyle();
+      const {all,list}=bindItems();
+      const unb=all.filter(x=>!x.s.owner).length;
+      h+='<div class="modal-eyebrow">管理員</div><div class="modal-title" style="font-size:17px">綁定一覽</div>'
+        +'<div class="au-chips">'+["all"].concat(Object.keys(ST)).map(k=>'<button class="au-chip au_chip'+(bindFilter===k?" on":"")+'" data-k="'+esc(k)+'">'+(k==="all"?"全部":FSHORT[k])+'</button>').join("")
+        +'<button class="au-chip au_chip'+(bindOnly?" on":"")+'" data-k="only">只看未綁定</button></div>'
+        +'<div class="au-bsum">共 '+all.length+' 個角色　／　未綁定 '+unb+'</div>'
+        +(list.length?list.map(x=>{
+          const u=x.s.owner; let sub;
+          if(!u) sub='<div class="au-bo none">未綁定</div>';
+          else{ const n=nickCache[u]; sub='<div class="au-bo">'+(n===undefined||n===null?"讀取中…":(n?esc(n):"已綁定（對方尚未設定暱稱）"))+'</div>'; }
+          return '<div class="au-brow"><div><div class="au-bn">編號 '+esc(x.s.id)+'　'+esc(x.s.name)+'</div>'+sub+'</div><span class="au-bf">'+FSHORT[x.f]+'</span></div>';
+        }).join(""):'<div class="au-empty">'+(bindOnly?"沒有未綁定的角色。":"沒有角色。")+'</div>');
     }else if(view==="inbox"){
       ensureInboxStyle();
       h+='<div class="modal-eyebrow">帳號</div><div class="modal-title" style="font-size:17px">'+MAIL_ICON+'</div>';
@@ -4085,7 +4130,7 @@ const Auth=(function(){
         +(an?'<div class="au-pend click au_row" data-v="claim"><div class="au-pend-h">已批准</div><div class="au-pend-s">你有 '+an+' 筆申請已批准，點此查看 ›</div></div>':"")
         +(pn?'<div class="au-pend click au_row" data-v="claim"><div class="au-pend-h">等待批准</div><div class="au-pend-s">你有 '+pn+' 筆申請正在等管理員審核，點此查看／取消 ›</div></div>':"")
         +row("inbox",MAIL_ICON,un?'<span class="au-badge amber">未讀 '+un+'</span>':"無新通知")
-        +(admin?row("admin","待批准的申請",'<span id="au_admcnt"></span>')+'<div class="au-row" id="au_addchar"><span>新增角色</span><span class="v">›</span></div>':"")
+        +(admin?row("admin","待批准的申請",'<span id="au_admcnt"></span>')+'<div class="au-row" id="au_addchar"><span>新增角色</span><span class="v">›</span></div>'+row("bind","綁定一覽",(()=>{ const ub=Object.keys(ST).reduce((n,f)=>n+roster(f).filter(s=>!s.owner).length,0); return ub?'<span class="au-badge amber">未綁定 '+ub+'</span>':"全部已綁定"; })()):"")
         +'<div class="au-sec"><span>我的角色</span><button class="au-mini au_row" data-v="claim">＋ 申請角色</button></div><div id="au_cards"></div>'
         +'<div class="au-sec"><span>收藏的實驗體</span><button class="au-mini au_row" data-v="fav">＋ 選擇收藏</button></div><div id="au_favcards"></div>'
         +(admin?"":'<div class="modal-note" style="word-break:break-all;font-size:11px;opacity:.5;margin-top:16px">UID：'+user.uid+"</div>");
@@ -4094,7 +4139,7 @@ const Auth=(function(){
     if(view==="home"||!nick) h+='<div class="au-outwrap"><button class="au-logout" id="au_out">登出</button></div>';
     b.innerHTML=h; b.scrollTop=keep;
     b.querySelector("#au_x").onclick=()=>{ if(view!=="home"&&nick){ view="home"; render(); } else hide(); };
-    b.querySelectorAll(".au_row").forEach(r=>r.onclick=()=>{ view=r.dataset.v; render(); });
+    b.querySelectorAll(".au_row").forEach(r=>r.onclick=()=>{ if(r.dataset.v==="bind") nickCache={}; view=r.dataset.v; render(); });
     const addc=b.querySelector("#au_addchar");
     if(addc) addc.onclick=()=>{ if(!admin){ alert("只有管理員可以新增角色"); return; } hide(); openAddCharacter(); };
     b.querySelectorAll(".au-favrow").forEach(r=>r.onclick=()=>{ const id=r.dataset.id; if(favs.has(id)) favs.delete(id); else favs.add(id); saveFavs(); render(); });
@@ -4108,6 +4153,10 @@ const Auth=(function(){
       cacheNick(v); db().ref("users/"+user.uid).update({nick:v}).then(()=>{ nick=v; paint(); view="home"; render(); }).catch(e=>alert("儲存失敗："+(e.code||e.message)));
     };
     b.querySelectorAll(".au_cancel").forEach(a=>a.onclick=ev=>{ ev.preventDefault(); const k=a.dataset.c; db().ref("claimRequests/"+user.uid+"/"+k).remove().then(()=>{ delete pend[k]; render(); }); });
+    if(view==="bind"){
+      b.querySelectorAll(".au_chip").forEach(c=>c.onclick=()=>{ if(c.dataset.k==="only") bindOnly=!bindOnly; else bindFilter=c.dataset.k; render(); });
+      loadNicks(bindItems().list);
+    }
     if(view==="inbox"){
       if(unread()) setTimeout(()=>{ if(isOpen()&&view==="inbox") markAllRead(); },1500);   // 開著信箱一下就當作看過了
       const clr=b.querySelector("#au_clr");
