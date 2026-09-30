@@ -8434,7 +8434,6 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
     if(curPost===pk) closePost();
     const d=getDb(); if(!d) return;
     const up={}; up[LIKES+"/"+pk]=null; up[CMT+"/"+pk]=null;
-    Object.keys(cmtMap[pk]||{}).forEach(ck=>{ up[COWN+"/"+ck]=null; });
     d.ref().update(up).catch(er=>console.warn("emo cascade delete skipped",er));
   }
   function watchCMine(uid){
