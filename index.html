@@ -387,6 +387,9 @@
   .menu-help-item:hover{padding-left:6px;}
   .menu-help-item:hover .label{color:var(--bone);text-shadow:0 0 12px rgba(181,2,15,0.35);}
   .menu-help-item:hover .num b{color:var(--c-crit);border-color:var(--c-crit);}
+  .menu-help-btn{position:absolute;left:24px;bottom:calc(24px + env(safe-area-inset-bottom,0px));width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.06);border:1px solid rgba(244,238,228,.8);color:#f4eee4;font-family:var(--mono);font-size:17px;font-weight:600;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;opacity:0;transform:translateY(8px);transition:opacity .3s ease,transform .3s ease,background .25s ease,box-shadow .25s ease}
+  .menu-panel.open .menu-help-btn{opacity:1;transform:none;transition:opacity .4s ease .5s,transform .4s ease .5s,background .25s ease,box-shadow .25s ease}
+  .menu-help-btn:hover{background:rgba(255,255,255,.18);box-shadow:0 0 14px rgba(244,238,228,.4)}
   .menu-item.locked{cursor:default;}
   .menu-item.locked .label{color:var(--bone-dim); opacity:0.32;}
   .menu-item.locked .num{opacity:0.32;}
@@ -3067,11 +3070,8 @@
       <span class="num">05</span>
       <span class="label">行動紀錄</span>
     </li>
-    <li class="menu-item menu-help-item" id="menuHelp" title="新手教學">
-      <span class="num"><b>?</b></span>
-      <span class="label">新手教學</span>
-    </li>
   </ul>
+  <button class="menu-help-btn" id="menuHelp" title="新手教學" aria-label="新手教學">?</button>
 </aside>
 
 
@@ -4405,12 +4405,13 @@ const Tutorial=(function(){
     }catch(e){}
   };
   const STEPS=[
-    {sel:"#menuToggle",h:"目錄",b:"• 點擊快速切換頁面。<br>• 點選目錄內的「新手教學」可隨時重看教學。"},
+    {sel:"#menuToggle",h:"目錄",b:"• 點擊快速切換頁面。"},
     {sel:"#authBtn",h:"個人檔案",b:"• 首次使用請先點此「登入」，並申請角色。"},
     {sel:"#fab",h:"行動",b:"• 執行動作的主按鈕。<br>• 攻擊、醫療、重生、使用道具等。"},
     {sel:"#rosterNav",show:"#rosterNav",h:"進度條",b:"• 點擊「上、下箭頭」可快速「跳轉頁首或頁尾」。"},
     {sel:"#menuToggle",h:"試試看：打開「目錄」",b:"• 請點擊左上角的目錄按鈕。",interactive:true,gated:true,hint:"請先點開目錄",wait:"#menuToggle",enter:closeM},
     {sel:'.menu-item[data-target="5"]',lit:"#menuPanel",h:"行動紀錄",b:"• 記錄全站所有玩家的行動。",enter:openM},
+    {sel:"#menuHelp",lit:"#menuPanel",h:"新手教學",b:"• 點擊左下角「?」可隨時重看教學。",enter:openM},
     {sel:'.menu-item[data-target="2"]',h:"試試看：點擊「實驗體名冊」",b:"• 點擊進入角色列表。",interactive:true,gated:true,hint:"請先點擊「實驗體名冊」",lit:"#menuPanel",wait:'.menu-item[data-target="2"]',enter:openM},
     {sel:"#card-001 .edit-btn",alt:".card .edit-btn",litClosest:".card",h:"角色卡：編輯鍵",b:"• 點擊角色卡右下角 "+PENCIL+" 可修改資訊。<br>• 僅能編輯自己的角色。",enter:gotoRoster},
     {sel:"#authBtn",h:"最後一步：申請角色",b:"• 點擊右上角個人檔案，選擇「＋ 申請角色」。<br>• 審核通過後即可開始行動。",interactive:true,wait:"#authBtn",end:true,delay:150,nextLabel:"完成"}
