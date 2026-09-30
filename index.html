@@ -3730,7 +3730,7 @@ const Auth=(function(){
   let inbox=[],inboxRef=null,inboxUid=null,inboxInit=false,badge=null,toastEl=null,toastT=null;
   const NOTI={kill:{t:"你的角色被擊殺",c:"bad"},mad:{t:"你的角色陷入瘋狂",c:"bad"},hit:{t:"你的角色受到攻擊",c:"warn"},torture:{t:"你的角色遭到折磨",c:"warn"},accident:{t:"你的角色遭遇醫療事故",c:"warn"},heal:{t:"你的角色受到治療",c:"good"},support:{t:"你的角色獲得資助",c:"good"},sys:{t:"系統通知",c:"sys"},evt:{t:"通知",c:"sys"}};
   const unread=()=>inbox.filter(x=>!x.r).length;
-  const BACK='<div class="au-stick bk"><button class="au-back au_back">‹ 返回</button></div>';   // 子頁面左上角：返回個人檔案首頁
+  const BACK='<div class="au-stick bk"><button class="modal-close au_back" aria-label="關閉">×</button></div>';   // 子頁面左上角：返回個人檔案首頁
   /* ---------- 綁定一覽（管理員） ---------- */
   let bindFilter="all",bindShow="all",bindSort=false,nickCache={};   // nickCache：uid → 暱稱（undefined=沒查過、null=查詢中、""=沒有暱稱）
   const FSHORT={"實驗體":"實驗體","醫療清潔部隊":"醫療隊","資助者":"資助者"};
@@ -3967,7 +3967,7 @@ const Auth=(function(){
 #authBox .au-back:hover{color:var(--bone)}
 #authBox .au-empty.small{padding:9px 12px;font-size:12px;opacity:.5}
 #authBox .au-stick{position:sticky;top:0;z-index:6;background:var(--bg-panel-2);margin:0 -24px 16px;padding:24px 24px 0}
-#authBox .au-stick.bk{padding-bottom:8px;border-bottom:1px solid var(--line)}
+#authBox .au-stick.bk{height:44px;padding:0;margin:0 -24px 4px}
 #authBox .au-stick .au-back{margin:0}
 #authBox .au-stick>.au-back.top{display:block;margin:0 0 8px}
 #authBox>*:first-child:not(.au-stick){margin-top:28px}
@@ -4312,6 +4312,7 @@ const Auth=(function(){
     markTutorialDone,
     favIds:()=>Array.from(favs), isFav:id=>favs.has(String(id)),
     get isAdmin(){return admin;},
+    onBack(){ if(!isOpen()) return false; if(view!=="home"&&nick){ view="home"; render(); } else hide(); return true; },
     uid:()=>user?user.uid:null, nick:()=>nick,
     newOwner:()=>(user&&!admin)?user.uid:null,
     requireLogin(){ if(user&&nick) return true; openPanel(); return false; },
@@ -4322,6 +4323,19 @@ const Auth=(function(){
   return api;
 })();
 window.Auth=Auth;
+
+/* ---------- 裝置返回鍵：不離開網站，只關閉目前開著的視窗（回到原本的位置） ---------- */
+(function(){
+  try{ history.scrollRestoration="manual"; }catch(e){}
+  try{ history.replaceState({bp:0},""); history.pushState({bp:1},""); }catch(e){ return; }
+  window.addEventListener("popstate",function(){
+    try{ history.pushState({bp:1},""); }catch(e){}
+    if(window.Tutorial&&window.Tutorial.active) return;
+    if(Auth.onBack()) return;
+    const open=document.querySelectorAll(".modal-overlay.open");
+    if(open.length){ const c=open[open.length-1].querySelector(".modal-close"); if(c) c.click(); }
+  });
+})();
 
 /* ---------- 新手教學：第一次登入自動跑一次；目錄裡的「?」可以重看 ---------- */
 const Tutorial=(function(){
@@ -5368,6 +5382,7 @@ function viewActionLog(){
 }
 
 function closeModal(){
+  addFlowActive = false;
   editDraft = null; editSnap = null;   // 沒按儲存就關掉：所有修改作廢、不留紀錄
   modalOverlay.classList.remove("open");
 }
@@ -5382,14 +5397,15 @@ const ADD_FACTIONS = [
 let addFactionIdx = null;
 let addedRef = null;
 
+let addFlowActive = false;
 function openAddCharacter(){
+  addFlowActive = true;
   renderAddFactionStep();
   modalOverlay.classList.add("open");
 }
 
 function renderAddFactionStep(){
   modalBody.innerHTML =
-    '<button class="back-link" onclick="backToProfile()">‹ 返回</button>' +
     '<div class="modal-eyebrow">新增角色</div>' +
     '<div class="modal-title">要新增哪個陣營的角色？</div>' +
     ADD_FACTIONS.map((f, i) => '<button class="choice-btn" onclick="renderAddNameStep(' + i + ')">' + f.label + '</button>').join("");
@@ -5401,7 +5417,6 @@ function renderAddNameStep(i){
   addFactionIdx = i;
   const f = ADD_FACTIONS[i];
   modalBody.innerHTML =
-    '<button class="back-link" onclick="renderAddFactionStep()">‹ 返回</button>' +
     '<div class="modal-eyebrow">新增角色 ／ ' + f.label + '</div>' +
     '<div class="modal-title">輸入角色名稱</div>' +
     '<span class="field-label">名稱（留空會用預設名稱）</span>' +
@@ -5422,7 +5437,6 @@ function confirmAddCharacter(){
 function renderAddDoneStep(){
   const f = ADD_FACTIONS[addedRef.idx];
   modalBody.innerHTML =
-    '<button class="back-link" onclick="backToProfile()">‹ 返回</button>' +
     '<div class="modal-eyebrow">新增角色</div>' +
     '<div class="modal-title">已新增到' + f.roster + '</div>' +
     '<div class="modal-note">' + f.label + '名冊裡多了一位新角色（編號 ' + addedRef.id + '）。</div>' +
@@ -5436,7 +5450,7 @@ function goToAddedCharacter(){
 }
 
 document.getElementById("fab").addEventListener("click", () => { if(Auth.requireLogin()) openModal(); });
-document.getElementById("modalClose").addEventListener("click", closeModal);
+document.getElementById("modalClose").addEventListener("click", () => { if(addFlowActive) backToProfile(); else closeModal(); });
 modalOverlay.addEventListener("click", (e) => {
   if(e.target === modalOverlay) closeModal();
 });
