@@ -3728,12 +3728,14 @@ const Auth=(function(){
   const NOTI={kill:{t:"你的角色被擊殺",c:"bad"},mad:{t:"你的角色陷入瘋狂",c:"bad"},hit:{t:"你的角色受到攻擊",c:"warn"},torture:{t:"你的角色遭到折磨",c:"warn"},accident:{t:"你的角色遭遇醫療事故",c:"warn"},heal:{t:"你的角色受到治療",c:"good"},support:{t:"你的角色獲得資助",c:"good"},sys:{t:"系統通知",c:"sys"},evt:{t:"通知",c:"sys"}};
   const unread=()=>inbox.filter(x=>!x.r).length;
   /* ---------- 綁定一覽（管理員） ---------- */
-  let bindFilter="all",bindOnly=false,nickCache={};   // nickCache：uid → 暱稱（undefined=沒查過、null=查詢中、""=沒有暱稱）
+  let bindFilter="all",bindShow="all",bindSort=false,nickCache={};   // nickCache：uid → 暱稱（undefined=沒查過、null=查詢中、""=沒有暱稱）
   const FSHORT={"實驗體":"實驗體","醫療清潔部隊":"醫療隊","資助者":"資助者"};
   function bindItems(){
     const all=[];
     Object.keys(ST).forEach(f=>{ if(bindFilter==="all"||bindFilter===f) roster(f).forEach(s=>all.push({f,s})); });
-    return {all,list:bindOnly?all.filter(x=>!x.s.owner):all};
+    let list=bindShow==="bound"?all.filter(x=>x.s.owner):bindShow==="unbound"?all.filter(x=>!x.s.owner):all.slice();
+    if(bindSort) list=list.filter(x=>x.s.owner).concat(list.filter(x=>!x.s.owner));   // 已綁定全部排前面（各自維持原本順序），未綁定接在後面
+    return {all,list};
   }
   function loadNicks(list){
     const need=[...new Set(list.map(x=>x.s.owner).filter(u=>u&&nickCache[u]===undefined))];
@@ -3750,7 +3752,10 @@ const Auth=(function(){
 #authBox .au-chip{font-family:var(--mono);font-size:12px;letter-spacing:.08em;padding:6px 12px;border:1px solid var(--line);color:var(--bone-dim);background:none;cursor:pointer}
 #authBox .au-chip.on{border-color:var(--c-crit);color:var(--bone);background:rgba(181,2,15,.22)}
 #authBox .au-bsum{font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--bone-dim);margin:10px 0 4px}
-#authBox .au-brow{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:10px 2px;border-bottom:1px solid var(--line)}
+#authBox .au-brow{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:10px 12px;margin:7px 0;border:1px solid var(--line)}
+#authBox .au-brow.bound{background:rgba(79,157,120,.13);border-color:rgba(79,157,120,.5);border-left:4px solid #4f9d78}
+#authBox .au-brow.bound .au-bo{color:#8fd0b0}
+#authBox .au-brow.free{opacity:.45;border-style:dashed;background:transparent}
 #authBox .au-bn{font-size:15px;color:var(--bone);word-break:break-all}
 #authBox .au-bo{font-size:11px;margin-top:3px;color:var(--bone-dim);letter-spacing:.04em;word-break:break-all}
 #authBox .au-bo.none{color:#d08a2e}
@@ -4104,14 +4109,17 @@ const Auth=(function(){
       const unb=all.filter(x=>!x.s.owner).length;
       h+='<div class="modal-eyebrow">管理員</div><div class="modal-title" style="font-size:17px">綁定一覽</div>'
         +'<div class="au-chips">'+["all"].concat(Object.keys(ST)).map(k=>'<button class="au-chip au_chip'+(bindFilter===k?" on":"")+'" data-k="'+esc(k)+'">'+(k==="all"?"全部":FSHORT[k])+'</button>').join("")
-        +'<button class="au-chip au_chip'+(bindOnly?" on":"")+'" data-k="only">只看未綁定</button></div>'
+        +'</div><div class="au-chips" style="margin-top:0">'
+        +'<button class="au-chip au_chip'+(bindShow==="bound"?" on":"")+'" data-k="show-bound">只看已綁定</button>'
+        +'<button class="au-chip au_chip'+(bindShow==="unbound"?" on":"")+'" data-k="show-unbound">只看未綁定</button>'
+        +'<button class="au-chip au_chip'+(bindSort?" on":"")+'" data-k="sort">已綁定排前面</button></div>'
         +'<div class="au-bsum">共 '+all.length+' 個角色　／　未綁定 '+unb+'</div>'
         +(list.length?list.map(x=>{
           const u=x.s.owner; let sub;
           if(!u) sub='<div class="au-bo none">未綁定</div>';
           else{ const n=nickCache[u]; sub='<div class="au-bo">'+(n===undefined||n===null?"讀取中…":(n?esc(n):"已綁定（對方尚未設定暱稱）"))+'</div>'; }
-          return '<div class="au-brow"><div><div class="au-bn">編號 '+esc(x.s.id)+'　'+esc(x.s.name)+'</div>'+sub+'</div><span class="au-bf">'+FSHORT[x.f]+'</span></div>';
-        }).join(""):'<div class="au-empty">'+(bindOnly?"沒有未綁定的角色。":"沒有角色。")+'</div>');
+          return '<div class="au-brow '+(u?"bound":"free")+'"><div><div class="au-bn">編號 '+esc(x.s.id)+'　'+esc(x.s.name)+'</div>'+sub+'</div><span class="au-bf">'+FSHORT[x.f]+'</span></div>';
+        }).join(""):'<div class="au-empty">'+(bindShow==="unbound"?"沒有未綁定的角色。":bindShow==="bound"?"沒有已綁定的角色。":"沒有角色。")+'</div>');
     }else if(view==="inbox"){
       ensureInboxStyle();
       h+='<div class="modal-eyebrow">帳號</div><div class="modal-title" style="font-size:17px">'+MAIL_ICON+'</div>';
@@ -4154,7 +4162,12 @@ const Auth=(function(){
     };
     b.querySelectorAll(".au_cancel").forEach(a=>a.onclick=ev=>{ ev.preventDefault(); const k=a.dataset.c; db().ref("claimRequests/"+user.uid+"/"+k).remove().then(()=>{ delete pend[k]; render(); }); });
     if(view==="bind"){
-      b.querySelectorAll(".au_chip").forEach(c=>c.onclick=()=>{ if(c.dataset.k==="only") bindOnly=!bindOnly; else bindFilter=c.dataset.k; render(); });
+      b.querySelectorAll(".au_chip").forEach(c=>c.onclick=()=>{ const k=c.dataset.k;
+        if(k==="show-bound") bindShow=bindShow==="bound"?"all":"bound";
+        else if(k==="show-unbound") bindShow=bindShow==="unbound"?"all":"unbound";
+        else if(k==="sort") bindSort=!bindSort;
+        else bindFilter=k;
+        render(); });
       loadNicks(bindItems().list);
     }
     if(view==="inbox"){
