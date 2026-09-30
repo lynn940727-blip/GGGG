@@ -2708,6 +2708,12 @@
 .emo-text{font-family:var(--sans);font-size:15px;line-height:1.8;color:var(--bone);white-space:pre-wrap;word-break:break-word}
 .emo-del{position:absolute;right:10px;bottom:8px;background:none;border:none;color:var(--bone-dim);font-size:14px;cursor:pointer;opacity:.6;display:none}
 .emo-del:hover{opacity:1;color:var(--c-warn)}
+.emo-edit{position:absolute;right:34px;bottom:8px;background:none;border:none;color:var(--bone-dim);font-size:14px;cursor:pointer;opacity:.6;display:none}
+.emo-edit:hover{opacity:1;color:var(--bone)}
+.emo-mode{display:flex;gap:8px}
+.emo-mode button{flex:1;font-family:var(--mono);font-size:12px;letter-spacing:.1em;color:var(--bone-dim);background:transparent;border:1px solid var(--line);padding:9px 10px;cursor:pointer;transition:background .25s ease,border-color .25s ease,color .25s ease}
+.emo-mode button.on{color:var(--bone);background:rgba(181,2,15,.16);border-color:rgba(181,2,15,.5)}
+.emo-mode-hint{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--clinical);min-height:1.4em}
 .emo-empty{grid-column:1/-1;text-align:center;font-family:var(--mono);font-size:12px;letter-spacing:.12em;color:var(--clinical-dim);padding:40px 0}
 @media (max-width:900px){.emo-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:560px){.emo-grid{grid-template-columns:minmax(0,1fr)}}
@@ -3309,10 +3315,12 @@
   <div class="modal-box">
     <button class="modal-close" id="emoClose">×</button>
     <div class="modal-eyebrow">檔案 ⁄ 情感收容</div>
-    <div class="modal-title">匿名投遞</div>
+    <div class="modal-title" id="emoTitle">投遞</div>
   <div class="emo-form">
-      <textarea id="emoText" maxlength="200" rows="3" placeholder="把說不出口的話放在這裡。不會顯示你的名字。"></textarea>
-      <div class="emo-row"><span class="emo-count" id="emoCount">0 / 200</span><button class="emo-send" id="emoSend">匿名投遞</button></div>
+      <textarea id="emoText" maxlength="200" rows="3" placeholder="把說不出口的話放在這裡。"></textarea>
+      <div class="emo-mode" id="emoMode"><button type="button" data-m="anon" class="on">匿名</button><button type="button" data-m="named">實名</button></div>
+      <div class="emo-mode-hint" id="emoModeHint"></div>
+      <div class="emo-row"><span class="emo-count" id="emoCount">0 / 200</span><button class="emo-send" id="emoSend">投遞</button></div>
     </div>
   </div>
 </div>
@@ -3403,7 +3411,7 @@
 </div>
 
 <div class="fab-stack">
-  <div class="fab-btn fab-add" id="emoAddBtn" title="匿名投遞" style="display:none"><span class="fab-plus">+</span></div>
+  <div class="fab-btn fab-add" id="emoAddBtn" title="投遞" style="display:none"><span class="fab-plus">+</span></div>
   <div class="fab-btn fab-action" id="fab">
     <div class="fab-label">行動</div>
   </div>
@@ -8117,13 +8125,17 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
 </script>
 
 <script>
-/* ---------- 匿名情感收容室：匿名投遞、卡片牆（不顯示、也不儲存投遞者身分） ---------- */
+/* ---------- 匿名情感收容室：可選匿名／實名投遞、卡片牆 ----------
+   公開節點 emotion_room_v1/<key> = {t 內容, ts 時間, n 暱稱(只有實名才有)}
+   投遞者帳號另存 emotion_owners/<key> = uid（只有管理員讀得到，前端畫面不顯示）
+   emotion_mine/<uid>/<key> = true（只有本人讀得到，用來判斷「這則是不是我的」） */
 (function(){
-  const PATH="emotion_room_v1";
+  const PATH="emotion_room_v1", OWN="emotion_owners", MINE="emotion_mine";
   const grid=document.getElementById("emoGrid"), meta=document.getElementById("emoMeta"),
         ta=document.getElementById("emoText"), cnt=document.getElementById("emoCount"), send=document.getElementById("emoSend");
   if(!grid||!ta||!send) return;
-  let db=null, ref=null, list=[], lastSend=0;
+  const modeBox=document.getElementById("emoMode"), modeHint=document.getElementById("emoModeHint"), titleEl=document.getElementById("emoTitle");
+  let db=null, ref=null, list=[], lastSend=0, mode="anon", editKey=null, mineSet=new Set(), mineUid=null, mineRef=null;
   const esc=t=>String(t==null?"":t).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const pad=(n,l)=>String(n).padStart(l,"0");
   function getDb(){
@@ -8132,33 +8144,71 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
     return db;
   }
   function fmt(ts){ if(!ts) return "—"; const d=new Date(ts); return pad(d.getMonth()+1,2)+"/"+pad(d.getDate(),2)+" "+pad(d.getHours(),2)+":"+pad(d.getMinutes(),2); }
+  const isAdmin=()=>!!(window.Auth&&Auth.isAdmin);
+  const canManage=k=>isAdmin()||mineSet.has(k);
+  function setMode(m){
+    mode=m;
+    modeBox.querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.m===m));
+    const nk=(window.Auth&&Auth.nick&&Auth.nick())||"";
+    modeHint.textContent=m==="named"?("卡片上會顯示你的暱稱："+nk):"卡片上只會顯示「匿名」。";
+  }
+  modeBox.addEventListener("click",e=>{ const b=e.target.closest&&e.target.closest("button"); if(b) setMode(b.dataset.m); });
   function render(){
     meta.textContent="收容數量 "+pad(list.length,3);
     if(!list.length){ grid.innerHTML='<div class="emo-empty">收容室目前是空的。</div>'; return; }
     grid.innerHTML=list.slice().reverse().map(x=>
-      '<div class="card ok" data-k="'+esc(x.k)+'"><div class="card-top"><span class="id-num">匿名　編號 <b>'+pad(x.n,4)+'</b></span><span class="status ok">'+esc(fmt(x.ts))+'</span></div><div class="emo-text">'+esc(x.t)+'</div><button class="emo-del" title="刪除（管理員）">✕</button></div>'
+      '<div class="card ok" data-k="'+esc(x.k)+'"><div class="card-top"><span class="id-num">'+(x.nm?esc(x.nm):"匿名")+'　編號 <b>'+pad(x.n,4)+'</b></span><span class="status ok">'+esc(fmt(x.ts))+'</span></div><div class="emo-text">'+esc(x.t)+'</div><button class="emo-edit" title="編輯">✎</button><button class="emo-del" title="刪除">✕</button></div>'
     ).join("");
     syncAdmin();
   }
   function syncAdmin(){
-    const a=!!(window.Auth&&Auth.isAdmin);
-    grid.querySelectorAll(".emo-del").forEach(b=>{ b.style.display=a?"block":"none"; });
+    const uid=(window.Auth&&Auth.uid&&Auth.uid())||null;
+    if(uid!==mineUid) watchMine(uid);
+    grid.querySelectorAll(".card").forEach(c=>{
+      const on=canManage(c.dataset.k)?"block":"none";
+      const e=c.querySelector(".emo-edit"), d=c.querySelector(".emo-del");
+      if(e) e.style.display=on; if(d) d.style.display=on;
+    });
+  }
+  // 讀「我投遞過哪些」（只有自己的 uid 讀得到）
+  function watchMine(uid){
+    const d=getDb(); if(!d) return;
+    if(mineRef){ mineRef.off(); mineRef=null; }
+    mineUid=uid; mineSet=new Set();
+    if(!uid){ return; }
+    mineRef=d.ref(MINE+"/"+uid);
+    mineRef.on("value",snap=>{ const v=snap.val()||{}; mineSet=new Set(Object.keys(v)); syncAdmin(); },err=>{ console.warn("emo mine read failed",err); });
   }
   function subscribe(){
     const d=getDb(); if(!d){ setTimeout(subscribe,1500); return; }
     ref=d.ref(PATH);
     ref.limitToLast(200).on("value",snap=>{
-      const v=snap.val()||{}, arr=Object.keys(v).map(k=>({k,t:String(v[k].t||""),ts:v[k].ts||0}));
+      const v=snap.val()||{}, arr=Object.keys(v).map(k=>({k,t:String(v[k].t||""),ts:v[k].ts||0,nm:v[k].n?String(v[k].n):""}));
       arr.sort((a,b)=>a.ts-b.ts||(a.k<b.k?-1:1));
       arr.forEach((x,i)=>{ x.n=i+1; });
       list=arr; render();
     },err=>{ grid.innerHTML='<div class="emo-empty">暫時無法讀取收容室。</div>'; console.warn("emo read failed",err); });
   }
   const ov=document.getElementById("emoOverlay"), addBtn=document.getElementById("emoAddBtn"), room=document.getElementById("emoRoom");
-  const openForm=()=>{ if(!window.Auth||!Auth.requireLogin()) return; ov.classList.add("open"); setTimeout(()=>ta.focus(),50); };
-  const closeForm=()=>ov.classList.remove("open");
+  function openForm(key){
+    if(!window.Auth||!Auth.requireLogin()) return;
+    editKey=key||null;
+    if(editKey){
+      const it=list.find(x=>x.k===editKey); if(!it||!canManage(editKey)) return;
+      ta.value=it.t; cnt.textContent=ta.value.length+" / 200";
+      titleEl.textContent="編輯投遞"; send.textContent="儲存";
+      modeBox.style.display="none"; modeHint.style.display="none";
+    }else{
+      ta.value=""; cnt.textContent="0 / 200";
+      titleEl.textContent="投遞"; send.textContent="投遞";
+      modeBox.style.display=""; modeHint.style.display="";
+      setMode("anon");
+    }
+    ov.classList.add("open"); setTimeout(()=>ta.focus(),50);
+  }
+  const closeForm=()=>{ ov.classList.remove("open"); editKey=null; };
   if(addBtn){
-    addBtn.addEventListener("click",openForm);
+    addBtn.addEventListener("click",()=>openForm(null));
     if(room&&"IntersectionObserver" in window){
       new IntersectionObserver(es=>{ addBtn.style.display=es[0].isIntersecting?"flex":"none"; },{threshold:0.05}).observe(room);
     }
@@ -8170,20 +8220,45 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
     if(!window.Auth||!Auth.requireLogin()) return;
     const t=ta.value.trim();
     if(!t){ ta.focus(); return; }
-    if(Date.now()-lastSend<8000){ alert("投遞太頻繁了，請稍後再試"); return; }
     const d=getDb(); if(!d) return alert("暫時無法連線");
     send.disabled=true;
-    d.ref(PATH).push({t:t.slice(0,200),ts:firebase.database.ServerValue.TIMESTAMP})
-      .then(()=>{ lastSend=Date.now(); ta.value=""; cnt.textContent="0 / 200"; closeForm(); })
-      .catch(e=>alert("投遞失敗："+(e.code||e.message)))
+    let job;
+    if(editKey){
+      // 編輯：只改內容，身分（匿名／實名）維持原樣
+      if(!canManage(editKey)){ send.disabled=false; return; }
+      job=d.ref(PATH+"/"+editKey).update({t:t.slice(0,200)});
+    }else{
+      if(Date.now()-lastSend<8000){ send.disabled=false; alert("投遞太頻繁了，請稍後再試"); return; }
+      const uid=Auth.uid(); if(!uid){ send.disabled=false; return; }
+      const key=d.ref(PATH).push().key;
+      const rec={t:t.slice(0,200),ts:firebase.database.ServerValue.TIMESTAMP};
+      if(mode==="named"){ const nk=(Auth.nick()||"").slice(0,50); if(nk) rec.n=nk; }
+      const up={}; up[PATH+"/"+key]=rec; up[OWN+"/"+key]=uid; up[MINE+"/"+uid+"/"+key]=true;
+      job=d.ref().update(up).then(()=>{ lastSend=Date.now(); });
+    }
+    job.then(()=>{ ta.value=""; cnt.textContent="0 / 200"; closeForm(); })
+      .catch(e=>alert((editKey?"儲存失敗：":"投遞失敗：")+(e.code||e.message)))
       .then(()=>{ send.disabled=false; });
   });
   grid.addEventListener("click",e=>{
-    const b=e.target.closest&&e.target.closest(".emo-del"); if(!b) return;
-    if(!(window.Auth&&Auth.isAdmin)) return;
-    const k=b.closest(".card").dataset.k;
+    const card=e.target.closest&&e.target.closest(".card"); if(!card) return;
+    const k=card.dataset.k;
+    if(e.target.closest(".emo-edit")){ if(canManage(k)) openForm(k); return; }
+    if(!e.target.closest(".emo-del")) return;
+    if(!canManage(k)) return;
     if(!confirm("確定刪除這則投遞？")) return;
-    getDb().ref(PATH+"/"+k).remove().catch(er=>alert("刪除失敗："+(er.code||er.message)));
+    const d=getDb(); if(!d) return;
+    const fail=er=>alert("刪除失敗："+(er.code||er.message));
+    if(isAdmin()){
+      // 管理員：先查出投遞者，才能一併清掉他的索引
+      d.ref(OWN+"/"+k).once("value").then(sn=>{
+        const ou=sn.val(), up={}; up[PATH+"/"+k]=null; up[OWN+"/"+k]=null; if(ou) up[MINE+"/"+ou+"/"+k]=null;
+        return d.ref().update(up);
+      }).catch(fail);
+    }else{
+      const up={}; up[PATH+"/"+k]=null; up[OWN+"/"+k]=null; up[MINE+"/"+mineUid+"/"+k]=null;
+      d.ref().update(up).catch(fail);
+    }
   });
   setInterval(syncAdmin,1500);
   window.addEventListener("load",()=>setTimeout(subscribe,300));
