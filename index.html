@@ -2695,10 +2695,17 @@
 
 /* ---------- 匿名情感收容室 ---------- */
 .emo-count{font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--clinical)}
-.emo-post-btn{background:none;border:1px solid var(--line);color:var(--bone-dim);font-family:var(--mono);font-size:13px;letter-spacing:.12em;padding:9px 18px;border-radius:0;cursor:pointer;white-space:nowrap;transition:border-color .2s,color .2s}
+.emo-post-btn{background:none;border:1px solid var(--line);color:var(--bone-dim);font-family:var(--mono);font-size:12px;letter-spacing:.08em;padding:5px 11px;line-height:1.3;border-radius:0;cursor:pointer;white-space:nowrap;transition:border-color .2s,color .2s}
 .emo-post-btn:hover{border-color:var(--bone-dim);color:var(--bone)}
 #emoRoom .roster-head-right{flex-direction:row;align-items:center;justify-content:space-between;gap:16px}
 #emoRoom .emo-post-btn{flex:none}
+#emoRoom .emo-head-btns{display:flex;align-items:center;gap:8px;flex:none}
+.emo-post-btn.emo-av-btn{display:inline-flex;align-items:center;gap:5px}
+.emo-av-btn .emo-av-thumb{width:16px;height:16px;border-radius:50%;object-fit:cover;display:none;border:1px solid var(--bone-dim)}
+.emo-av-btn.has .emo-av-thumb{display:block}
+.emo-av-btn.has .emo-av-plus{display:none}
+.emo-av-prev{width:96px;height:96px;border-radius:50%;margin:6px auto 14px;border:1.5px dashed var(--bone-dim);background:rgba(255,255,255,.06);overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--bone-dim);font-size:12px;font-family:var(--mono)}
+.emo-av-prev img{width:100%;height:100%;object-fit:cover;display:block}
 @media (max-width:520px){#emoRoom .roster-head-right{width:100%;align-items:center}}
 .emo-grid .card{gap:18px;animation:bpBodyIn .5s ease both}
 .emo-grid .card-top .status{max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -3402,7 +3409,7 @@
   <div class="roster-eyebrow">檔案 ⁄ 情感收容</div>
   <div class="roster-head">
     <h2>匿名情感收容室</h2>
-    <div class="roster-head-right"><div class="meta" id="emoMeta">收容數量 000</div><button type="button" class="emo-post-btn" id="emoAddBtn" title="投稿">＋ 投稿</button></div>
+    <div class="roster-head-right"><div class="meta" id="emoMeta">收容數量 000</div><div class="emo-head-btns"><button type="button" class="emo-post-btn" id="emoAddBtn" title="投稿">投稿＋</button><button type="button" class="emo-post-btn emo-av-btn" id="emoAvBtn" title="設定實名發言時的頭像">頭像<img class="emo-av-thumb" alt=""><span class="emo-av-plus">＋</span></button></div></div>
   </div>
   <div class="roster-divider"></div>
   <div class="grid emo-grid" id="emoGrid"></div>
@@ -3432,6 +3439,20 @@
       <button class="modify-btn" id="emoCancel">取消</button>
       <button class="danger-btn" id="emoDel" style="display:none">刪除此投遞</button>
     </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="emoAvOverlay">
+  <div class="modal-box">
+    <button class="modal-close" id="emoAvClose">×</button>
+    <div class="modal-eyebrow">匿名情感收容室</div>
+    <div class="modal-title">實名發言頭像</div>
+    <div class="emo-av-prev" id="emoAvPrev">未設定</div>
+    <input type="file" accept="image/*" class="text-input" id="emoAvFile">
+    <div class="modal-note">只會用在「實名」留言，並自動裁成正方形。</div>
+    <button class="confirm-btn" id="emoAvOk" disabled>確認頭像</button>
+    <button class="modify-btn" id="emoAvRm" style="display:none">移除頭像</button>
+    <button class="modify-btn" id="emoAvCancel">取消</button>
   </div>
 </div>
 
@@ -3903,6 +3924,7 @@ const SharedStore = (function(){
       const btn = ev.target.closest && ev.target.closest("button[data-act]"); if(!btn) return;
       const row = btn.closest(".log-row"); if(!row) return;
       const k = row.getAttribute("data-k"), act = btn.getAttribute("data-act");
+      if(act !== "cancel" && !(window.Auth && Auth.requireLogin())) return;   // 沒登入不能編輯／刪除紀錄
       if(act === "edit"){
         const cur = rows.find(x => x._k === k);
         editKey = k; editText = cur ? (cur.msg || "") : ""; delArmed = false; draw(); return;
@@ -4225,12 +4247,13 @@ const Auth=(function(){
   }
   function load(){
     if(!user){ nick="";admin=false;favs=new Set();pend={};tutDone=null;if(pendRef){ try{ pendRef.off(); }catch(e){} pendRef=null; }watchInbox();loaded=true;paint();return Promise.resolve(); }
-    loaded=false;
+    loaded=false; admin=false;
     const d=db();
     return Promise.all([
       d.ref("users/"+user.uid+"/favs").once("value").then(s=>{ const v=s.val(); favs=new Set(v?Object.keys(v):localFavs()); }).catch(()=>{ favs=new Set(localFavs()); }),
       d.ref("users/"+user.uid+"/nick").once("value").then(s=>{ nick=s.val()||localNick(); if(nick) cacheNick(nick); }).catch(e=>{ nick=localNick(); console.warn("nick read failed",e); }),
-      d.ref("admins/"+user.uid).once("value").then(s=>{admin=s.val()===true;}).catch(()=>{admin=false;}),
+      d.ref("admins/"+user.uid).once("value").then(s=>{ if(s.val()===true) admin=true; }).catch(()=>{}),
+      (user.email?d.ref("adminEmails/"+emailKey(user.email)).once("value").then(s=>{ if(s.exists()&&s.val()) admin=true; }).catch(()=>{}):Promise.resolve()),
       d.ref("claimRequests/"+user.uid).once("value").then(s=>{pend=s.val()||{};}).catch(()=>{pend={};}),
       d.ref("users/"+user.uid+"/tut").once("value").then(s=>{
         if(s.val()===true){ tutDone=true; try{ localStorage.setItem("bp_tut_"+user.uid,"1"); }catch(e){} }
@@ -4306,6 +4329,8 @@ const Auth=(function(){
       ov.style.opacity="1"; b.style.transform="none";
     } else render(b);
   }
+  const emailKey=e=>String(e||"").trim().toLowerCase().replace(/[.$#\[\]\/]/g,",");
+  let adminList=null, adminMsg="";
   const row=(id,label,val)=>'<div class="au_row au-row" data-v="'+id+'"><span>'+label+'</span><span class="v">'+val+' ›</span></div>';
   function roleTags(isAdm){
     if(isAdm) return '<span class="au-role adm">管理員</span>';
@@ -4448,6 +4473,15 @@ const Auth=(function(){
           else{ const n=nickCache[u]; sub='<div class="au-bo">'+(n===undefined||n===null?"讀取中…":(n?esc(n):"已綁定（對方尚未設定暱稱）"))+'</div>'; }
           return '<div class="au-brow '+(u?"bound":"free")+'"><div><div class="au-bn">編號 '+esc(x.s.id)+'　'+esc(x.s.name)+'</div>'+sub+'</div><div class="au-br"><span class="au-bf">'+FSHORT[x.f]+'</span>'+(u?'<button class="au-bunb au_bunb" data-f="'+esc(x.f)+'" data-id="'+esc(x.s.id)+'">解綁</button>':"")+'</div></div>';
         }).join(""):'<div class="au-empty">'+(bindShow==="unbound"?"沒有未綁定的角色。":bindShow==="bound"?"沒有已綁定的角色。":"沒有角色。")+'</div>');
+    }else if(view==="addadmin"){
+      if(!admin){ view="home"; render(); return; }
+      h+=BACK+'<div class="modal-title" style="font-size:17px">新增管理員</div>'
+        +'<div class="modal-note">輸入對方登入用的 Google 信箱，對方下次登入（或重新整理）後就會是管理員。</div>'
+        +'<input type="email" class="text-input" id="au_admmail" placeholder="example@gmail.com" autocomplete="off" autocapitalize="off">'
+        +(adminMsg?'<div class="modal-note" style="color:var(--bone)">'+esc(adminMsg)+'</div>':'')
+        +'<button class="confirm-btn" id="au_admadd">新增管理員</button>'
+        +'<div class="au-sec"><span>已新增的管理員</span></div>'
+        +(adminList===null?'<div class="au-empty small">讀取中…</div>':adminList.length?adminList.map(x=>'<div class="au-brow bound"><div><div class="au-bn" style="word-break:break-all">'+esc(x.e)+'</div></div><div class="au-br"><button class="au-bunb au_admrm" data-k="'+esc(x.k)+'">移除</button></div></div>').join(""):'<div class="au-empty small">還沒有透過信箱新增的管理員。</div>');
     }else if(view==="inbox"){
       ensureInboxStyle();
       h+=BACK+'<div class="modal-title" style="font-size:17px">'+MAIL_ICON+'</div>';
@@ -4468,7 +4502,7 @@ const Auth=(function(){
         +(an?'<div class="au-pend click au_row" data-v="claim"><div class="au-pend-h">已批准</div><div class="au-pend-s">你有 '+an+' 筆申請已批准，點此查看 ›</div></div>':"")
         +(pn?'<div class="au-pend click au_row" data-v="claim"><div class="au-pend-h">等待批准</div><div class="au-pend-s">你有 '+pn+' 筆申請正在等管理員審核，點此查看／取消 ›</div></div>':"")
         +row("inbox",MAIL_ICON,un?'<span class="au-badge amber">未讀 '+un+'</span>':"無新通知")
-        +(admin?row("admin","待批准的申請",'<span id="au_admcnt"></span>')+'<div class="au-row" id="au_addchar"><span>新增角色</span><span class="v">›</span></div>'+row("bind","綁定一覽",(()=>{ const ub=Object.keys(ST).reduce((n,f)=>n+roster(f).filter(s=>!s.owner).length,0); return ub?'<span class="au-badge amber">未綁定 '+ub+'</span>':"全部已綁定"; })()):"")
+        +(admin?row("admin","待批准的申請",'<span id="au_admcnt"></span>')+'<div class="au-row" id="au_addchar"><span>新增角色</span><span class="v">›</span></div>'+row("bind","綁定一覽",(()=>{ const ub=Object.keys(ST).reduce((n,f)=>n+roster(f).filter(s=>!s.owner).length,0); return ub?'<span class="au-badge amber">未綁定 '+ub+'</span>':"全部已綁定"; })())+row("addadmin","新增管理員","") :"")
         +'<div class="au-sec"><span>我的角色</span><button class="au-mini au_row" data-v="claim">＋ 申請角色</button></div><div id="au_cards"></div>'
         +'<div class="au-sec"><span>收藏的實驗體</span><button class="au-mini au_row" data-v="fav">＋ 選擇收藏</button></div><div id="au_favcards"></div>'
         +(admin?"":'<div class="modal-note" style="word-break:break-all;font-size:11px;opacity:.5;margin-top:16px">UID：'+user.uid+"</div>");
@@ -4479,7 +4513,7 @@ const Auth=(function(){
     const ax=b.querySelector("#au_x"); if(ax) ax.onclick=hide;
     b.querySelectorAll(".au_close").forEach(x=>x.onclick=hide);
     b.querySelectorAll(".au_back").forEach(x=>x.onclick=()=>{ view="home"; render(); });
-    b.querySelectorAll(".au_row").forEach(r=>r.onclick=()=>{ if(r.dataset.v==="bind") nickCache={}; view=r.dataset.v; render(); });
+    b.querySelectorAll(".au_row").forEach(r=>r.onclick=()=>{ if(r.dataset.v==="bind") nickCache={}; if(r.dataset.v==="addadmin"){ adminList=null; adminMsg=""; } view=r.dataset.v; render(); });
     const addc=b.querySelector("#au_addchar");
     if(addc) addc.onclick=()=>{ if(!admin){ alert("只有管理員可以新增角色"); return; } hide(); openAddCharacter(); };
     if(view==="fav"){
@@ -4507,6 +4541,20 @@ const Auth=(function(){
       cacheNick(v); db().ref("users/"+user.uid).update({nick:v}).then(()=>{ nick=v; paint(); view="home"; render(); }).catch(e=>alert("儲存失敗："+(e.code||e.message)));
     };
     b.querySelectorAll(".au_cancel").forEach(a=>a.onclick=ev=>{ ev.preventDefault(); const k=a.dataset.c; db().ref("claimRequests/"+user.uid+"/"+k).remove().then(()=>{ delete pend[k]; render(); }); });
+    if(view==="addadmin"){
+      const loadAdm=()=>db().ref("adminEmails").once("value").then(sn=>{ const v=sn.val()||{}; adminList=Object.keys(v).filter(k=>v[k]).map(k=>({k,e:typeof v[k]==="string"?v[k]:k.replace(/,/g,".")})); if(isOpen()&&view==="addadmin") render(); }).catch(e=>{ adminList=[]; adminMsg="讀取名單失敗："+(e.code||e.message); if(isOpen()&&view==="addadmin") render(); });
+      if(adminList===null) loadAdm();
+      const inp=b.querySelector("#au_admmail");
+      b.querySelector("#au_admadd").onclick=()=>{
+        const em=(inp.value||"").trim().toLowerCase();
+        if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){ adminMsg="信箱格式不正確。"; render(); return; }
+        db().ref("adminEmails/"+emailKey(em)).set(em).then(()=>{ adminMsg="已新增："+em; adminList=null; render(); }).catch(e=>{ adminMsg="新增失敗："+(e.code||e.message)+"（請確認 Firebase 規則允許管理員寫入 adminEmails）"; render(); });
+      };
+      b.querySelectorAll(".au_admrm").forEach(a=>a.onclick=()=>{
+        if(!confirm("確定要移除這位管理員嗎？")) return;
+        db().ref("adminEmails/"+a.dataset.k).remove().then(()=>{ adminMsg="已移除。"; adminList=null; render(); }).catch(e=>{ adminMsg="移除失敗："+(e.code||e.message); render(); });
+      });
+    }
     if(view==="bind"){
       b.querySelectorAll(".au_chip").forEach(c=>c.onclick=()=>{ const k=c.dataset.k;
         if(k==="show-bound") bindShow=bindShow==="bound"?"all":"bound";
@@ -8382,6 +8430,7 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
     const ab=document.getElementById("emoAdminBtn"); if(ab) ab.style.display=isAdmin()?"":"none";
     const uid=(window.Auth&&Auth.uid&&Auth.uid())||null;
     if(uid!==mineUid) watchMine(uid);
+    if(uid!==avUid) loadMyAv(uid);
     grid.querySelectorAll(".card").forEach(c=>{
       const e=c.querySelector(".emo-more");
       if(e) e.style.display=canManage(c.dataset.k)?"flex":"none";
@@ -8478,6 +8527,70 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
   }
   delBtn.addEventListener("click",()=>deletePost(editKey));
 
+  /* ===== 實名發言頭像：存在 users/<uid>/av（跨裝置）＋本機快取；留言時會附在實名留言上 ===== */
+  let myAv="", avUid=null, avDraft="";
+  const avBtn=document.getElementById("emoAvBtn"), avOv=document.getElementById("emoAvOverlay"), avPrev=document.getElementById("emoAvPrev"),
+        avFile=document.getElementById("emoAvFile"), avOk=document.getElementById("emoAvOk"), avRm=document.getElementById("emoAvRm");
+  const avKey=u=>"emo_named_av_"+u;
+  function paintAvBtn(){
+    if(!avBtn) return;
+    avBtn.classList.toggle("has",!!myAv);
+    const im=avBtn.querySelector(".emo-av-thumb"); if(im&&myAv) im.src=myAv;
+  }
+  function loadMyAv(uid){
+    avUid=uid; myAv="";
+    if(uid){ try{ myAv=localStorage.getItem(avKey(uid))||""; }catch(e){} }
+    paintAvBtn();
+    if(!uid) return;
+    const d=getDb(); if(!d) return;
+    d.ref("users/"+uid+"/av").once("value").then(sn=>{
+      if(avUid!==uid) return;
+      const v=sn.val();
+      if(typeof v==="string"&&v.indexOf("data:image/")===0){ myAv=v; try{ localStorage.setItem(avKey(uid),v); }catch(e){} paintAvBtn(); }
+    }).catch(()=>{});
+  }
+  function saveMyAv(v){
+    const uid=uidNow(); if(!uid) return;
+    myAv=v||""; paintAvBtn();
+    try{ if(v) localStorage.setItem(avKey(uid),v); else localStorage.removeItem(avKey(uid)); }catch(e){}
+    const d=getDb(); if(d) d.ref("users/"+uid).update({av:v||null}).catch(er=>console.warn("avatar cloud save failed",er));
+  }
+  function showAvPrev(src){
+    avPrev.innerHTML=src?'<img src="'+esc(src)+'" alt="">':"未設定";
+  }
+  function openAv(){
+    if(!window.Auth||!Auth.requireLogin()) return;
+    avDraft=""; avFile.value=""; avOk.disabled=true;
+    showAvPrev(myAv); avRm.style.display=myAv?"":"none";
+    avOv.classList.add("open");
+  }
+  const closeAv=()=>avOv.classList.remove("open");
+  if(avBtn){
+    avBtn.addEventListener("click",openAv);
+    document.getElementById("emoAvClose").addEventListener("click",closeAv);
+    document.getElementById("emoAvCancel").addEventListener("click",closeAv);
+    avOv.addEventListener("click",e=>{ if(e.target===avOv) closeAv(); });
+    avFile.addEventListener("change",()=>{
+      const f=avFile.files&&avFile.files[0]; if(!f) return;
+      if(f.size>4*1024*1024){ alert("圖片太大了（上限 4MB）。"); avFile.value=""; return; }
+      const rd=new FileReader();
+      rd.onload=()=>{
+        const im=new Image();
+        im.onload=()=>{
+          const S=96, c=document.createElement("canvas"); c.width=c.height=S;
+          const m=Math.min(im.width,im.height), sx=(im.width-m)/2, sy=(im.height-m)/2;
+          const g=c.getContext("2d"); g.fillStyle="#000"; g.fillRect(0,0,S,S); g.drawImage(im,sx,sy,m,m,0,0,S,S);
+          avDraft=c.toDataURL("image/jpeg",0.82); showAvPrev(avDraft); avOk.disabled=false;
+        };
+        im.onerror=()=>alert("無法讀取這張圖片。");
+        im.src=rd.result;
+      };
+      rd.readAsDataURL(f);
+    });
+    avOk.addEventListener("click",()=>{ if(!avDraft) return; saveMyAv(avDraft); closeAv(); });
+    avRm.addEventListener("click",()=>{ saveMyAv(""); closeAv(); });
+  }
+
   /* ===== 按讚／留言（類似臉書）=====
      emotion_likes/<postKey>/<uid> = true
      emotion_comments/<postKey>/<commentKey> = {t, ts, n(只有實名才有)}
@@ -8495,7 +8608,7 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
   const iLiked=k=>{ const u=uidNow(); return !!(u&&likeMap[k]&&likeMap[k][u]); };
   function cmtList(k){
     const v=cmtMap[k]||{};
-    return Object.keys(v).map(ck=>({k:ck,t:String(v[ck].t||""),ts:v[ck].ts||0,nm:v[ck].n?String(v[ck].n):"",p:v[ck].p?String(v[ck].p):""})).sort((a,b)=>a.ts-b.ts||(a.k<b.k?-1:1));
+    return Object.keys(v).map(ck=>({k:ck,t:String(v[ck].t||""),ts:v[ck].ts||0,nm:v[ck].n?String(v[ck].n):"",p:v[ck].p?String(v[ck].p):"",a:(typeof v[ck].a==="string"&&v[ck].a.indexOf("data:image/")===0)?v[ck].a:""})).sort((a,b)=>a.ts-b.ts||(a.k<b.k?-1:1));
   }
   function actionsHtml(k){
     return '<div class="emo-actions"><button type="button" class="emo-act emo-like'+(iLiked(k)?' on':'')+'" title="讚">'+HEART+'<span>'+likeCount(k)+'</span></button><button type="button" class="emo-act emo-cmt" title="留言">'+BUBBLE+'<span>'+cmtList(k).length+'</span></button></div>';
@@ -8567,7 +8680,7 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
     cs.forEach(c=>{ byKey[c.k]=c; });
     cs.forEach(c=>{ if(c.p&&c.p!==c.k&&byKey[c.p]) (kids[c.p]=kids[c.p]||[]).push(c); else tops.push(c); });
     const flat=k=>{ let o=[]; (kids[k]||[]).forEach(x=>{ o.push(x); o=o.concat(flat(x.k)); }); return o.sort((a,b)=>a.ts-b.ts||(a.k<b.k?-1:1)); };
-    const avatar=(nm,sm)=>{
+    const avatar=(nm,sm,av)=>{
       const cls="emo-cav"+(sm?" sm":"");
       // 匿名：統一紅底亮紅問號
       if(!nm) return '<div class="'+cls+' anon">?</div>';
@@ -8578,7 +8691,8 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
           ? '<div class="'+cls+' role-img"><img src="'+esc(r.avatarUrl)+'" alt=""></div>'
           : '<div class="'+cls+' role-empty"></div>';
       }
-      // 實名：維持原本的首字頭像
+      // 實名：有設定頭像就用頭像，沒有就維持原本的首字頭像
+      if(av) return '<div class="'+cls+' role-img"><img src="'+esc(av)+'" alt=""></div>';
       const ch=Array.from(nm)[0]; let h=0; for(const x of nm) h=(h*31+x.charCodeAt(0))%360;
       return '<div class="'+cls+'" style="background:hsl('+h+',38%,30%)">'+esc(ch)+'</div>'; };
     // 一則留言（含它底下的回覆）。超過三層的回覆不再往內縮，改成同一層並標註「回覆誰」
@@ -8589,7 +8703,7 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
       const head='<div class="emo-chead"><span class="emo-name">'+esc(shortName(c.nm))+'</span><span class="emo-when" title="'+esc(fmt(c.ts))+'">'+esc(ago(c.ts))+'</span>'+(mng&&!ed?'<button type="button" class="emo-more" style="display:flex" title="更多">'+DOTS+'</button><div class="emo-menu"><button type="button" data-a="cedit">'+PEN+'編輯</button><button type="button" data-a="cdel">'+BIN+'刪除</button></div>':'')+'</div>';
       const body=ed?'<div class="emo-c-edit"><textarea class="emo-c-edit-ta" maxlength="200">'+esc(editDraft)+'</textarea><div class="emo-c-bar"><span class="n">'+editDraft.length+'/200</span><button type="button" data-a="ccancel">取消</button><button type="button" class="go" data-a="csave">儲存</button></div></div>':'<div class="emo-c-body">'+esc(c.t)+'</div>';
       const acts=ed?"":'<div class="emo-cacts"><button type="button" class="emo-act emo-creply" title="回覆">'+BUBBLE+(nrep?'<span>'+nrep+'</span>':'')+'</button></div>';
-      return '<div class="emo-c'+(replyTo===c.k?" replying":"")+'" data-ck="'+esc(c.k)+'"><div class="emo-crow"><div class="emo-cl">'+avatar(c.nm,depth>0)+(own.length?'<div class="emo-cline"></div>':'')+'</div><div class="emo-cm">'+head+(label?'<div class="emo-clabel">'+esc(label)+'</div>':'')+body+acts+'</div></div>'
+      return '<div class="emo-c'+(replyTo===c.k?" replying":"")+'" data-ck="'+esc(c.k)+'"><div class="emo-crow"><div class="emo-cl">'+avatar(c.nm,depth>0,c.a)+(own.length?'<div class="emo-cline"></div>':'')+'</div><div class="emo-cm">'+head+(label?'<div class="emo-clabel">'+esc(label)+'</div>':'')+body+acts+'</div></div>'
         +(own.length?'<div class="emo-kids">'+own.map(x=>one(x,depth>=2?3:depth+1,(depth>=2&&x.p!==c.k&&byKey[x.p])?"回覆 "+shortName(byKey[x.p].nm):"")).join("")+'</div>':'')+'</div>';
     };
     pList.innerHTML=tops.length?tops.map(c=>one(c,0,(c.p&&!byKey[c.p])?"回覆已刪除的留言":"")).join(""):'<div class="emo-cempty">還沒有留言，來說點什麼。</div>';
@@ -8694,6 +8808,7 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
     if(replyTo&&cmtList(pk).some(c=>c.k===replyTo)) rec.p=replyTo;
     if(cmode==="named"){ const nk=(Auth.nick()||"").slice(0,50); if(nk) rec.n=nk; }
     else if(cmode==="role"&&cRole){ rec.n=String(cRole.name).slice(0,50); }
+    if(cmode==="named"&&rec.n&&myAv) rec.a=myAv;
     const up={}; up[CMT+"/"+pk+"/"+ck]=rec; up[COWN+"/"+ck]=uid; up[CMINE+"/"+uid+"/"+ck]=true;
     cSend.disabled=true;
     d.ref().update(up).then(()=>{ lastC=Date.now(); cTa.value=""; fitComposer(); replyTo=null; if(curPost===pk) renderPost();
