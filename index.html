@@ -2704,12 +2704,12 @@
 .emo-send:disabled{opacity:.4;cursor:default}
 #emoOverlay .emo-form{max-width:none;margin:0}
 #emoAddBtn .fab-plus{font-size:24px;color:var(--bone)}
-.emo-grid .card{padding:24px 24px 26px;gap:16px;animation:bpBodyIn .5s ease both}
+.emo-grid .card{padding:24px 24px 64px;gap:16px;animation:bpBodyIn .5s ease both}
+.emo-grid .card-top .status{max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.emo-time{position:absolute;left:24px;bottom:24px;font-family:var(--mono);font-size:11px;color:var(--bone-dim)}
+.emo-grid .edit-btn{display:none}
+#emoDel{margin-top:10px}
 .emo-text{font-family:var(--sans);font-size:15px;line-height:1.8;color:var(--bone);white-space:pre-wrap;word-break:break-word}
-.emo-del{position:absolute;right:10px;bottom:8px;background:none;border:none;color:var(--bone-dim);font-size:14px;cursor:pointer;opacity:.6;display:none}
-.emo-del:hover{opacity:1;color:var(--c-warn)}
-.emo-edit{position:absolute;right:34px;bottom:8px;background:none;border:none;color:var(--bone-dim);font-size:14px;cursor:pointer;opacity:.6;display:none}
-.emo-edit:hover{opacity:1;color:var(--bone)}
 .emo-mode{display:flex;gap:8px}
 .emo-mode button{flex:1;font-family:var(--mono);font-size:12px;letter-spacing:.1em;color:var(--bone-dim);background:transparent;border:1px solid var(--line);padding:9px 10px;cursor:pointer;transition:background .25s ease,border-color .25s ease,color .25s ease}
 .emo-mode button.on{color:var(--bone);background:rgba(181,2,15,.16);border-color:rgba(181,2,15,.5)}
@@ -3321,6 +3321,7 @@
       <div class="emo-mode" id="emoMode"><button type="button" data-m="anon" class="on">匿名</button><button type="button" data-m="named">實名</button></div>
       <div class="emo-mode-hint" id="emoModeHint"></div>
       <div class="emo-row"><span class="emo-count" id="emoCount">0 / 200</span><button class="emo-send" id="emoSend">投遞</button></div>
+      <button type="button" class="modify-btn" id="emoDel" style="display:none">刪除這則投遞</button>
     </div>
   </div>
 </div>
@@ -3829,7 +3830,7 @@ const Auth=(function(){
   }
   /* ---------- 信箱（通知） ---------- */
   let inbox=[],inboxRef=null,inboxUid=null,inboxInit=false,badge=null,toastEl=null,toastT=null;
-  const NOTI={kill:{t:"你的角色被擊殺",c:"bad"},mad:{t:"你的角色陷入瘋狂",c:"bad"},hit:{t:"你的角色受到攻擊",c:"warn"},torture:{t:"你的角色遭到折磨",c:"warn"},accident:{t:"你的角色遭遇醫療事故",c:"warn"},heal:{t:"你的角色受到治療",c:"good"},support:{t:"你的角色獲得資助",c:"good"},sys:{t:"系統通知",c:"sys"},evt:{t:"通知",c:"sys"}};
+  const NOTI={kill:{t:"你的角色被擊殺",c:"bad kill"},mad:{t:"你的角色陷入瘋狂",c:"bad"},hit:{t:"你的角色受到攻擊",c:"warn"},torture:{t:"你的角色遭到折磨",c:"warn"},accident:{t:"你的角色遭遇醫療事故",c:"warn"},heal:{t:"你的角色受到治療",c:"good"},support:{t:"你的角色獲得資助",c:"good"},sys:{t:"系統通知",c:"sys"},evt:{t:"通知",c:"sys"}};
   const unread=()=>inbox.filter(x=>!x.r).length;
   const BACK='<div class="au-stick bk"><button class="modal-close au_back" aria-label="關閉">×</button></div>';   // 子頁面左上角：返回個人檔案首頁
   /* ---------- 綁定一覽（管理員） ---------- */
@@ -3875,9 +3876,12 @@ const Auth=(function(){
 #authBox .au-noti{border:1px solid var(--line);border-left:3px solid var(--bone-dim);background:var(--bg-panel);padding:11px 14px;margin:10px 0;opacity:.62}
 #authBox .au-noti.unread{opacity:1;box-shadow:0 0 0 1px rgba(181,2,15,.25) inset}
 #authBox .au-noti.bad{border-left-color:#c2242f}
-#authBox .au-noti.warn{border-left-color:#d08a2e}
-#authBox .au-noti.good{border-left-color:#4f9d78}
+#authBox .au-noti.warn{border-left-color:#c2242f}
+#authBox .au-noti.good{border-left-color:#0F7F8D}
 #authBox .au-noti.sys{border-left-color:#6ca6c9}
+#authBox .au-noti.kill{background:#6e0a12;border-color:#c2242f}
+#authBox .au-noti.kill .au-noti-h{color:#fff}
+#authBox .au-noti.kill .au-noti-b{color:#f3d6d6}
 #authBox .au-noti-h{display:flex;justify-content:space-between;gap:10px;font-family:var(--serif);font-size:14px;font-weight:700;color:var(--bone);letter-spacing:.06em;margin-bottom:5px}
 #authBox .au-noti.unread .au-noti-h::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#c2242f;margin-right:7px;align-self:center}
 #authBox .au-noti-h>span:first-child{flex:1}
@@ -8134,7 +8138,7 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
   const grid=document.getElementById("emoGrid"), meta=document.getElementById("emoMeta"),
         ta=document.getElementById("emoText"), cnt=document.getElementById("emoCount"), send=document.getElementById("emoSend");
   if(!grid||!ta||!send) return;
-  const modeBox=document.getElementById("emoMode"), modeHint=document.getElementById("emoModeHint"), titleEl=document.getElementById("emoTitle");
+  const delBtn=document.getElementById("emoDel"), modeBox=document.getElementById("emoMode"), modeHint=document.getElementById("emoModeHint"), titleEl=document.getElementById("emoTitle");
   let db=null, ref=null, list=[], lastSend=0, mode="anon", editKey=null, mineSet=new Set(), mineUid=null, mineRef=null;
   const esc=t=>String(t==null?"":t).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const pad=(n,l)=>String(n).padStart(l,"0");
@@ -8143,7 +8147,7 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
     try{ if(typeof firebase==="undefined") return null; if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG); db=firebase.database(); }catch(e){ console.warn("emo db failed",e); }
     return db;
   }
-  function fmt(ts){ if(!ts) return "—"; const d=new Date(ts); return pad(d.getMonth()+1,2)+"/"+pad(d.getDate(),2)+" "+pad(d.getHours(),2)+":"+pad(d.getMinutes(),2); }
+  function fmt(ts){ return ts?new Date(ts).toLocaleString("zh-TW",{hour12:false,year:"numeric",month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"}):"—"; }
   const isAdmin=()=>!!(window.Auth&&Auth.isAdmin);
   const canManage=k=>isAdmin()||mineSet.has(k);
   function setMode(m){
@@ -8157,7 +8161,7 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
     meta.textContent="收容數量 "+pad(list.length,3);
     if(!list.length){ grid.innerHTML='<div class="emo-empty">收容室目前是空的。</div>'; return; }
     grid.innerHTML=list.slice().reverse().map(x=>
-      '<div class="card ok" data-k="'+esc(x.k)+'"><div class="card-top"><span class="id-num">'+(x.nm?esc(x.nm):"匿名")+'　編號 <b>'+pad(x.n,4)+'</b></span><span class="status ok">'+esc(fmt(x.ts))+'</span></div><div class="emo-text">'+esc(x.t)+'</div><button class="emo-edit" title="編輯">✎</button><button class="emo-del" title="刪除">✕</button></div>'
+      '<div class="card ok" data-k="'+esc(x.k)+'"><div class="card-top"><span class="id-num">編號 <b>'+pad(x.n,4)+'</b></span><span class="status ok">'+(x.nm?esc(x.nm):"匿名")+'</span></div><div class="emo-text">'+esc(x.t)+'</div><div class="emo-time">'+esc(fmt(x.ts))+'</div><button class="edit-btn" title="編輯"><svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M19,19V12.31L21,10.31V19A2,2 0 0,1 19,21H5A2,2 0 0,1 3,19V5A2,2 0 0,1 5,3H13.69L11.69,5H5V19H19M21.7,7.35L18.65,4.3L20.07,2.88C20.46,2.5 21.09,2.5 21.48,2.88L23.12,4.5C23.5,4.91 23.5,5.54 23.12,5.93L21.7,7.35M19.94,8.06L10,18H7V15L16.94,5.06L19.94,8.06Z"/></svg></button></div>'
     ).join("");
     syncAdmin();
   }
@@ -8165,9 +8169,8 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
     const uid=(window.Auth&&Auth.uid&&Auth.uid())||null;
     if(uid!==mineUid) watchMine(uid);
     grid.querySelectorAll(".card").forEach(c=>{
-      const on=canManage(c.dataset.k)?"block":"none";
-      const e=c.querySelector(".emo-edit"), d=c.querySelector(".emo-del");
-      if(e) e.style.display=on; if(d) d.style.display=on;
+      const e=c.querySelector(".edit-btn");
+      if(e) e.style.display=canManage(c.dataset.k)?"flex":"none";
     });
   }
   // 讀「我投遞過哪些」（只有自己的 uid 讀得到）
@@ -8197,11 +8200,11 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
       const it=list.find(x=>x.k===editKey); if(!it||!canManage(editKey)) return;
       ta.value=it.t; cnt.textContent=ta.value.length+" / 200";
       titleEl.textContent="編輯投遞"; send.textContent="儲存";
-      modeBox.style.display="none"; modeHint.style.display="none";
+      modeBox.style.display="none"; modeHint.style.display="none"; delBtn.style.display="";
     }else{
       ta.value=""; cnt.textContent="0 / 200";
       titleEl.textContent="投遞"; send.textContent="投遞";
-      modeBox.style.display=""; modeHint.style.display="";
+      modeBox.style.display=""; modeHint.style.display=""; delBtn.style.display="none";
       setMode("anon");
     }
     ov.classList.add("open"); setTimeout(()=>ta.focus(),50);
@@ -8242,22 +8245,23 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
   });
   grid.addEventListener("click",e=>{
     const card=e.target.closest&&e.target.closest(".card"); if(!card) return;
-    const k=card.dataset.k;
-    if(e.target.closest(".emo-edit")){ if(canManage(k)) openForm(k); return; }
-    if(!e.target.closest(".emo-del")) return;
-    if(!canManage(k)) return;
+    if(e.target.closest(".edit-btn")){ const k=card.dataset.k; if(canManage(k)) openForm(k); }
+  });
+  delBtn.addEventListener("click",()=>{
+    const k=editKey; if(!k||!canManage(k)) return;
     if(!confirm("確定刪除這則投遞？")) return;
     const d=getDb(); if(!d) return;
     const fail=er=>alert("刪除失敗："+(er.code||er.message));
+    const done=()=>{ closeForm(); };
     if(isAdmin()){
       // 管理員：先查出投遞者，才能一併清掉他的索引
       d.ref(OWN+"/"+k).once("value").then(sn=>{
         const ou=sn.val(), up={}; up[PATH+"/"+k]=null; up[OWN+"/"+k]=null; if(ou) up[MINE+"/"+ou+"/"+k]=null;
         return d.ref().update(up);
-      }).catch(fail);
+      }).then(done).catch(fail);
     }else{
       const up={}; up[PATH+"/"+k]=null; up[OWN+"/"+k]=null; up[MINE+"/"+mineUid+"/"+k]=null;
-      d.ref().update(up).catch(fail);
+      d.ref().update(up).then(done).catch(fail);
     }
   });
   setInterval(syncAdmin,1500);
