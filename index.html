@@ -3727,6 +3727,7 @@ const Auth=(function(){
   let inbox=[],inboxRef=null,inboxUid=null,inboxInit=false,badge=null,toastEl=null,toastT=null;
   const NOTI={kill:{t:"你的角色被擊殺",c:"bad"},mad:{t:"你的角色陷入瘋狂",c:"bad"},hit:{t:"你的角色受到攻擊",c:"warn"},torture:{t:"你的角色遭到折磨",c:"warn"},accident:{t:"你的角色遭遇醫療事故",c:"warn"},heal:{t:"你的角色受到治療",c:"good"},support:{t:"你的角色獲得資助",c:"good"},sys:{t:"系統通知",c:"sys"},evt:{t:"通知",c:"sys"}};
   const unread=()=>inbox.filter(x=>!x.r).length;
+  const BACK='<button class="au-back au_back">‹ 返回</button>';   // 子頁面左上角：返回個人檔案首頁
   /* ---------- 綁定一覽（管理員） ---------- */
   let bindFilter="all",bindShow="all",bindSort=false,nickCache={};   // nickCache：uid → 暱稱（undefined=沒查過、null=查詢中、""=沒有暱稱）
   const FSHORT={"實驗體":"實驗體","醫療清潔部隊":"醫療隊","資助者":"資助者"};
@@ -3798,6 +3799,34 @@ const Auth=(function(){
     clearTimeout(toastT); toastT=setTimeout(()=>{ if(toastEl) toastEl.classList.remove("show"); },6500);
     try{ if(navigator.vibrate) navigator.vibrate(80); }catch(e){}
   }
+  // 被擊殺：跳出置中的大視窗（跟自己擊殺別人時的回報視窗同樣的樣子），其他通知仍是上方小提示
+  let killOv=null,killItems=[];
+  function drawKill(){
+    if(!killOv) return;
+    const n=killItems.length;
+    killOv.innerHTML='<div class="modal-box"><div class="reveal-box kill" id="killBox">'
+      +'<div class="modal-eyebrow">通知</div>'
+      +'<div class="target-report killed"><div class="modal-title">☠ 你的角色被擊殺'+(n>1?'（共 '+n+' 則）':'')+'</div>'
+      +killItems.map(x=>'<div class="result-line" style="margin-bottom:8px">'+esc(x.msg).replace(/\n/g,"<br>")+'</div>').join("")+'</div>'
+      +'<button class="confirm-btn" id="killOk">確認</button></div></div>';
+    const ok=killOv.querySelector("#killOk");
+    const done=()=>{
+      const up={}; killItems.forEach(x=>{ up[x.id+"/r"]=true; });
+      if(user&&Object.keys(up).length) db().ref("notifications/"+user.uid).update(up).catch(e=>console.warn("mark read failed",e));
+      if(killOv){ killOv.remove(); killOv=null; } killItems=[];
+    };
+    ok.onclick=done;
+    killOv.onclick=e=>{ if(e.target===killOv) done(); };
+    requestAnimationFrame(()=>setTimeout(()=>{ const b=killOv&&killOv.querySelector("#killBox"); if(b) b.classList.add("show"); try{ if(typeof flashScreen==="function") flashScreen(); }catch(_){} },60));
+  }
+  function showKill(list){
+    const have=new Set(killItems.map(x=>x.id));
+    list.forEach(x=>{ if(!have.has(x.id)) killItems.push(x); });
+    if(!killItems.length) return;
+    if(!killOv){ killOv=document.createElement("div"); killOv.className="modal-overlay open"; killOv.style.zIndex="100001"; document.body.appendChild(killOv); }
+    drawKill();
+    try{ if(navigator.vibrate) navigator.vibrate([120,60,120]); }catch(_){}
+  }
   function markAllRead(){
     if(!user) return;
     const up={}; inbox.forEach(x=>{ if(!x.r) up[x.id+"/r"]=true; });
@@ -3821,10 +3850,17 @@ const Auth=(function(){
         const first=!inboxInit;
         inbox=list; inboxInit=true; updateBadge();
         const viewing=isOpen()&&view==="inbox";
-        if(first){ const n=unread(); if(n) toast("信箱","你有 "+n+" 則未讀通知",true); }
-        else if(fresh.length&&!viewing){
-          const x=fresh[0], m=NOTI[x.k]||NOTI.evt;
-          toast(m.t+(fresh.length>1?"（共 "+fresh.length+" 則）":""),String(x.msg||"").split("\n")[0]);
+        if(first){
+          const un=inbox.filter(x=>!x.r), ks=un.filter(x=>x.k==="kill").slice(0,5);
+          if(ks.length) showKill(ks);   // 你不在的時候被擊殺的，一進來就先告訴你
+          const n=un.length-ks.length; if(n>0) toast("信箱","你有 "+n+" 則未讀通知",true);
+        }else{
+          const ks=fresh.filter(x=>x.k==="kill"), rest=fresh.filter(x=>x.k!=="kill");
+          if(ks.length) showKill(ks);
+          if(rest.length&&!viewing){
+            const x=rest[0], m=NOTI[x.k]||NOTI.evt;
+            toast(m.t+(rest.length>1?"（共 "+rest.length+" 則）":""),String(x.msg||"").split("\n")[0]);
+          }
         }
         if(isOpen()&&(view==="home"||view==="inbox")) render();
       },e=>{ console.warn("inbox read failed",e); try{ SharedStore.banner("信箱讀取失敗（"+((e&&e.code)||"未知原因")+"）：請確認 Firebase 規則已加入 notifications 並發布。"); }catch(_){} });
@@ -3919,7 +3955,14 @@ const Auth=(function(){
 @keyframes auFadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 #authBox .au-spin{position:relative;width:34px;height:34px;margin:44px auto;border-radius:50%;border:2px solid rgba(181,2,15,.22);border-top-color:var(--c-crit);box-shadow:0 0 14px rgba(181,2,15,.25);animation:logSpin .9s linear infinite}
 #authBox .au-spin::after{content:"";position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:var(--c-crit);animation:blink 1.2s ease-in-out infinite}
-#authBox .au-empty{padding:14px;border:1px dashed var(--line);border-radius:0;font-size:13px;opacity:.7}`;
+#authBox .au-empty{padding:14px;border:1px dashed var(--line);border-radius:0;font-size:13px;opacity:.7}
+#authBox .au-cta{margin:12px 0 6px;padding:30px 20px 24px;min-height:190px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;border:2px dashed var(--c-crit);background:rgba(181,2,15,.09);box-shadow:0 0 24px rgba(181,2,15,.12) inset;cursor:pointer}
+#authBox .au-cta-h{font-family:var(--serif);font-size:19px;font-weight:700;letter-spacing:.08em;color:var(--bone);margin-bottom:10px}
+#authBox .au-cta-s{font-size:13px;line-height:1.7;color:var(--bone-dim);margin-bottom:18px}
+#authBox .au-cta .confirm-btn{margin:0;width:100%;padding:15px 14px;font-size:15px}
+#authBox .au-back{display:inline-block;margin:0 0 12px -4px;padding:4px 10px 4px 4px;background:none;border:none;color:var(--clinical);font-family:var(--mono);font-size:13px;letter-spacing:.1em;cursor:pointer}
+#authBox .au-back:hover{color:var(--bone)}
+#authBox .au-empty.small{padding:9px 12px;font-size:12px;opacity:.5}`;
     document.head.appendChild(st);
   }
   function load(){
@@ -3938,6 +3981,13 @@ const Auth=(function(){
       }).catch(()=>{ tutDone=localTut()?true:null; })   // 讀不到雲端：寧可不顯示（null），也不讓已看過的人再看一次
     ]).then(()=>{ loaded=true; paint(); watchPend(); watchInbox(); });
   }
+  // 回到首頁（第一個區塊）
+  function goHome(){
+    try{
+      if(typeof jumpToIndex==="function"&&typeof withTransitionLock==="function") withTransitionLock(()=>jumpToIndex(0));
+      else window.scrollTo({top:0,behavior:"smooth"});
+    }catch(e){ try{ window.scrollTo(0,0); }catch(_){} }
+  }
   function init(){
     paint();
     if(typeof firebase==="undefined"||!firebase.auth){ authReady=true; return; }
@@ -3951,7 +4001,16 @@ const Auth=(function(){
         const p=load();
         Promise.race([p,new Promise(r=>setTimeout(r,6000))]).then(paint);
         p.then(()=>{
-          const finish=()=>{ working=""; if(u&&!nick&&!notice) openPanel(); else if(isOpen()) render(); };
+          const finish=()=>{
+            working="";
+            if(u&&tutDone===false){
+              // 第一次使用：不跳個人檔案，回首頁、直接開始新手教學（教學會告訴他要先設定暱稱）
+              const wasOpen=isOpen(); notice="";
+              if(wasOpen){ hide(); setTimeout(goHome,450); }
+              return;
+            }
+            if(u&&!nick&&!notice) openPanel(); else if(isOpen()) render();
+          };
           if(u&&working) setTimeout(finish,900); else finish();
         });
       });
@@ -4035,12 +4094,12 @@ const Auth=(function(){
   }
   function cardsHTML(){
     const m=myChars();
-    if(!m.length) return '<div class="au-empty">還沒有已認領的角色，點右上「＋ 申請角色」。</div>';
+    if(!m.length) return '<div class="au-cta au_cta"><div class="au-cta-h">你還沒有角色</div><div class="au-cta-s">先申請一個角色，管理員批准後，就能編輯自己的角色、開始行動。</div><button class="confirm-btn">＋ 申請角色</button></div>';
     return m.map(({f,s})=>cardHTML(f,s,"own")).join("");
   }
   function favsHTML(){
     const list=roster("實驗體").filter(s=>favs.has(String(s.id)));
-    if(!list.length) return '<div class="au-empty">還沒有收藏的實驗體。收藏後可在這裡看他的面板，行動時他會置頂。</div>';
+    if(!list.length) return '<div class="au-empty small">還沒有收藏的實驗體。</div>';
     return list.map(s=>cardHTML("實驗體",s,"fav")).join("");
   }
   // 前往：關掉個人檔案，捲到名冊裡那張角色卡（做法跟「新增角色後前往查看」一樣）
@@ -4055,6 +4114,7 @@ const Auth=(function(){
     },420);   // 等個人檔案淡出、捲動鎖解除再跳
   }
   function bindCards(c){
+    c.querySelectorAll(".au_cta").forEach(a=>a.onclick=()=>{ view="claim"; render(); });
     c.querySelectorAll(".au_goto").forEach(a=>a.onclick=ev=>{ ev.preventDefault(); gotoChar(a.dataset.f,a.dataset.id); });
     c.querySelectorAll(".au_unbind").forEach(a=>a.onclick=ev=>{
       ev.preventDefault();
@@ -4097,7 +4157,7 @@ const Auth=(function(){
     if(view==="nick"){
       h+='<div class="modal-title">'+(nick?"修改暱稱":"先取個暱稱吧")+'</div><span class="field-label">暱稱（1–50 字）</span><input class="text-input" id="au_nick" maxlength="50" placeholder="暱稱｜陣營｜角色名，ex：汪汪｜主辦方/實驗體｜十字，同DC暱稱" value="'+esc(nick)+'"><button class="confirm-btn" id="au_sn">儲存</button>';
     }else if(view==="claim"){
-      h+='<div class="modal-eyebrow">帳號</div><div class="modal-title" style="font-size:17px">申請認領角色</div>';
+      h+=BACK+'<div class="modal-title" style="font-size:17px">申請認領角色</div>';
       const pk=Object.keys(pend).filter(k=>!isApproved(pend[k])), ak=Object.keys(pend).filter(k=>isApproved(pend[k]));
       if(ak.length) h+='<div class="au-pend"><div class="au-pend-h">已批准</div><div class="au-pend-s">角色已綁定到你的帳號，可以在「我的角色」使用</div>'+ak.map(k=>'<div class="au-pend-t">'+esc(pend[k].f)+'　編號 '+esc(pend[k].id)+'　'+esc(pend[k].name)+'</div><button class="au-btn au_cancel" data-c="'+esc(k)+'">知道了</button>').join("")+'</div>';
       if(pk.length) h+='<div class="au-pend"><div class="au-pend-h">等待批准</div><div class="au-pend-s">管理員批准後即可使用角色</div>'+pk.map(k=>'<div class="au-pend-t">'+esc(pend[k].f)+'　編號 '+esc(pend[k].id)+'　'+esc(pend[k].name)+'</div><button class="au-btn au-danger au_cancel" data-c="'+esc(k)+'">取消申請</button>').join("")+'</div>';
@@ -4107,7 +4167,7 @@ const Auth=(function(){
       ensureBindStyle();
       const {all,list}=bindItems();
       const unb=all.filter(x=>!x.s.owner).length;
-      h+='<div class="modal-eyebrow">管理員</div><div class="modal-title" style="font-size:17px">綁定一覽</div>'
+      h+=BACK+'<div class="modal-title" style="font-size:17px">綁定一覽</div>'
         +'<div class="au-chips">'+["all"].concat(Object.keys(ST)).map(k=>'<button class="au-chip au_chip'+(bindFilter===k?" on":"")+'" data-k="'+esc(k)+'">'+(k==="all"?"全部":FSHORT[k])+'</button>').join("")
         +'</div><div class="au-chips" style="margin-top:0">'
         +'<button class="au-chip au_chip'+(bindShow==="bound"?" on":"")+'" data-k="show-bound">只看已綁定</button>'
@@ -4122,15 +4182,15 @@ const Auth=(function(){
         }).join(""):'<div class="au-empty">'+(bindShow==="unbound"?"沒有未綁定的角色。":bindShow==="bound"?"沒有已綁定的角色。":"沒有角色。")+'</div>');
     }else if(view==="inbox"){
       ensureInboxStyle();
-      h+='<div class="modal-eyebrow">帳號</div><div class="modal-title" style="font-size:17px">'+MAIL_ICON+'</div>';
+      h+=BACK+'<div class="modal-title" style="font-size:17px">'+MAIL_ICON+'</div>';
       if(!inbox.length) h+='<div class="au-empty">目前沒有通知。你的角色被攻擊、擊殺、治療時，會顯示在這裡。</div>';
       else h+=inbox.map(x=>{ const m=NOTI[x.k]||NOTI.evt; const tm=x.ts?new Date(x.ts).toLocaleString("zh-TW",{hour12:false,month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"}):"";
         return '<div class="au-noti '+(x.r?"":"unread ")+m.c+'"><div class="au-noti-h"><span>'+m.t+'</span><span class="au-noti-time">'+esc(tm)+'</span></div><div class="au-noti-b">'+esc(x.msg).replace(/\n/g,"<br>")+'</div></div>'; }).join("")
         +'<button class="modify-btn" id="au_clr">清空信箱</button>';
     }else if(view==="admin"){
-      h+='<div class="modal-eyebrow">管理員</div><div class="modal-title" style="font-size:17px">待批准的申請</div><div id="au_list" class="modal-note">讀取中…</div>';
+      h+=BACK+'<div class="modal-title" style="font-size:17px">待批准的申請</div><div id="au_list" class="modal-note">讀取中…</div>';
     }else if(view==="fav"){
-      h+='<div class="modal-eyebrow">帳號</div><div class="modal-title">收藏的實驗體</div><div class="modal-note">收藏後，會在個人檔案顯示他的面板；行動選目標時，他會置頂並標示 ☆。</div>'
+      h+=BACK+'<div class="modal-title">收藏的實驗體</div><div class="modal-note">收藏後，會在個人檔案顯示他的面板；行動選目標時，他會置頂並標示 ☆。</div>'
         +roster("實驗體").map(x=>{ const on=favs.has(String(x.id)); return '<div class="au-favrow'+(on?" on":"")+'" data-id="'+esc(x.id)+'"><span class="au-star">☆</span><span class="au-fn">編號 '+esc(x.id)+'　'+esc(x.name)+'</span><span class="au-fs">'+(on?"已收藏":"點擊收藏")+'</span></div>'; }).join("");
     }else{
       const pn=Object.keys(pend).filter(k=>!isApproved(pend[k])).length, an=Object.keys(pend).length-pn, un=unread();
@@ -4147,6 +4207,7 @@ const Auth=(function(){
     if(view==="home"||!nick) h+='<div class="au-outwrap"><button class="au-logout" id="au_out">登出</button></div>';
     b.innerHTML=h; b.scrollTop=keep;
     b.querySelector("#au_x").onclick=()=>{ if(view!=="home"&&nick){ view="home"; render(); } else hide(); };
+    b.querySelectorAll(".au_back").forEach(x=>x.onclick=()=>{ view="home"; render(); });
     b.querySelectorAll(".au_row").forEach(r=>r.onclick=()=>{ if(r.dataset.v==="bind") nickCache={}; view=r.dataset.v; render(); });
     const addc=b.querySelector("#au_addchar");
     if(addc) addc.onclick=()=>{ if(!admin){ alert("只有管理員可以新增角色"); return; } hide(); openAddCharacter(); };
@@ -4222,7 +4283,7 @@ const Auth=(function(){
   const api={
     init,openPanel,
     get isOpen(){return isOpen()||!!(window.Tutorial&&window.Tutorial.active);},   // 教學進行中也鎖住頁面滾動
-    autoTutorialReady(){ return !!(user&&nick&&loaded&&tutDone===false&&!isOpen()&&!closing); },
+    autoTutorialReady(){ return !!(user&&loaded&&tutDone===false&&!isOpen()&&!closing); },
     markTutorialDone,
     favIds:()=>Array.from(favs), isFav:id=>favs.has(String(id)),
     get isAdmin(){return admin;},
@@ -4240,20 +4301,37 @@ window.Auth=Auth;
 /* ---------- 新手教學：第一次登入自動跑一次；目錄裡的「?」可以重看 ---------- */
 const Tutorial=(function(){
   const PENCIL='<svg viewBox="0 0 24 24" width="16" height="16" style="vertical-align:-3px"><path fill="currentColor" d="M19,19V12.31L21,10.31V19A2,2 0 0,1 19,21H5A2,2 0 0,1 3,19V5A2,2 0 0,1 5,3H13.69L11.69,5H5V19H19M21.7,7.35L18.65,4.3L20.07,2.88C20.46,2.5 21.09,2.5 21.48,2.88L23.12,4.5C23.5,4.91 23.5,5.54 23.12,5.93L21.7,7.35M19.94,8.06L10,18H7V15L16.94,5.06L19.94,8.06Z"/></svg>';
+  const closeM=()=>{ try{ if(typeof closeMenu==="function") closeMenu(); }catch(e){} };
+  const openM=()=>{ try{ const mp=document.getElementById("menuPanel"); if(mp&&!mp.classList.contains("open")&&typeof toggleMenu==="function") toggleMenu(); }catch(e){} };
+  const gotoRoster=()=>{
+    closeM();
+    try{
+      if(typeof snapSections==="undefined"||!snapSections[2]) return;
+      const r=snapSections[2].getBoundingClientRect();
+      const inView=r.top<innerHeight*0.6&&r.bottom>innerHeight*0.4;
+      if(!inView&&typeof withTransitionLock==="function") withTransitionLock(()=>jumpToIndex(2));   // 沒按到目錄的人，這裡幫他跳過去
+    }catch(e){}
+  };
   const STEPS=[
     {sel:"#menuToggle",h:"左上角：目錄",b:"點開可以快速跳到各區塊：機構資訊、實驗體名冊、醫療隊名冊、資助者名冊、行動紀錄。目錄裡的「?」可以隨時重看這份教學。"},
-    {sel:"#authBtn",h:"右上角：個人檔案",b:"在這裡登入、設定暱稱、申請認領自己的角色、收藏實驗體。你的角色被攻擊、治療、擊殺時，會收到信箱通知（按鈕上的紅點是未讀數量）。"},
+    {sel:"#authBtn",h:"右上角：個人檔案",b:"第一次使用請先點這裡設定暱稱，之後才能行動。也可以在這裡申請認領自己的角色、收藏實驗體。你的角色被攻擊、治療、擊殺時，會收到信箱通知（按鈕上的紅點是未讀數量）。"},
     {sel:"#rosterNav",show:"#rosterNav",h:"右側：進度條",b:"在名冊頁面滑動時，右邊會出現進度條。點上方箭頭回到該頁首，點下方箭頭跳到該頁尾。"},
     {sel:"#fab",h:"右下角：行動",b:"要攻擊、治療、資助、使用道具或重生，都從這裡開始，照著畫面一步一步選就可以。需要先登入並設定暱稱。"},
-    {sel:".card .edit-btn",h:"角色卡：編輯鍵",b:"每張角色卡右下角有一個 "+PENCIL+" 編輯鍵，可以修改自己角色的名稱、數值、頭像和隱藏台詞。只能編輯自己認領的角色（管理員可以編輯全部）。"},
-    {sel:"#logRoster",h:"行動紀錄",b:"目錄的「行動紀錄」會記下所有人的每一次行動：誰攻擊、誰治療、誰擊殺了誰，都看得到。"}
+    {sel:"#logRoster",h:"行動紀錄",b:"目錄的「行動紀錄」會記下所有人的每一次行動：誰攻擊、誰治療、誰擊殺了誰，都看得到。"},
+    {sel:"#menuToggle",h:"試試看：打開目錄",b:"請點一下發亮的目錄按鈕。",interactive:true,wait:"#menuToggle",delay:650,nextLabel:"略過這步",enter:closeM},
+    {sel:'.menu-item[data-target="2"]',h:"再點「實驗體名冊」",b:"點一下發亮的「實驗體名冊」，就會跳到所有實驗體的名冊。",interactive:true,wait:'.menu-item[data-target="2"]',delay:1100,nextLabel:"略過這步",enter:openM},
+    {sel:".card .edit-btn",h:"角色卡：編輯鍵",b:"每張角色卡右下角有一個 "+PENCIL+" 編輯鍵，可以編輯角色的名稱、數值、頭像和隱藏台詞。但只能編輯自己的角色（管理員可以編輯全部）。",enter:gotoRoster},
+    {sel:"#authBtn",h:"最後一步：申請角色",b:"教學到這裡就結束了！請點開右上角的個人檔案，選「＋ 申請角色」，等管理員批准後，你就能編輯自己的角色、開始行動了。",interactive:true,wait:"#authBtn",end:true,delay:150,nextLabel:"完成"}
   ];
-  let ov=null,hole=null,card=null,i=0,active=false,shown=null,onKey=null,onResize=null,stop=null;
+  let ov=null,hole=null,card=null,blocks=[],i=0,active=false,shown=null,onKey=null,onResize=null,onScroll=null,stopAll=null,raf=0,timers=[],waitEl=null,waitFn=null;
   function css(){
     if(document.getElementById("tutStyle")) return;
     const s=document.createElement("style"); s.id="tutStyle";
     s.textContent=`
 .tut-ov{position:fixed;inset:0;z-index:100002;touch-action:none;overscroll-behavior:contain}
+.tut-ov.pass{pointer-events:none}
+.tut-ov.pass .tut-card,.tut-ov.pass .tut-block{pointer-events:auto}
+.tut-block{position:fixed;display:none;background:transparent}
 .tut-hole{position:fixed;border-radius:6px;box-shadow:0 0 0 9999px rgba(0,0,0,.8);border:1px solid var(--c-crit);pointer-events:none;transition:all .3s ease}
 .tut-hole.none{border-color:transparent;box-shadow:0 0 0 9999px rgba(0,0,0,.84);left:50%;top:50%;width:0;height:0}
 .tut-card{position:fixed;left:50%;width:min(92vw,380px);box-sizing:border-box;transform:translateX(-50%);background:var(--bg-panel-2);border:1px solid var(--line);border-left:3px solid var(--c-crit);box-shadow:0 10px 40px rgba(0,0,0,.65);padding:18px 18px 14px;color:var(--bone);transition:top .3s ease,bottom .3s ease}
@@ -4263,73 +4341,114 @@ const Tutorial=(function(){
 .tut-row{display:flex;align-items:center;gap:8px;margin-top:16px}
 .tut-btn{font-family:var(--serif);font-size:14px;letter-spacing:.08em;padding:9px 16px;background:none;border:1px solid var(--line);color:var(--bone);cursor:pointer}
 .tut-btn.main{background:rgba(181,2,15,.22);border-color:var(--c-crit)}
+.tut-btn.soft{background:none;border-color:var(--line);color:var(--bone-dim)}
 .tut-btn:disabled{opacity:.3;cursor:default}
 .tut-skip{margin-left:auto;background:none;border:none;color:var(--bone-dim);font-size:12px;letter-spacing:.08em;cursor:pointer;padding:8px 2px;opacity:.75}
-.tut-dots{display:flex;gap:5px;margin-top:12px}
+.tut-dots{display:flex;gap:5px;margin-top:12px;flex-wrap:wrap}
 .tut-dots i{width:6px;height:6px;border-radius:50%;background:var(--line)}
 .tut-dots i.on{background:var(--c-crit)}
 .roster-nav.tut-show{opacity:1!important;visibility:visible!important}`;
     document.head.appendChild(s);
   }
   function visibleRect(sel){
-    const el=document.querySelector(sel); if(!el) return null;
-    const r=el.getBoundingClientRect(); if(r.width<4||r.height<4) return null;
-    const cs=getComputedStyle(el); if(cs.display==="none") return null;
-    if(sel!=="#rosterNav"&&(cs.visibility==="hidden"||+cs.opacity===0)) return null;
-    if(r.bottom<0||r.top>innerHeight||r.right<0||r.left>innerWidth) return null;   // 不在目前畫面上：改成置中說明
-    return r;
+    const list=document.querySelectorAll(sel);
+    for(const el of list){
+      const r=el.getBoundingClientRect(); if(r.width<4||r.height<4) continue;
+      const cs=getComputedStyle(el); if(cs.display==="none") continue;
+      if(sel!=="#rosterNav"&&(cs.visibility==="hidden"||+cs.opacity===0)) continue;
+      if(r.bottom<0||r.top>innerHeight||r.right<0||r.left>innerWidth) continue;   // 不在目前畫面上：換下一張，全都看不到就改成置中說明
+      return r;
+    }
+    return null;
   }
   function place(){
+    if(!active||!ov) return;
     const st=STEPS[i]; const r=visibleRect(st.sel);
+    const pad=6;
     if(r){
-      const pad=6;
       hole.className="tut-hole";
       hole.style.left=(r.left-pad)+"px"; hole.style.top=(r.top-pad)+"px";
       hole.style.width=(r.width+pad*2)+"px"; hole.style.height=(r.height+pad*2)+"px";
     }else{ hole.className="tut-hole none"; hole.style.cssText=""; }
+    // 互動步驟：只有亮起來的那塊可以點，其他地方用透明擋板擋住
+    const pass=!!(st.interactive&&r);
+    ov.classList.toggle("pass",pass);
+    if(pass){
+      const L=Math.max(0,r.left-pad),T=Math.max(0,r.top-pad),R=Math.min(innerWidth,r.right+pad),B=Math.min(innerHeight,r.bottom+pad);
+      const rects=[[0,0,innerWidth,T],[0,B,innerWidth,innerHeight-B],[0,T,L,B-T],[R,T,innerWidth-R,B-T]];
+      blocks.forEach((d,k)=>{ const q=rects[k]; d.style.display="block"; d.style.left=q[0]+"px"; d.style.top=q[1]+"px"; d.style.width=Math.max(0,q[2])+"px"; d.style.height=Math.max(0,q[3])+"px"; });
+    }else blocks.forEach(d=>{ d.style.display="none"; });
     card.style.top="auto"; card.style.bottom="auto";
     if(!r){ card.style.top=Math.max(16,(innerHeight-card.offsetHeight)/2)+"px"; return; }
     const cy=r.top+r.height/2;
     if(cy<innerHeight/2) card.style.top=Math.min(innerHeight-card.offsetHeight-12,r.bottom+18)+"px";
     else card.style.bottom=Math.min(innerHeight-card.offsetHeight-12,innerHeight-r.top+18)+"px";
   }
+  function clearTimers(){ timers.forEach(clearTimeout); timers=[]; }
+  function unwait(){ if(waitEl&&waitFn) waitEl.removeEventListener("click",waitFn); waitEl=null; waitFn=null; }
   function draw(){
     const st=STEPS[i];
+    unwait(); clearTimers();
     if(shown){ shown.classList.remove("tut-show"); shown=null; }
     if(st.show){ const el=document.querySelector(st.show); if(el){ el.classList.add("tut-show"); shown=el; } }
+    if(st.enter){ try{ st.enter(); }catch(e){} }
+    const last=i===STEPS.length-1;
     card.innerHTML='<div class="tut-step">'+(i+1)+' / '+STEPS.length+'</div><div class="tut-h">'+st.h+'</div><div class="tut-b">'+st.b+'</div>'
       +'<div class="tut-dots">'+STEPS.map((_,k)=>'<i class="'+(k===i?"on":"")+'"></i>').join("")+'</div>'
-      +'<div class="tut-row"><button class="tut-btn" id="tutPrev"'+(i?"":" disabled")+'>上一步</button><button class="tut-btn main" id="tutNext">'+(i===STEPS.length-1?"開始使用":"下一步")+'</button><button class="tut-skip" id="tutSkip">略過</button></div>';
+      +'<div class="tut-row"><button class="tut-btn" id="tutPrev"'+(i?"":" disabled")+'>上一步</button><button class="tut-btn '+(st.interactive&&!last?"soft":"main")+'" id="tutNext">'+(st.nextLabel||(last?"完成":"下一步"))+'</button>'+(last?"":'<button class="tut-skip" id="tutSkip">略過</button>')+'</div>';
     card.querySelector("#tutPrev").onclick=()=>{ if(i>0){ i--; draw(); } };
     card.querySelector("#tutNext").onclick=()=>{ if(i<STEPS.length-1){ i++; draw(); } else finish(); };
-    card.querySelector("#tutSkip").onclick=finish;
+    const sk=card.querySelector("#tutSkip"); if(sk) sk.onclick=finish;
+    if(st.wait){
+      const el=document.querySelector(st.wait);
+      if(el){
+        waitEl=el;
+        waitFn=()=>{ const cur=i; setTimeout(()=>{ if(!active||i!==cur) return; if(st.end) finish(); else if(i<STEPS.length-1){ i++; draw(); } },st.delay||600); };
+        el.addEventListener("click",waitFn);
+      }
+    }
     requestAnimationFrame(place);
+    [450,1000,1700].forEach(ms=>timers.push(setTimeout(place,ms)));   // 選單展開、跳頁捲動需要一點時間，之後再對準一次
   }
   function finish(){
     if(!active) return;
     active=false;
+    unwait(); clearTimers();
     if(shown){ shown.classList.remove("tut-show"); shown=null; }
-    document.removeEventListener("keydown",onKey); window.removeEventListener("resize",onResize);
+    closeM();
+    document.removeEventListener("keydown",onKey); window.removeEventListener("resize",onResize); window.removeEventListener("scroll",onScroll);
+    window.removeEventListener("wheel",stopAll); window.removeEventListener("touchmove",stopAll);
     if(ov){ ov.remove(); ov=null; }
+    blocks=[];
   }
   function start(){
     if(active) return;
     css();
-    try{ if(typeof closeMenu==="function") closeMenu(); }catch(e){}
+    closeM();
     active=true; i=0;
     try{ Auth.markTutorialDone(); }catch(e){}   // 一開始就記下「看過了」：中途關網頁也不會再出現
     ov=document.createElement("div"); ov.className="tut-ov";
     hole=document.createElement("div"); hole.className="tut-hole none";
+    ov.appendChild(hole);
+    blocks=[0,1,2,3].map(()=>{ const d=document.createElement("div"); d.className="tut-block"; ov.appendChild(d); return d; });
     card=document.createElement("div"); card.className="tut-card";
-    ov.appendChild(hole); ov.appendChild(card); document.body.appendChild(ov);
-    stop=e=>{ e.preventDefault(); };
+    ov.appendChild(card); document.body.appendChild(ov);
+    const stop=e=>{ e.preventDefault(); };
     ov.addEventListener("wheel",stop,{passive:false}); ov.addEventListener("touchmove",stop,{passive:false});
-    onKey=e=>{ if(e.key==="Escape") finish(); else if(e.key==="ArrowRight"||e.key==="Enter"){ const n=card.querySelector("#tutNext"); if(n) n.click(); } else if(e.key==="ArrowLeft"){ const p=card.querySelector("#tutPrev"); if(p&&!p.disabled) p.click(); } };
+    stopAll=e=>{ e.preventDefault(); };   // 教學中不讓使用者用滾輪／手指捲動頁面（點目錄跳頁不受影響）
+    window.addEventListener("wheel",stopAll,{passive:false}); window.addEventListener("touchmove",stopAll,{passive:false});
+    onKey=e=>{
+      if(e.key==="Escape") finish();
+      else if(e.key==="ArrowRight"||e.key==="Enter"){ const n=card.querySelector("#tutNext"); if(n) n.click(); }
+      else if(e.key==="ArrowLeft"){ const p=card.querySelector("#tutPrev"); if(p&&!p.disabled) p.click(); }
+      else if(["ArrowUp","ArrowDown","PageUp","PageDown"," ","Home","End"].indexOf(e.key)>-1) e.preventDefault();
+    };
     onResize=()=>place();
-    document.addEventListener("keydown",onKey); window.addEventListener("resize",onResize);
+    onScroll=()=>{ if(!raf) raf=requestAnimationFrame(()=>{ raf=0; place(); }); };
+    document.addEventListener("keydown",onKey); window.addEventListener("resize",onResize); window.addEventListener("scroll",onScroll,{passive:true});
     draw();
   }
-  // 選單「?」＝重看；第一次登入（設好暱稱、關掉個人檔案視窗後）自動開始
+  // 選單「?」＝重看；第一次登入後（回到首頁、個人檔案視窗關掉）自動開始
   window.addEventListener("load",()=>{
     const h=document.getElementById("menuHelp");
     if(h) h.addEventListener("click",()=>{ start(); });
