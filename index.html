@@ -2695,7 +2695,9 @@
 
 /* ---------- 匿名情感收容室 ---------- */
 .emo-count{font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--clinical)}
-#emoAddBtn .fab-plus{font-size:24px;color:var(--bone)}
+.emo-post-btn{width:130px;max-width:45vw;box-sizing:border-box;padding:7px 10px;background:#0e0b0a;border:1px solid var(--line);color:var(--bone);font-family:var(--mono);font-size:12px;letter-spacing:.2em;text-align:center;cursor:pointer;transition:border-color .2s,color .2s}
+.emo-post-btn:hover{border-color:var(--clinical);color:var(--clinical)}
+@media (max-width:520px){.emo-post-btn{width:100%;max-width:none}}
 .emo-grid .card{gap:18px;animation:bpBodyIn .5s ease both}
 .emo-grid .card-top .status{max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .emo-time{position:absolute;left:32px;bottom:34px;font-family:var(--mono);font-size:11px;color:var(--bone-dim)}
@@ -3294,7 +3296,7 @@
   <div class="roster-eyebrow">檔案 ⁄ 情感收容</div>
   <div class="roster-head">
     <h2>匿名情感收容室</h2>
-    <div class="roster-head-right"><div class="meta" id="emoMeta">收容數量 000</div></div>
+    <div class="roster-head-right"><button type="button" class="emo-post-btn" id="emoAddBtn" title="投稿">投稿</button><div class="meta" id="emoMeta">收容數量 000</div></div>
   </div>
   <div class="roster-divider"></div>
   <div class="grid emo-grid" id="emoGrid"></div>
@@ -3409,7 +3411,6 @@
 </div>
 
 <div class="fab-stack">
-  <div class="fab-btn fab-add" id="emoAddBtn" title="投遞" style="display:none"><span class="fab-plus">+</span></div>
   <div class="fab-btn fab-action" id="fab">
     <div class="fab-label">行動</div>
   </div>
@@ -8214,9 +8215,6 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
   const closeForm=()=>{ ov.classList.remove("open"); editKey=null; };
   if(addBtn){
     addBtn.addEventListener("click",()=>openForm(null));
-    if(room&&"IntersectionObserver" in window){
-      new IntersectionObserver(es=>{ addBtn.style.display=es[0].isIntersecting?"flex":"none"; },{threshold:0.05}).observe(room);
-    }
   }
   document.getElementById("emoClose").addEventListener("click",closeForm);
   cancelBtn.addEventListener("click",closeForm);
