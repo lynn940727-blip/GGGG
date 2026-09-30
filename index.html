@@ -2764,6 +2764,29 @@
 .emo-c-bar button:hover{color:var(--bone);border-color:var(--bone-dim)}
 .emo-c-bar button.go{color:var(--bone);border-color:var(--bone);background:rgba(181,2,15,.25)}
 .emo-act:focus-visible,.emo-more:focus-visible,.emo-post-btn:focus-visible,.emo-cmodebtn:focus-visible,.emo-cmodes button:focus-visible,.emo-csend:focus-visible{outline:1px solid var(--bone-dim);outline-offset:2px}
+.emo-c .emo-crow{display:flex;align-items:stretch;gap:10px;cursor:pointer;border-radius:10px}
+.emo-c.replying>.emo-crow{background:rgba(181,2,15,.12);box-shadow:0 0 0 6px rgba(181,2,15,.12)}
+.emo-cl{flex:none;width:36px;display:flex;flex-direction:column;align-items:center}
+.emo-cav{flex:none;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--bone);font-family:var(--sans);font-size:15px;font-weight:600}
+.emo-cav.sm{width:28px;height:28px;font-size:12px}
+.emo-cline{flex:1;width:2px;margin-top:6px;background:rgba(230,221,207,.2);border-radius:1px}
+.emo-cm{flex:1;min-width:0}
+.emo-clabel{font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--bone-dim);margin-bottom:2px}
+.emo-cacts{display:flex;gap:18px;margin-top:6px}
+.emo-cacts .emo-act{padding:2px 0;font-size:13px}
+.emo-cacts .emo-act svg{width:19px;height:19px}
+.emo-kids{margin-left:18px}
+.emo-kids>.emo-c{position:relative;padding:10px 0 0;border-bottom:none}
+.emo-kids>.emo-c>.emo-crow{padding-left:22px}
+.emo-kids>.emo-c::before{content:"";position:absolute;left:-1px;top:0;width:20px;height:24px;border-left:2px solid rgba(230,221,207,.2);border-bottom:2px solid rgba(230,221,207,.2);border-bottom-left-radius:14px}
+.emo-kids>.emo-c:not(:last-child)::after{content:"";position:absolute;left:-1px;top:24px;bottom:0;border-left:2px solid rgba(230,221,207,.2)}
+.emo-kids>.emo-c .emo-cl,.emo-kids>.emo-c .emo-cav{width:28px}
+.emo-kids>.emo-c .emo-cav{height:28px}
+.emo-kids .emo-kids{margin-left:14px}
+.emo-replybar{flex:none;display:flex;align-items:center;gap:8px;margin:8px 14px 0;padding:6px 6px 6px 12px;border-left:3px solid var(--c-crit);background:rgba(255,255,255,.06);border-radius:8px;font-size:13px;color:var(--bone-dim)}
+.emo-replybar span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.emo-replybar button{flex:none;width:28px;height:28px;background:none;border:none;color:var(--bone-dim);font-size:20px;line-height:1;cursor:pointer}
+@media (min-width:601px){.emo-replybar{margin-left:20px;margin-right:20px}}
 .emo-cempty{text-align:center;font-family:var(--mono);font-size:12px;letter-spacing:.12em;color:var(--clinical-dim);padding:36px 0}
 .emo-composer{flex:none;display:flex;align-items:flex-end;gap:8px;margin:8px 14px calc(12px + env(safe-area-inset-bottom,0px));padding:5px 6px 5px 6px;background:rgba(255,255,255,.07);border-radius:26px}
 .emo-cmodes{flex:none;display:flex;gap:8px;margin:10px 14px 0}
@@ -3417,6 +3440,7 @@
       <div class="emo-actions" id="emoPActs"></div>
       <div class="emo-clist" id="emoPList"></div>
     </div>
+    <div class="emo-replybar" id="emoReplyBar" style="display:none"><span></span><button type="button" id="emoReplyX" title="取消回覆">×</button></div>
     <div class="emo-cmodes" id="emoCModes"><button type="button" data-m="anon" class="on">匿名</button><button type="button" data-m="named">實名</button><button type="button" data-m="role">角色</button></div>
     <div class="emo-composer" id="emoComposer">
       <textarea id="emoCText" maxlength="200" rows="1" placeholder="以匿名身分留言…"></textarea>
@@ -8269,7 +8293,7 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
   if(!grid||!ta||!send) return;
   const delBtn=document.getElementById("emoDel"), cancelBtn=document.getElementById("emoCancel"), eyebrowEl=document.getElementById("emoEyebrow"), modeLabel=document.getElementById("emoModeLabel"), modeBox=document.getElementById("emoMode"), modeHint=document.getElementById("emoModeHint"), titleEl=document.getElementById("emoTitle");
   const LIKES="emotion_likes", CMT="emotion_comments", COWN="emotion_comment_owners", CMINE="emotion_comment_mine";
-  let editingC=null, editDraft="", focusEdit=false;
+  let editingC=null, editDraft="", focusEdit=false, replyTo=null;
   let likeMap={}, cmtMap={}, curPost=null, cmode="anon", cMine=new Set(), cMineUid=null, cMineRef=null, lastC=0;
   let picker=null, cRole=null, pRole=null;
   let db=null, ref=null, list=[], lastSend=0, mode="anon", editKey=null, mineSet=new Set(), mineUid=null, mineRef=null;
@@ -8466,7 +8490,7 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
   const iLiked=k=>{ const u=uidNow(); return !!(u&&likeMap[k]&&likeMap[k][u]); };
   function cmtList(k){
     const v=cmtMap[k]||{};
-    return Object.keys(v).map(ck=>({k:ck,t:String(v[ck].t||""),ts:v[ck].ts||0,nm:v[ck].n?String(v[ck].n):""})).sort((a,b)=>a.ts-b.ts||(a.k<b.k?-1:1));
+    return Object.keys(v).map(ck=>({k:ck,t:String(v[ck].t||""),ts:v[ck].ts||0,nm:v[ck].n?String(v[ck].n):"",p:v[ck].p?String(v[ck].p):""})).sort((a,b)=>a.ts-b.ts||(a.k<b.k?-1:1));
   }
   function actionsHtml(k){
     return '<div class="emo-actions"><button type="button" class="emo-act emo-like'+(iLiked(k)?' on':'')+'" title="讚">'+HEART+'<span>'+likeCount(k)+'</span></button><button type="button" class="emo-act emo-cmt" title="留言">'+BUBBLE+'<span>'+cmtList(k).length+'</span></button></div>';
@@ -8523,23 +8547,49 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
     const cs=cmtList(it.k);
     const hadFocus=!!(document.activeElement&&document.activeElement.classList&&document.activeElement.classList.contains("emo-c-edit-ta"));
     if(editingC&&!cs.some(c=>c.k===editingC)) editingC=null;
-    pList.innerHTML=cs.length?cs.map(c=>{
+    if(replyTo&&!cs.some(c=>c.k===replyTo)) replyTo=null;
+    const byKey={}, kids={}, tops=[];
+    cs.forEach(c=>{ byKey[c.k]=c; });
+    cs.forEach(c=>{ if(c.p&&c.p!==c.k&&byKey[c.p]) (kids[c.p]=kids[c.p]||[]).push(c); else tops.push(c); });
+    const flat=k=>{ let o=[]; (kids[k]||[]).forEach(x=>{ o.push(x); o=o.concat(flat(x.k)); }); return o.sort((a,b)=>a.ts-b.ts||(a.k<b.k?-1:1)); };
+    const avatar=(nm,sm)=>{ const ch=Array.from(nm||"匿")[0]; let bg="rgba(230,221,207,.16)";
+      if(nm){ let h=0; for(const x of nm) h=(h*31+x.charCodeAt(0))%360; bg="hsl("+h+",38%,30%)"; }
+      return '<div class="emo-cav'+(sm?" sm":"")+'" style="background:'+bg+'">'+esc(ch)+'</div>'; };
+    // 一則留言（含它底下的回覆）。超過三層的回覆不再往內縮，改成同一層並標註「回覆誰」
+    const one=(c,depth,label)=>{
       const mng=canManageC(c.k), ed=(editingC===c.k);
-      return '<div class="emo-c" data-ck="'+esc(c.k)+'"><div class="emo-chead"><span class="emo-name">'+esc(shortName(c.nm))+'</span><span class="emo-when" title="'+esc(fmt(c.ts))+'">'+esc(ago(c.ts))+'</span>'+(mng&&!ed?'<button type="button" class="emo-more" style="display:flex" title="更多">'+DOTS+'</button><div class="emo-menu"><button type="button" data-a="cedit">'+PEN+'編輯</button><button type="button" data-a="cdel">'+BIN+'刪除</button></div>':'')+'</div>'+
-        (ed?'<div class="emo-c-edit"><textarea class="emo-c-edit-ta" maxlength="200">'+esc(editDraft)+'</textarea><div class="emo-c-bar"><span class="n">'+editDraft.length+'/200</span><button type="button" data-a="ccancel">取消</button><button type="button" class="go" data-a="csave">儲存</button></div></div>':'<div class="emo-c-body">'+esc(c.t)+'</div>')+'</div>';
-    }).join(""):'<div class="emo-cempty">還沒有留言，來說點什麼。</div>';
+      const own=depth>=3?[]:(depth>=2?flat(c.k):(kids[c.k]||[]));
+      const nrep=flat(c.k).length;
+      const head='<div class="emo-chead"><span class="emo-name">'+esc(shortName(c.nm))+'</span><span class="emo-when" title="'+esc(fmt(c.ts))+'">'+esc(ago(c.ts))+'</span>'+(mng&&!ed?'<button type="button" class="emo-more" style="display:flex" title="更多">'+DOTS+'</button><div class="emo-menu"><button type="button" data-a="cedit">'+PEN+'編輯</button><button type="button" data-a="cdel">'+BIN+'刪除</button></div>':'')+'</div>';
+      const body=ed?'<div class="emo-c-edit"><textarea class="emo-c-edit-ta" maxlength="200">'+esc(editDraft)+'</textarea><div class="emo-c-bar"><span class="n">'+editDraft.length+'/200</span><button type="button" data-a="ccancel">取消</button><button type="button" class="go" data-a="csave">儲存</button></div></div>':'<div class="emo-c-body">'+esc(c.t)+'</div>';
+      const acts=ed?"":'<div class="emo-cacts"><button type="button" class="emo-act emo-creply" title="回覆">'+BUBBLE+(nrep?'<span>'+nrep+'</span>':'')+'</button></div>';
+      return '<div class="emo-c'+(replyTo===c.k?" replying":"")+'" data-ck="'+esc(c.k)+'"><div class="emo-crow"><div class="emo-cl">'+avatar(c.nm,depth>0)+(own.length?'<div class="emo-cline"></div>':'')+'</div><div class="emo-cm">'+head+(label?'<div class="emo-clabel">'+esc(label)+'</div>':'')+body+acts+'</div></div>'
+        +(own.length?'<div class="emo-kids">'+own.map(x=>one(x,depth>=2?3:depth+1,(depth>=2&&x.p!==c.k&&byKey[x.p])?"回覆 "+shortName(byKey[x.p].nm):"")).join("")+'</div>':'')+'</div>';
+    };
+    pList.innerHTML=tops.length?tops.map(c=>one(c,0,(c.p&&!byKey[c.p])?"回覆已刪除的留言":"")).join(""):'<div class="emo-cempty">還沒有留言，來說點什麼。</div>';
+    refreshReplyBar();
     if(editingC&&(hadFocus||focusEdit)){
       const ta2=pList.querySelector(".emo-c-edit-ta");
       if(ta2){ ta2.focus(); ta2.setSelectionRange(ta2.value.length,ta2.value.length); }
       focusEdit=false;
     }
   }
+  const replyBar=document.getElementById("emoReplyBar");
+  function refreshReplyBar(){
+    if(!replyTo||!curPost){ replyBar.style.display="none"; return; }
+    const c=cmtList(curPost).find(x=>x.k===replyTo);
+    if(!c){ replyTo=null; replyBar.style.display="none"; return; }
+    replyBar.firstElementChild.textContent="回覆 "+shortName(c.nm)+"："+c.t.replace(/\s+/g," ").slice(0,24);
+    replyBar.style.display="flex";
+  }
+  function setReply(ck){ replyTo=ck||null; renderPost(); if(replyTo) cTa.focus(); }
+  document.getElementById("emoReplyX").addEventListener("click",()=>{ replyTo=null; renderPost(); });
   function openPost(k){
-    curPost=k; editingC=null; if(cmode==="role"&&!roleValid(cRole)){ cRole=null; cmode="anon"; } setCMode(cmode); cTa.value="";
+    curPost=k; editingC=null; replyTo=null; if(cmode==="role"&&!roleValid(cRole)){ cRole=null; cmode="anon"; } setCMode(cmode); cTa.value="";
     renderPost(); cmtOv.classList.add("open"); pScroll.scrollTop=0;
     lockScroll(true); fitComposer();
   }
-  function closePost(){ curPost=null; editingC=null; closePicker(); cmtOv.classList.remove("open"); lockScroll(false); }
+  function closePost(){ curPost=null; editingC=null; replyTo=null; refreshReplyBar(); closePicker(); cmtOv.classList.remove("open"); lockScroll(false); }
   function lockScroll(on){
     document.documentElement.style.overflow=on?"hidden":"";
     document.body.style.overflow=on?"hidden":"";
@@ -8596,6 +8646,14 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
       return;
     }
     if(!(e.target.closest&&e.target.closest(".emo-menu"))) closeMenus();
+    // 點留言（或它的回覆鍵）→ 針對這則留言回覆
+    const rb=e.target.closest&&e.target.closest(".emo-creply");
+    const crow=e.target.closest&&e.target.closest(".emo-crow");
+    if(crow&&!(e.target.closest(".emo-more, .emo-menu, .emo-c-edit, .emo-c-bar, a"))){
+      if(!rb&&window.getSelection&&String(window.getSelection()).length) return;
+      const ck=crow.parentNode.dataset.ck; if(!ck||editingC===ck) return;
+      setReply(ck);
+    }
   });
   cSend.addEventListener("click",()=>{
     if(!window.Auth||!Auth.requireLogin()) return;
@@ -8607,11 +8665,13 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
     const pk=curPost, ck=d.ref(CMT+"/"+pk).push().key;
     if(cmode==="role"&&!roleValid(cRole)){ cRole=null; setCMode("anon"); alert("找不到這個角色，請重新選擇。"); return; }
     const rec={t:t.slice(0,200),ts:firebase.database.ServerValue.TIMESTAMP};
+    if(replyTo&&cmtList(pk).some(c=>c.k===replyTo)) rec.p=replyTo;
     if(cmode==="named"){ const nk=(Auth.nick()||"").slice(0,50); if(nk) rec.n=nk; }
     else if(cmode==="role"&&cRole){ rec.n=String(cRole.name).slice(0,50); }
     const up={}; up[CMT+"/"+pk+"/"+ck]=rec; up[COWN+"/"+ck]=uid; up[CMINE+"/"+uid+"/"+ck]=true;
     cSend.disabled=true;
-    d.ref().update(up).then(()=>{ lastC=Date.now(); cTa.value=""; fitComposer(); setTimeout(()=>{ pScroll.scrollTop=pScroll.scrollHeight; },250); })
+    d.ref().update(up).then(()=>{ lastC=Date.now(); cTa.value=""; fitComposer(); replyTo=null; if(curPost===pk) renderPost();
+      setTimeout(()=>{ const el=pList.querySelector('[data-ck="'+ck+'"]'); if(el&&rec.p) el.scrollIntoView({block:"center",behavior:"smooth"}); else pScroll.scrollTop=pScroll.scrollHeight; },250); })
       .catch(er=>alert("留言失敗："+(er.code||er.message)))
       .then(()=>{ cSend.disabled=false; });
   });
@@ -8647,7 +8707,8 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
   });
   function deleteComment(pk,ck){
     if(!pk||!ck||!canManageC(ck)) return;
-    if(!confirm("確定刪除這則留言？")) return;
+    const nr=cmtList(pk).filter(c=>c.p===ck).length;
+    if(!confirm(nr?"確定刪除這則留言？它底下的 "+nr+" 則回覆會保留。":"確定刪除這則留言？")) return;
     const d=getDb(); if(!d) return;
     const fail=er=>alert("刪除失敗："+(er.code||er.message));
     const base={}; base[CMT+"/"+pk+"/"+ck]=null; base[COWN+"/"+ck]=null;
