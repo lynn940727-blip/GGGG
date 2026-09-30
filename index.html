@@ -2702,6 +2702,8 @@
 .emo-send{font-family:var(--mono);font-size:12px;letter-spacing:.14em;color:var(--bone);background:rgba(181,2,15,.16);border:1px solid rgba(181,2,15,.5);padding:9px 22px;cursor:pointer;transition:background .3s ease,border-color .3s ease,opacity .3s ease}
 .emo-send:hover{background:rgba(181,2,15,.3);border-color:var(--c-crit)}
 .emo-send:disabled{opacity:.4;cursor:default}
+#emoOverlay .emo-form{max-width:none;margin:0}
+#emoAddBtn .fab-plus{font-size:24px;color:var(--bone)}
 .emo-grid .card{padding:24px 24px 26px;gap:16px;animation:bpBodyIn .5s ease both}
 .emo-text{font-family:var(--sans);font-size:15px;line-height:1.8;color:var(--bone);white-space:pre-wrap;word-break:break-word}
 .emo-del{position:absolute;right:10px;bottom:8px;background:none;border:none;color:var(--bone-dim);font-size:14px;cursor:pointer;opacity:.6;display:none}
@@ -3296,16 +3298,24 @@
     <div class="roster-head-right"><div class="meta" id="emoMeta">收容數量 000</div></div>
   </div>
   <div class="roster-divider"></div>
-  <div class="emo-form">
-    <textarea id="emoText" maxlength="200" rows="3" placeholder="把說不出口的話放在這裡。不會顯示你的名字。"></textarea>
-    <div class="emo-row"><span class="emo-count" id="emoCount">0 / 200</span><button class="emo-send" id="emoSend">匿名投遞</button></div>
-  </div>
   <div class="grid emo-grid" id="emoGrid"></div>
 
   <div style="text-align:center; margin-top:56px;">
     <button class="observe-btn observe-btn-ominous" id="ominousBtn" title="？">？</button>
   </div>
 </section>
+
+<div class="modal-overlay" id="emoOverlay">
+  <div class="modal-box">
+    <button class="modal-close" id="emoClose">×</button>
+    <div class="modal-eyebrow">檔案 ⁄ 情感收容</div>
+    <div class="modal-title">匿名投遞</div>
+  <div class="emo-form">
+      <textarea id="emoText" maxlength="200" rows="3" placeholder="把說不出口的話放在這裡。不會顯示你的名字。"></textarea>
+      <div class="emo-row"><span class="emo-count" id="emoCount">0 / 200</span><button class="emo-send" id="emoSend">匿名投遞</button></div>
+    </div>
+  </div>
+</div>
 
 <div class="modal-overlay" id="logAdminOverlay">
   <div class="modal-box log-admin-box">
@@ -3393,6 +3403,7 @@
 </div>
 
 <div class="fab-stack">
+  <div class="fab-btn fab-add" id="emoAddBtn" title="匿名投遞" style="display:none"><span class="fab-plus">+</span></div>
   <div class="fab-btn fab-action" id="fab">
     <div class="fab-label">行動</div>
   </div>
@@ -8143,6 +8154,17 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
       list=arr; render();
     },err=>{ grid.innerHTML='<div class="emo-empty">暫時無法讀取收容室。</div>'; console.warn("emo read failed",err); });
   }
+  const ov=document.getElementById("emoOverlay"), addBtn=document.getElementById("emoAddBtn"), room=document.getElementById("emoRoom");
+  const openForm=()=>{ if(!window.Auth||!Auth.requireLogin()) return; ov.classList.add("open"); setTimeout(()=>ta.focus(),50); };
+  const closeForm=()=>ov.classList.remove("open");
+  if(addBtn){
+    addBtn.addEventListener("click",openForm);
+    if(room&&"IntersectionObserver" in window){
+      new IntersectionObserver(es=>{ addBtn.style.display=es[0].isIntersecting?"flex":"none"; },{threshold:0.05}).observe(room);
+    }
+  }
+  document.getElementById("emoClose").addEventListener("click",closeForm);
+  ov.addEventListener("click",e=>{ if(e.target===ov) closeForm(); });
   ta.addEventListener("input",()=>{ cnt.textContent=ta.value.length+" / 200"; });
   send.addEventListener("click",()=>{
     if(!window.Auth||!Auth.requireLogin()) return;
@@ -8152,7 +8174,7 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
     const d=getDb(); if(!d) return alert("暫時無法連線");
     send.disabled=true;
     d.ref(PATH).push({t:t.slice(0,200),ts:firebase.database.ServerValue.TIMESTAMP})
-      .then(()=>{ lastSend=Date.now(); ta.value=""; cnt.textContent="0 / 200"; })
+      .then(()=>{ lastSend=Date.now(); ta.value=""; cnt.textContent="0 / 200"; closeForm(); })
       .catch(e=>alert("投遞失敗："+(e.code||e.message)))
       .then(()=>{ send.disabled=false; });
   });
