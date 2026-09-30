@@ -75,7 +75,6 @@
     0%,100%{opacity:.45; transform:translate(-50%,-50%) scale(.85);}
     50%{opacity:1; transform:translate(-50%,-50%) scale(1.15);}
   }
-  #authBtn.tut-authglow{color:#f4eee4 !important; animation:auGlowPulse 1.6s ease-in-out infinite;}
   #authBtn.au-glow{color:#f4eee4 !important; animation:auGlowPulse 1.6s ease-in-out infinite;}
   #authBtn.au-glow::before{content:""; position:absolute; left:50%; top:50%; width:92px; height:92px; border-radius:50%; background:radial-gradient(circle, rgba(255,35,55,.6) 0%, rgba(255,35,55,.28) 38%, rgba(255,35,55,0) 70%); pointer-events:none; z-index:-1; animation:auHalo 1.6s ease-in-out infinite;}
   ::placeholder{color:rgba(230,221,207,0.2) !important; opacity:1 !important;}
@@ -4440,6 +4439,27 @@ const Tutorial=(function(){
       if(!inView&&typeof withTransitionLock==="function") withTransitionLock(()=>jumpToIndex(2));   // 沒按到目錄的人，這裡幫他跳過去
     }catch(e){}
   };
+  // 角色卡編輯步驟：先跳到名冊，再自動捲到能同時看到 001 角色卡（放不下就至少看到編輯鍵）的位置
+  const focusEdit=()=>{
+    gotoRoster();
+    const me=i; let n=0;
+    const tick=()=>{
+      if(!active||i!==me||++n>20) return;
+      const busy=(typeof jumping!=="undefined"&&jumping)||(typeof transitioning!=="undefined"&&transitioning);
+      const sec=(typeof snapSections!=="undefined"&&snapSections[2])||document;
+      const btn=sec.querySelector("#card-001 .edit-btn")||document.querySelector("#card-001 .edit-btn");
+      if(btn&&!busy){
+        const c=btn.closest(".card")||btn, cr=c.getBoundingClientRect(), br=btn.getBoundingClientRect(), H=innerHeight;
+        const fits=cr.height<=H-170;
+        const ok=fits?(cr.top>=76&&cr.bottom<=H-20):(br.top>=76&&br.bottom<=H-30);
+        if(ok){ place(); return; }
+        const delta=fits?(cr.top+cr.height/2-(H/2+30)):(br.top+br.height/2-H*0.6);
+        try{ window.scrollTo({top:Math.max(0,window.scrollY+delta),behavior:"smooth"}); }catch(e){}
+      }
+      timers.push(setTimeout(tick,600));
+    };
+    timers.push(setTimeout(tick,500));
+  };
   const STEPS=[
     {sel:"#menuToggle",h:"目錄",b:"• 點擊快速切換頁面。"},
     {sel:"#authBtn",h:"個人檔案",b:"• 首次使用請先點此「登入」，並申請角色。"},
@@ -4449,8 +4469,8 @@ const Tutorial=(function(){
     {sel:"#menuHelp",lit:"#menuPanel",corner:true,h:"新手教學",b:"• 點擊左下角「?」可隨時重看教學。",enter:openM},
     {sel:'.menu-item[data-target="5"]',lit:"#menuPanel",corner:true,h:"行動紀錄",b:"• 記錄全站所有玩家的行動。",enter:openM},
     {sel:'.menu-item[data-target="2"]',h:"試試看：點擊「實驗體名冊」",b:"• 點擊進入角色列表。",interactive:true,pulse:true,corner:true,lit:"#menuPanel",delay:0,wait:'.menu-item[data-target="2"]',enter:openM},
-    {sel:"#card-001 .edit-btn",litClosest:".card",corner:true,avoidLit:true,pulse:true,h:"角色卡：編輯鍵",b:"• 點擊角色卡右下角 "+PENCIL+" 可修改資訊。<br>• 僅能編輯自己的角色。",enter:gotoRoster},
-    {sel:"#authBtn",h:"最後一步：申請角色",b:"• 點擊右上角個人檔案，選擇「＋ 申請角色」。<br>• 審核通過後即可開始行動。",interactive:true,pulse:true,wait:"#authBtn",end:true,delay:150,nextLabel:"完成"}
+    {sel:"#card-001 .edit-btn",litClosest:".card",corner:true,avoidLit:true,pulse:true,h:"角色卡：編輯鍵",b:"• 點擊角色卡右下角 "+PENCIL+" 可修改資訊。<br>• 僅能編輯自己的角色。",enter:focusEdit},
+    {sel:"#authBtn",h:"最後一步：個人檔案",b:"• 請點擊右上角的「個人檔案」。<br>• 選擇「＋ 申請角色」，審核通過後即可開始行動。",interactive:true,pulse:true,wait:"#authBtn",end:true,delay:150}
   ];
   let ov=null,hole=null,card=null,blocks=[],i=0,active=false,shown=null,onKey=null,onResize=null,onScroll=null,stopAll=null,raf=0,timers=[],waitEl=null,waitFn=null,ring=null,toastEl2=null,toastT2=null,stepDone=false,lastEl=null;
   function css(){
@@ -4484,7 +4504,7 @@ const Tutorial=(function(){
 .tut-ring.pulse{animation:tutPulse 1.1s ease-in-out infinite}
 .tut-card.corner{left:auto;right:20px;top:calc(env(safe-area-inset-top,0px) + 72px)!important;bottom:auto!important;transform:none;width:min(50vw,200px);padding:11px 12px 9px;transition:none}
 .tut-card.corner.low{top:auto!important;bottom:calc(20px + env(safe-area-inset-bottom,0px))!important}
-.tut-ring.calm{border:1px solid rgba(244,238,228,.55);box-shadow:none}
+.tut-ring.calm{border:2px solid var(--c-crit);box-shadow:none}
 .tut-card.corner .tut-step,.tut-card.corner .tut-dots{display:none}
 .tut-card.corner .tut-h{font-size:14px;margin-bottom:4px}
 .tut-card.corner .tut-b{font-size:12px;line-height:1.6}
@@ -4568,13 +4588,13 @@ const Tutorial=(function(){
     const last=i===STEPS.length-1;
     stepDone=false;
     card.classList.remove("tut-in"); void card.offsetWidth; card.classList.add("tut-in");
-    const gated=false, autoStep=!!(st.wait&&!st.end);
+    const gated=false, autoStep=!!st.wait;
     card.innerHTML='<div class="tut-step">'+(i+1)+' / '+STEPS.length+'</div><div class="tut-h">'+st.h+'</div><div class="tut-b">'+st.b+'</div>'
       +'<div class="tut-dots">'+STEPS.map((_,k)=>'<i class="'+(k===i?"on":"")+'"></i>').join("")+'</div>'
-      +'<div class="tut-row"><button class="tut-btn" id="tutPrev"'+(i?"":" disabled")+'>上一步</button><button class="tut-btn main" id="tutNext"'+(autoStep?' style="display:none"':'')+'>'+(st.nextLabel||(last?"完成":"下一步"))+'</button>'+(last?"":'<button class="tut-skip" id="tutSkip">略過</button>')+'</div>';
+      +'<div class="tut-row"><button class="tut-btn" id="tutPrev"'+(i?"":" disabled")+'>上一步</button><button class="tut-btn main" id="tutNext"'+(autoStep?' style="display:none"':'')+'>'+(st.nextLabel||(last?"完成":"下一步"))+'</button>'+'<button class="tut-skip" id="tutSkip">略過</button>'+'</div>';
     card.querySelector("#tutPrev").onclick=()=>{ if(i>0){ i--; draw(); } };
     card.querySelector("#tutNext").onclick=()=>{
-      if(i<STEPS.length-1){ i++; draw(); } else finish(true);
+      if(i<STEPS.length-1){ i++; draw(); } else finish();
     };
     const sk=card.querySelector("#tutSkip"); if(sk) sk.onclick=()=>finish();
     if(st.wait){
@@ -4592,17 +4612,7 @@ const Tutorial=(function(){
     requestAnimationFrame(place);
     [450,1000,1700].forEach(ms=>timers.push(setTimeout(place,ms)));   // 選單展開、跳頁捲動需要一點時間，之後再對準一次
   }
-  function profileHint(){
-    const t=document.createElement("div"); t.className="tut-toast"; t.style.cssText="top:calc(env(safe-area-inset-top,0px) + 70px);right:16px;left:auto;bottom:auto;transform:translateY(-8px);white-space:normal;max-width:70vw;z-index:100003";
-    t.textContent="請點擊右上角「個人檔案」，申請角色";
-    document.body.appendChild(t);
-    requestAnimationFrame(()=>{ t.style.opacity="1"; t.style.transform="none"; });
-    const b=document.getElementById("authBtn"); if(b) b.classList.add("tut-authglow");
-    const stop=()=>{ if(b) b.classList.remove("tut-authglow"); t.style.opacity="0"; setTimeout(()=>{ try{ t.remove(); }catch(e){} },400); if(b) b.removeEventListener("click",stop); };
-    if(b) b.addEventListener("click",stop);
-    setTimeout(stop,7000);
-  }
-  function finish(hint){
+  function finish(){
     if(!active) return;
     active=false;
     unwait(); clearTimers();
@@ -4612,7 +4622,6 @@ const Tutorial=(function(){
     window.removeEventListener("wheel",stopAll); window.removeEventListener("touchmove",stopAll);
     if(ov){ const o=ov; o.style.pointerEvents="none"; o.style.transition="opacity .3s ease"; o.style.opacity="0"; setTimeout(()=>{ try{ o.remove(); }catch(e){} },340); ov=null; }
     blocks=[]; ring=null; toastEl2=null; clearTimeout(toastT2);
-    if(hint===true) profileHint();
   }
   function start(){
     if(active) return;
@@ -4636,7 +4645,7 @@ const Tutorial=(function(){
     stopAll=e=>{ e.preventDefault(); };   // 教學中不讓使用者用滾輪／手指捲動頁面（點目錄跳頁不受影響）
     window.addEventListener("wheel",stopAll,{passive:false}); window.addEventListener("touchmove",stopAll,{passive:false});
     onKey=e=>{
-      if(e.key==="Escape") finish(false);
+      if(e.key==="Escape") finish();
       else if(e.key==="ArrowRight"||e.key==="Enter"){ const n=card.querySelector("#tutNext"); if(n) n.click(); }
       else if(e.key==="ArrowLeft"){ const p=card.querySelector("#tutPrev"); if(p&&!p.disabled) p.click(); }
       else if(["ArrowUp","ArrowDown","PageUp","PageDown"," ","Home","End"].indexOf(e.key)>-1) e.preventDefault();
