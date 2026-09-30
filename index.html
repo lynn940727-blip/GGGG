@@ -3276,7 +3276,10 @@
 </div>
 <div id="logList"><div class="log-loading"><div class="log-spinner"></div><div class="log-loading-text">讀取紀錄中…</div></div></div>
 <div style="text-align:center; margin-top:56px;">
-<button class="observe-btn observe-btn-ominous" id="ominousBtn" title="？">？</button>
+<button class="observe-btn" id="emoBtn">
+<span class="dot"></span>
+匿名情感收容室
+</button>
 </div>
 </section>
 
@@ -3298,6 +3301,10 @@
     <div class="emo-row"><span class="emo-count" id="emoCount">0 / 200</span><button class="emo-send" id="emoSend">匿名投遞</button></div>
   </div>
   <div class="grid emo-grid" id="emoGrid"></div>
+
+  <div style="text-align:center; margin-top:56px;">
+    <button class="observe-btn observe-btn-ominous" id="ominousBtn" title="？">？</button>
+  </div>
 </section>
 
 <div class="modal-overlay" id="logAdminOverlay">
@@ -4469,7 +4476,7 @@ const Tutorial=(function(){
     {sel:"#menuHelp",lit:"#menuPanel",corner:true,h:"新手教學",b:"• 點擊左下角「?」可隨時重看教學。",enter:openM},
     {sel:'.menu-item[data-target="5"]',lit:"#menuPanel",corner:true,h:"行動紀錄",b:"• 記錄全站所有玩家的行動。",enter:openM},
     {sel:'.menu-item[data-target="2"]',h:"試試看：點擊「實驗體名冊」",b:"• 點擊進入角色列表。",interactive:true,pulse:true,corner:true,lit:"#menuPanel",delay:0,wait:'.menu-item[data-target="2"]',enter:openM},
-    {sel:"#card-001 .edit-btn",litClosest:".card",corner:true,avoidLit:true,pulse:true,h:"角色卡：編輯鍵",b:"• 點擊角色卡右下角 "+PENCIL+" 可修改資訊。<br>• 僅能編輯自己的角色。",enter:focusEdit},
+    {sel:"#card-001 .edit-btn",litClosest:".card",corner:true,avoidLit:true,h:"角色卡：編輯鍵",b:"• 點擊角色卡右下角 "+PENCIL+" 可修改資訊。<br>• 僅能編輯自己的角色。",enter:focusEdit},
     {sel:"#authBtn",h:"最後一步：個人檔案",b:"• 請點擊右上角的「個人檔案」。<br>• 選擇「＋ 申請角色」，審核通過後即可開始行動。",interactive:true,pulse:true,wait:"#authBtn",end:true,delay:150}
   ];
   let ov=null,hole=null,card=null,blocks=[],i=0,active=false,shown=null,onKey=null,onResize=null,onScroll=null,stopAll=null,raf=0,timers=[],waitEl=null,waitFn=null,ring=null,toastEl2=null,toastT2=null,stepDone=false,lastEl=null;
@@ -4591,7 +4598,7 @@ const Tutorial=(function(){
     const gated=false, autoStep=!!st.wait;
     card.innerHTML='<div class="tut-step">'+(i+1)+' / '+STEPS.length+'</div><div class="tut-h">'+st.h+'</div><div class="tut-b">'+st.b+'</div>'
       +'<div class="tut-dots">'+STEPS.map((_,k)=>'<i class="'+(k===i?"on":"")+'"></i>').join("")+'</div>'
-      +'<div class="tut-row"><button class="tut-btn" id="tutPrev"'+(i?"":" disabled")+'>上一步</button><button class="tut-btn main" id="tutNext"'+(autoStep?' style="display:none"':'')+'>'+(st.nextLabel||(last?"完成":"下一步"))+'</button>'+'<button class="tut-skip" id="tutSkip">略過</button>'+'</div>';
+      +'<div class="tut-row"><button class="tut-btn" id="tutPrev"'+(i?"":" disabled")+'>上一步</button><button class="tut-btn main" id="tutNext"'+(autoStep?' style="display:none"':'')+'>'+(st.nextLabel||(last?"完成":"下一步"))+'</button>'+(last?"":'<button class="tut-skip" id="tutSkip">略過</button>')+'</div>';
     card.querySelector("#tutPrev").onclick=()=>{ if(i>0){ i--; draw(); } };
     card.querySelector("#tutNext").onclick=()=>{
       if(i<STEPS.length-1){ i++; draw(); } else finish();
@@ -5242,6 +5249,10 @@ document.getElementById("sponsorBtn").addEventListener("click", () => {
 
 document.getElementById("logBtn").addEventListener("click", () => {
   withTransitionLock(() => jumpToIndex(5));
+});
+
+document.getElementById("emoBtn").addEventListener("click", () => {
+  withTransitionLock(() => jumpToIndex(6));
 });
 
 /* ---------- section nav (progress dots + jump to top/bottom) ----------
