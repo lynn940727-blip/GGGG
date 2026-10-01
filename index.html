@@ -2705,7 +2705,7 @@
 .emo-head .emo-more{top:-3px}
 .emo-phead{align-items:center;gap:10px}
 .emo-cav.md{width:32px;height:32px;font-size:14px;flex:none}
-.emo-cav.md.anon{font-size:17px}
+.emo-cav.md.anon{font-size:20px}
 @media (max-width:520px){#emoRoom .roster-head-right{width:100%;align-items:center}}
 .emo-grid .card{gap:18px;animation:bpBodyIn .5s ease both}
 .emo-grid .card-top .status{max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -2714,7 +2714,7 @@
 @media (min-width:641px){#emoRoom .emo-grid{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}}
 @media (max-width:640px){#emoRoom .emo-grid{grid-template-columns:minmax(0,1fr)}}
 @media (min-width:601px){.emo-post-box{border-radius:14px}.emo-composer{margin-left:20px;margin-right:20px}}
-.emo-head{display:flex;align-items:baseline;gap:8px;position:relative;padding-right:34px;min-height:24px}
+.emo-head{display:flex;align-items:center;gap:10px;position:relative;padding-right:34px;min-height:24px}
 .emo-name{font-family:var(--sans);font-size:15px;font-weight:600;color:var(--bone);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .emo-when{font-family:var(--mono);font-size:11px;color:var(--bone-dim);white-space:nowrap;flex:none}
 .emo-more{position:absolute;right:-8px;top:-6px;width:34px;height:34px;display:none;align-items:center;justify-content:center;background:none;border:none;color:var(--bone-dim);cursor:pointer;transition:color .2s ease}
@@ -2755,7 +2755,7 @@
 .emo-post-box .modal-close{top:20px;right:16px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;z-index:2}
 #emoPostOverlay{-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
 .emo-pscroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:18px 20px 40px;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
-.emo-phead{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}
+.emo-phead{display:flex;align-items:center;gap:10px;margin-bottom:8px}
 .emo-phead .emo-name{font-size:16px}
 .emo-pscroll>.emo-text{font-size:16px;margin-bottom:14px}
 .emo-pscroll>.emo-actions{margin-top:0;padding-bottom:14px;border-bottom:1px solid var(--line)}
@@ -2778,8 +2778,8 @@
 .emo-cl{flex:none;width:36px;display:flex;flex-direction:column;align-items:center}
 .emo-cav{flex:none;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--bone);font-family:var(--sans);font-size:15px;font-weight:600}
 .emo-cav.sm{width:28px;height:28px;font-size:12px}
-.emo-cav.anon{background:#5c0d14;border:1px solid rgba(255,59,71,.38);color:#ff3b47;font-weight:800;font-size:19px;line-height:1}
-.emo-cav.anon.sm{font-size:15px}
+.emo-cav.anon{background:#5c0d14;border:1px solid rgba(255,59,71,.38);color:#ff3b47;font-family:"PMingLiU","新細明體","MingLiU","細明體","Songti TC","Noto Serif TC","Source Han Serif TC",serif;font-weight:400;font-size:21px;line-height:1;padding-bottom:2px}
+.emo-cav.anon.sm{font-size:17px}
 .emo-cav.role-empty{background:rgba(255,255,255,.07);border:1.5px dashed var(--bone-dim)}
 .emo-cav.role-img{background:rgba(255,255,255,.07);overflow:hidden}
 .emo-cav.role-img img{width:100%;height:100%;object-fit:cover;display:block;border-radius:50%}
@@ -4246,6 +4246,21 @@ const Auth=(function(){
       }).catch(()=>{});
     });
   }
+  // 讀取管理員身分：自動登入（還原登入狀態）時，資料庫的登入憑證可能還沒就緒，
+  // 第一次讀取會被拒絕。以前這裡一失敗就直接當成「不是管理員」，所以要登出再登入才會有管理員介面。
+  // 現在失敗會重新取得憑證並重試，最後仍失敗才當作非管理員。
+  function readAdmin(u,n){
+    n=n||0;
+    return db().ref("admins/"+u.uid).once("value").then(s=>{
+      if(user&&user.uid===u.uid) admin=s.val()===true;
+    }).catch(e=>{
+      if(!user||user.uid!==u.uid) return;
+      if(n<3){
+        return u.getIdToken(true).catch(()=>{}).then(()=>new Promise(r=>setTimeout(r,400*(n+1)))).then(()=>readAdmin(u,n+1));
+      }
+      console.warn("admin read failed",e); admin=false;
+    });
+  }
   function load(){
     if(!user){ nick="";myAv="";admin=false;favs=new Set();pend={};tutDone=null;if(pendRef){ try{ pendRef.off(); }catch(e){} pendRef=null; }watchInbox();loaded=true;paint();return Promise.resolve(); }
     loaded=false;
@@ -4254,14 +4269,14 @@ const Auth=(function(){
       d.ref("users/"+user.uid+"/favs").once("value").then(s=>{ const v=s.val(); favs=new Set(v?Object.keys(v):localFavs()); }).catch(()=>{ favs=new Set(localFavs()); }),
       d.ref("users/"+user.uid+"/nick").once("value").then(s=>{ nick=s.val()||localNick(); if(nick) cacheNick(nick); }).catch(e=>{ nick=localNick(); console.warn("nick read failed",e); }),
       d.ref("users/"+user.uid+"/avatar").once("value").then(s=>{ myAv=s.val()||""; }).catch(()=>{ myAv=""; }),
-      d.ref("admins/"+user.uid).once("value").then(s=>{admin=s.val()===true;}).catch(()=>{admin=false;}),
+      readAdmin(user),
       d.ref("claimRequests/"+user.uid).once("value").then(s=>{pend=s.val()||{};}).catch(()=>{pend={};}),
       d.ref("users/"+user.uid+"/tut").once("value").then(s=>{
         if(s.val()===true){ tutDone=true; try{ localStorage.setItem("bp_tut_"+user.uid,"1"); }catch(e){} }
         else if(localTut()){ tutDone=true; markTutorialDone(); }   // 這台看過但雲端沒記到：補記
         else tutDone=false;   // 雲端確實沒有紀錄 → 這個帳號還沒看過
       }).catch(()=>{ tutDone=localTut()?true:null; })   // 讀不到雲端：寧可不顯示（null），也不讓已看過的人再看一次
-    ]).then(()=>registerEmail()).then(()=>{ loaded=true; paint(); watchPend(); watchInbox(); });
+    ]).then(()=>registerEmail()).then(()=>{ loaded=true; paint(); watchPend(); watchInbox(); try{ window.dispatchEvent(new Event("bp-auth-ready")); }catch(e){} });
   }
   // 回到首頁（第一個區塊）
   function goHome(){
@@ -5789,6 +5804,7 @@ function resetWizard(startStep){
     lastAddedMap:{},
     anyDead:false,
     removeStatus:null,
+    removeSel:[],
     removedNow:null,
     itemType:null
   };
@@ -6128,10 +6144,15 @@ function renderModalBody(){
       html += '<div class="modal-note">此實驗體目前沒有可解除的狀態。</div>' +
               '<button class="confirm-btn" onclick="chooseRemoveStatusIdx(-1)">下一步</button>';
     } else {
+      const sel = wizard.removeSel || [];
+      html += '<div class="modal-note">最多可解除 2 個狀態（已選 ' + sel.length + '／2）。再點一次可取消選取。</div>';
       target.statuses.forEach((st, i) => {
-        html += '<button class="choice-btn" onclick="chooseRemoveStatusIdx(' + i + ')">解除：' + escapeHTML(st) + '</button>';
+        const on = sel.indexOf(i) > -1;
+        html += '<button class="choice-btn" style="' + (on ? 'border-color:var(--bone);background:rgba(181,2,15,.25)' : '') + '" onclick="toggleRemoveStatus(' + i + ')">' + (on ? '✓ ' : '') + '解除：' + escapeHTML(st) + '</button>';
       });
-      html += '<button class="choice-btn" onclick="chooseRemoveStatusIdx(-1)">不解除狀態</button>';
+      html += sel.length
+        ? '<button class="confirm-btn" onclick="confirmRemoveStatus()">確認解除 ' + sel.length + ' 個狀態</button>'
+        : '<button class="choice-btn" onclick="chooseRemoveStatusIdx(-1)">不解除狀態</button>';
     }
 
   } else if(step === "statusInput1"){
@@ -6357,12 +6378,29 @@ function chooseDamageType(key){
 function chooseMedicalType(key){
   wizard.statKey = key;
   wizard.natureLabel = key === "hp" ? "物理醫療" : "精神醫療";
+  wizard.removeSel = []; wizard.removeStatus = null;
   goStep("medicalRemoveStatus");
 }
 
 function chooseRemoveStatusIdx(i){
   const target = subjects.find(s => s.id === wizard.targetId);
+  wizard.removeSel = i >= 0 ? [i] : [];
   wizard.removeStatus = i >= 0 ? target.statuses[i] : null;
+  goStep("actionPreview");
+}
+function toggleRemoveStatus(i){
+  const sel = wizard.removeSel || (wizard.removeSel = []);
+  const at = sel.indexOf(i);
+  if(at > -1) sel.splice(at, 1);
+  else if(sel.length < 2) sel.push(i);
+  else { sel.shift(); sel.push(i); }   // 已選滿兩個：再點第三個就換掉最早選的
+  renderModalBody();
+}
+function confirmRemoveStatus(){
+  const target = subjects.find(s => s.id === wizard.targetId);
+  const sel = (wizard.removeSel || []).slice().sort((a,b)=>a-b);
+  wizard.removeSel = sel;
+  wizard.removeStatus = sel.length ? sel.map(i => target.statuses[i]).join("、") : null;
   goStep("actionPreview");
 }
 
@@ -6400,10 +6438,11 @@ function applyAction(){
 
     const _statTxt = wizard.statKey === "hp" ? "HP" : "SAN";
     target[wizard.statKey] = Math.min(3, target[wizard.statKey] + 1);
-    if(wizard.removeStatus){
-      const idx = target.statuses.indexOf(wizard.removeStatus);
-      if(idx > -1) target.statuses.splice(idx, 1);
-      wizard.removedNow = wizard.removeStatus;
+    const _sel = (wizard.removeSel || []).filter(i => i >= 0 && i < target.statuses.length).sort((a,b)=>b-a);
+    if(_sel.length){
+      const _names = _sel.slice().reverse().map(i => target.statuses[i]);
+      _sel.forEach(i => target.statuses.splice(i, 1));   // 由後往前刪，索引才不會錯位
+      wizard.removedNow = _names.join("、");
     } else {
       wizard.removedNow = null;
     }
@@ -8683,20 +8722,17 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
     });
     return hit;
   }
-  // 頭像：匿名＝問號（樓主紅色、其他人依亂碼換色）；角色＝角色頭像；實名＝自己上傳的頭像，沒有就首字
+  // 頭像：匿名＝問號（樓主紅色、其他人依亂碼換色）；角色＝角色頭像；實名＝自己上傳的頭像，沒有就是虛線圓圈
   function avHtml(nm,size,al){
     const cls="emo-cav"+(size?" "+size:"");
     if(!nm){
-      if(al&&al!=="匿名-樓主"){ let h=0; for(const x of al) h=(h*31+x.charCodeAt(0))%360;
-        return '<div class="'+cls+' anon" style="background:hsl('+h+',38%,20%);border-color:hsla('+h+',55%,60%,.45);color:hsl('+h+',75%,72%)">?</div>'; }
       return '<div class="'+cls+' anon">?</div>';
     }
     const r=roleByName(nm);
     if(r) return r.avatarUrl?'<div class="'+cls+' role-img"><img src="'+esc(r.avatarUrl)+'" alt=""></div>':'<div class="'+cls+' role-empty"></div>';
     const av=avMap[encodeURIComponent(nm).replace(/\./g,"%2E")];
     if(av) return '<div class="'+cls+' role-img"><img src="'+esc(av)+'" alt=""></div>';
-    const ch=Array.from(nm)[0]; let h=0; for(const x of nm) h=(h*31+x.charCodeAt(0))%360;
-    return '<div class="'+cls+'" style="background:hsl('+h+',38%,30%)">'+esc(ch)+'</div>';
+    return '<div class="'+cls+' role-empty"></div>';
   }
   const nameOf=c=>c.nm?shortName(c.nm):(c.al||"匿名");
   // 匿名亂碼：同一個人在同一篇貼文永遠是同一個，換一篇就是新的
@@ -8957,6 +8993,7 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
   })();
   setInterval(()=>{ const u=uidNow(); if(u!==cMineUid) watchCMine(u); updateCards(); },1500);
   setInterval(syncAdmin,1500);
+  window.addEventListener("bp-auth-ready",syncAdmin);
   window.addEventListener("load",()=>setTimeout(subscribe,300));
 })();
 </script>
