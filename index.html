@@ -2699,6 +2699,13 @@
 .emo-post-btn:hover{border-color:var(--bone-dim);color:var(--bone)}
 #emoRoom .roster-head-right{flex-direction:row;align-items:center;justify-content:space-between;gap:16px}
 #emoRoom .emo-post-btn{flex:none}
+.emo-btns{display:inline-flex;gap:8px;flex:none}
+.emo-post-btn.sm{padding:6px 12px;font-size:12px;letter-spacing:.08em}
+.emo-head{align-items:center;gap:10px}
+.emo-head .emo-more{top:-3px}
+.emo-phead{align-items:center;gap:10px}
+.emo-cav.md{width:32px;height:32px;font-size:14px;flex:none}
+.emo-cav.md.anon{font-size:17px}
 @media (max-width:520px){#emoRoom .roster-head-right{width:100%;align-items:center}}
 .emo-grid .card{gap:18px;animation:bpBodyIn .5s ease both}
 .emo-grid .card-top .status{max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -3404,7 +3411,7 @@
   <div class="roster-eyebrow">檔案 ⁄ 情感收容</div>
   <div class="roster-head">
     <h2>匿名情感收容室</h2>
-    <div class="roster-head-right"><div class="meta" id="emoMeta">收容數量 000</div><button type="button" class="emo-post-btn" id="emoAddBtn" title="投稿">＋ 投稿</button></div>
+    <div class="roster-head-right"><div class="meta" id="emoMeta">收容數量 000</div><span class="emo-btns"><button type="button" class="emo-post-btn sm" id="emoAvBtn" title="更換我的實名頭像">頭像＋</button><button type="button" class="emo-post-btn sm" id="emoAddBtn" title="投稿">投稿＋</button></span></div>
   </div>
   <div class="roster-divider"></div>
   <div class="grid emo-grid" id="emoGrid"></div>
@@ -3442,7 +3449,7 @@
     <button class="modal-close" id="emoPostClose" title="關閉">×</button>
     <div class="emo-ptop">貼文</div>
     <div class="emo-pscroll" id="emoPScroll">
-      <div class="emo-phead"><span class="emo-name" id="emoPName"></span><span class="emo-when" id="emoPTime"></span></div>
+      <div class="emo-phead"><span id="emoPAv" style="display:flex"></span><span class="emo-name" id="emoPName"></span><span class="emo-when" id="emoPTime"></span></div>
       <div class="emo-text" id="emoPText"></div>
       <div class="emo-actions" id="emoPActs"></div>
       <div class="emo-clist" id="emoPList"></div>
@@ -4667,6 +4674,12 @@ const Auth=(function(){
     get isAdmin(){return admin;},
     onBack(){ if(!isOpen()) return false; if(view!=="home"&&nick){ view="home"; render(); } else hide(); return true; },
     uid:()=>user?user.uid:null, nick:()=>nick,
+    pickAvatar(){
+      if(!api.requireLogin()) return;
+      const inp=document.createElement("input"); inp.type="file"; inp.accept="image/*";
+      inp.onchange=()=>{ const f=inp.files&&inp.files[0]; if(f) readAvatar(f,v=>{ saveAvatar(v); }); };
+      inp.click();
+    },
     myChars:()=>myChars().map(x=>({f:x.f,id:String(x.s.id),name:String(x.s.name||"")})),
     newOwner:()=>(user&&!admin)?user.uid:null,
     requireLogin(){ if(user&&nick) return true; openPanel(); return false; },
@@ -8460,7 +8473,7 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
     meta.textContent="收容數量 "+pad(list.length,3);
     if(!list.length){ grid.innerHTML='<div class="emo-empty">收容室目前是空的。</div>'; return; }
     grid.innerHTML=list.slice().reverse().map(x=>
-      '<div class="card ok" data-k="'+esc(x.k)+'"><div class="emo-head"><span class="emo-name">'+esc(shortName(x.nm))+'</span><span class="emo-when" data-ts="'+(x.ts||0)+'" title="'+esc(fmt(x.ts))+'">'+esc(ago(x.ts))+'</span><button type="button" class="emo-more" title="更多">'+DOTS+'</button><div class="emo-menu"><button type="button" data-a="edit">'+PEN+'編輯</button><button type="button" data-a="del">'+BIN+'刪除</button></div></div><div class="emo-text">'+esc(x.t)+'</div>'+actionsHtml(x.k)+'</div>'
+      '<div class="card ok" data-k="'+esc(x.k)+'"><div class="emo-head">'+avHtml(x.nm,"md")+'<span class="emo-name">'+esc(shortName(x.nm))+'</span><span class="emo-when" data-ts="'+(x.ts||0)+'" title="'+esc(fmt(x.ts))+'">'+esc(ago(x.ts))+'</span><button type="button" class="emo-more" title="更多">'+DOTS+'</button><div class="emo-menu"><button type="button" data-a="edit">'+PEN+'編輯</button><button type="button" data-a="del">'+BIN+'刪除</button></div></div><div class="emo-text">'+esc(x.t)+'</div>'+actionsHtml(x.k)+'</div>'
     ).join("");
     syncAdmin();
   }
@@ -8485,7 +8498,7 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
   function subscribe(){
     const d=getDb(); if(!d){ setTimeout(subscribe,1500); return; }
     ref=d.ref(PATH);
-    d.ref("emotion_avatars").on("value",sn=>{ avMap=sn.val()||{}; if(curPost) renderPost(); },er=>console.warn("emo avatars read failed",er));
+    d.ref("emotion_avatars").on("value",sn=>{ avMap=sn.val()||{}; render(); if(curPost) renderPost(); },er=>console.warn("emo avatars read failed",er));
     d.ref(LIKES).on("value",sn=>{ likeMap=sn.val()||{}; updateCards(); if(curPost) renderPost(); },er=>console.warn("emo likes read failed",er));
     d.ref(CMT).on("value",sn=>{ cmtMap=sn.val()||{}; checkReplies(); updateCards(); if(curPost) renderPost(); },er=>console.warn("emo comments read failed",er));
     ref.limitToLast(200).on("value",snap=>{
@@ -8516,6 +8529,8 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
   if(addBtn){
     addBtn.addEventListener("click",()=>openForm(null));
   }
+  const avBtn=document.getElementById("emoAvBtn");
+  if(avBtn) avBtn.addEventListener("click",()=>{ if(window.Auth&&Auth.pickAvatar) Auth.pickAvatar(); });
   document.getElementById("emoClose").addEventListener("click",closeForm);
   cancelBtn.addEventListener("click",closeForm);
   ov.addEventListener("click",e=>{ if(e.target===ov) closeForm(); });
@@ -8582,7 +8597,7 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
   const iLiked=k=>{ const u=uidNow(); return !!(u&&likeMap[k]&&likeMap[k][u]); };
   function cmtList(k){
     const v=cmtMap[k]||{};
-    return Object.keys(v).map(ck=>({k:ck,t:String(v[ck].t||""),ts:v[ck].ts||0,nm:v[ck].n?String(v[ck].n):"",p:v[ck].p?String(v[ck].p):""})).sort((a,b)=>a.ts-b.ts||(a.k<b.k?-1:1));
+    return Object.keys(v).map(ck=>({k:ck,t:String(v[ck].t||""),ts:v[ck].ts||0,nm:v[ck].n?String(v[ck].n):"",al:v[ck].a?String(v[ck].a):"",p:v[ck].p?String(v[ck].p):""})).sort((a,b)=>a.ts-b.ts||(a.k<b.k?-1:1));
   }
   function actionsHtml(k){
     return '<div class="emo-actions"><button type="button" class="emo-act emo-like'+(iLiked(k)?' on':'')+'" title="讚">'+HEART+'<span>'+likeCount(k)+'</span></button><button type="button" class="emo-act emo-cmt" title="留言">'+BUBBLE+'<span>'+cmtList(k).length+'</span></button></div>';
@@ -8610,7 +8625,7 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
       }); });
       try{ localStorage.setItem(key,String(max||Date.now())); }catch(e){}
       found.sort((a,b)=>a.ts-b.ts).slice(-5).forEach(x=>{
-        const who=x.c.n?shortName(String(x.c.n)):"匿名";
+        const who=x.c.n?shortName(String(x.c.n)):(x.c.a||"匿名");
         SharedStore.notify(uid,"reply",who+(x.c.p?" 回覆了你的留言：":" 在你的貼文下留言：")+String(x.c.t||"").replace(/\s+/g," ").slice(0,40));
       });
     }catch(e){ console.warn("checkReplies failed",e); }
@@ -8659,10 +8674,34 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
     });
     return hit;
   }
+  // 頭像：匿名＝問號（樓主紅色、其他人依亂碼換色）；角色＝角色頭像；實名＝自己上傳的頭像，沒有就首字
+  function avHtml(nm,size,al){
+    const cls="emo-cav"+(size?" "+size:"");
+    if(!nm){
+      if(al&&al!=="匿名-樓主"){ let h=0; for(const x of al) h=(h*31+x.charCodeAt(0))%360;
+        return '<div class="'+cls+' anon" style="background:hsl('+h+',38%,20%);border-color:hsla('+h+',55%,60%,.45);color:hsl('+h+',75%,72%)">?</div>'; }
+      return '<div class="'+cls+' anon">?</div>';
+    }
+    const r=roleByName(nm);
+    if(r) return r.avatarUrl?'<div class="'+cls+' role-img"><img src="'+esc(r.avatarUrl)+'" alt=""></div>':'<div class="'+cls+' role-empty"></div>';
+    const av=avMap[encodeURIComponent(nm).replace(/\./g,"%2E")];
+    if(av) return '<div class="'+cls+' role-img"><img src="'+esc(av)+'" alt=""></div>';
+    const ch=Array.from(nm)[0]; let h=0; for(const x of nm) h=(h*31+x.charCodeAt(0))%360;
+    return '<div class="'+cls+'" style="background:hsl('+h+',38%,30%)">'+esc(ch)+'</div>';
+  }
+  const nameOf=c=>c.nm?shortName(c.nm):(c.al||"匿名");
+  // 匿名亂碼：同一個人在同一篇貼文永遠是同一個，換一篇就是新的
+  const ANIMALS=["cat","dog","fox","owl","bear","wolf","deer","crow","seal","mole","hare","lynx","moth","newt","toad","swan","wasp","crab","duck","goat","horse","beetle","squid","otter","panda","koala","tiger","eagle","gecko","raven","whale","mouse"];
+  function hash32(s,seed){ let h=2166136261^seed; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; }
+  function anonAlias(pk,uid){
+    const s=uid+":"+pk;
+    return ANIMALS[hash32(s,1)%ANIMALS.length]+String(10000+hash32(s,7)%90000);
+  }
   function renderPost(){
     const it=list.find(x=>x.k===curPost);
     if(!it){ closePost(); return; }
     pName.textContent=it.nm?it.nm:"匿名";
+    const pav=document.getElementById("emoPAv"); if(pav) pav.innerHTML=avHtml(it.nm,"md");
     pTime.textContent=ago(it.ts); pTime.title=fmt(it.ts);
     pText.textContent=it.t;
     pActs.innerHTML=actionsHtml(it.k).replace(/^<div class="emo-actions">|<\/div>$/g,"");
@@ -8674,33 +8713,18 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
     cs.forEach(c=>{ byKey[c.k]=c; });
     cs.forEach(c=>{ if(c.p&&c.p!==c.k&&byKey[c.p]) (kids[c.p]=kids[c.p]||[]).push(c); else tops.push(c); });
     const flat=k=>{ let o=[]; (kids[k]||[]).forEach(x=>{ o.push(x); o=o.concat(flat(x.k)); }); return o.sort((a,b)=>a.ts-b.ts||(a.k<b.k?-1:1)); };
-    const avatar=(nm,sm)=>{
-      const cls="emo-cav"+(sm?" sm":"");
-      // 匿名：統一紅底亮紅問號
-      if(!nm) return '<div class="'+cls+' anon">?</div>';
-      // 角色：換成該角色的頭像；沒上傳頭像就是虛線底色（沒有加號）
-      const r=roleByName(nm);
-      if(r){
-        return r.avatarUrl
-          ? '<div class="'+cls+' role-img"><img src="'+esc(r.avatarUrl)+'" alt=""></div>'
-          : '<div class="'+cls+' role-empty"></div>';
-      }
-      // 實名：有自己上傳的頭像就用，沒有就是首字頭像
-      const av=avMap[encodeURIComponent(nm).replace(/\./g,"%2E")];
-      if(av) return '<div class="'+cls+' role-img"><img src="'+esc(av)+'" alt=""></div>';
-      const ch=Array.from(nm)[0]; let h=0; for(const x of nm) h=(h*31+x.charCodeAt(0))%360;
-      return '<div class="'+cls+'" style="background:hsl('+h+',38%,30%)">'+esc(ch)+'</div>'; };
+    const avatar=(nm,sm,al)=>avHtml(nm,sm?"sm":"",al);
     // 一則留言（含它底下的回覆）。超過三層的回覆不再往內縮，改成同一層並標註「回覆誰」
     const one=(c,depth,label)=>{
       const mng=canManageC(c.k), ed=(editingC===c.k);
       const own=depth>=3?[]:(depth>=2?flat(c.k):(kids[c.k]||[]));
       const nrep=flat(c.k).length;
-      const head='<div class="emo-chead"><span class="emo-name">'+esc(shortName(c.nm))+'</span><span class="emo-when" title="'+esc(fmt(c.ts))+'">'+esc(ago(c.ts))+'</span>'+(mng&&!ed?'<button type="button" class="emo-more" style="display:flex" title="更多">'+DOTS+'</button><div class="emo-menu"><button type="button" data-a="cedit">'+PEN+'編輯</button><button type="button" data-a="cdel">'+BIN+'刪除</button></div>':'')+'</div>';
+      const head='<div class="emo-chead"><span class="emo-name">'+esc(nameOf(c))+'</span><span class="emo-when" title="'+esc(fmt(c.ts))+'">'+esc(ago(c.ts))+'</span>'+(mng&&!ed?'<button type="button" class="emo-more" style="display:flex" title="更多">'+DOTS+'</button><div class="emo-menu"><button type="button" data-a="cedit">'+PEN+'編輯</button><button type="button" data-a="cdel">'+BIN+'刪除</button></div>':'')+'</div>';
       const body=ed?'<div class="emo-c-edit"><textarea class="emo-c-edit-ta" maxlength="200">'+esc(editDraft)+'</textarea><div class="emo-c-bar"><span class="n">'+editDraft.length+'/200</span><button type="button" data-a="ccancel">取消</button><button type="button" class="go" data-a="csave">儲存</button></div></div>':'<div class="emo-c-body">'+esc(c.t)+'</div>';
       const lc=likeCount(c.k);
       const acts=ed?"":'<div class="emo-cacts"><button type="button" class="emo-act emo-clike'+(iLiked(c.k)?' on':'')+'" title="讚">'+HEART+(lc?'<span>'+lc+'</span>':'')+'</button><button type="button" class="emo-act emo-creply" title="回覆">'+BUBBLE+(nrep?'<span>'+nrep+'</span>':'')+'</button></div>';
-      return '<div class="emo-c'+(replyTo===c.k?" replying":"")+'" data-ck="'+esc(c.k)+'"><div class="emo-crow"><div class="emo-cl">'+avatar(c.nm,depth>0)+(own.length?'<div class="emo-cline"></div>':'')+'</div><div class="emo-cm">'+head+(label?'<div class="emo-clabel">'+esc(label)+'</div>':'')+body+acts+'</div></div>'
-        +(own.length?'<div class="emo-kids">'+own.map(x=>one(x,depth>=2?3:depth+1,(depth>=2&&x.p!==c.k&&byKey[x.p])?"回覆 "+shortName(byKey[x.p].nm):"")).join("")+'</div>':'')+'</div>';
+      return '<div class="emo-c'+(replyTo===c.k?" replying":"")+'" data-ck="'+esc(c.k)+'"><div class="emo-crow"><div class="emo-cl">'+avatar(c.nm,depth>0,c.al)+(own.length?'<div class="emo-cline"></div>':'')+'</div><div class="emo-cm">'+head+(label?'<div class="emo-clabel">'+esc(label)+'</div>':'')+body+acts+'</div></div>'
+        +(own.length?'<div class="emo-kids">'+own.map(x=>one(x,depth>=2?3:depth+1,(depth>=2&&x.p!==c.k&&byKey[x.p])?"回覆 "+nameOf(byKey[x.p]):"")).join("")+'</div>':'')+'</div>';
     };
     pList.innerHTML=tops.length?tops.map(c=>one(c,0,(c.p&&!byKey[c.p])?"回覆已刪除的留言":"")).join(""):'<div class="emo-cempty">還沒有留言，來說點什麼。</div>';
     refreshReplyBar();
@@ -8715,7 +8739,7 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
     if(!replyTo||!curPost){ replyBar.style.display="none"; return; }
     const c=cmtList(curPost).find(x=>x.k===replyTo);
     if(!c){ replyTo=null; replyBar.style.display="none"; return; }
-    replyBar.firstElementChild.textContent="回覆 "+shortName(c.nm)+"："+c.t.replace(/\s+/g," ").slice(0,24);
+    replyBar.firstElementChild.textContent="回覆 "+nameOf(c)+"："+c.t.replace(/\s+/g," ").slice(0,24);
     replyBar.style.display="flex";
   }
   function setReply(ck){ replyTo=ck||null; renderPost(); if(replyTo) cTa.focus(); }
@@ -8806,6 +8830,7 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
     if(replyTo&&cmtList(pk).some(c=>c.k===replyTo)) rec.p=replyTo;
     if(cmode==="named"){ const nk=(Auth.nick()||"").slice(0,50); if(nk) rec.n=nk; }
     else if(cmode==="role"&&cRole){ rec.n=String(cRole.name).slice(0,50); }
+    else{ const it=list.find(x=>x.k===pk); rec.a=(it&&!it.nm&&mineSet.has(pk))?"匿名-樓主":anonAlias(pk,uid); }
     const up={}; up[CMT+"/"+pk+"/"+ck]=rec; up[COWN+"/"+ck]=uid; up[CMINE+"/"+uid+"/"+ck]=true;
     cSend.disabled=true;
     d.ref().update(up).then(()=>{ lastC=Date.now(); cTa.value=""; fitComposer(); replyTo=null; if(curPost===pk) renderPost();
@@ -8924,53 +8949,6 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
   setInterval(()=>{ const u=uidNow(); if(u!==cMineUid) watchCMine(u); updateCards(); },1500);
   setInterval(syncAdmin,1500);
   window.addEventListener("load",()=>setTimeout(subscribe,300));
-})();
-</script>
-<style>
-#bpTicker{position:fixed;left:0;right:84px;bottom:0;height:30px;z-index:450;display:none;align-items:stretch;background:rgba(10,7,6,.94);border-top:1px solid var(--line);border-right:1px solid var(--line);font-family:var(--mono);font-size:12px;letter-spacing:.04em;color:var(--bone-dim);cursor:pointer;padding-bottom:env(safe-area-inset-bottom,0px);box-sizing:content-box}
-#bpTicker.on{display:flex}
-#bpTicker .bpt-l{flex:none;display:flex;align-items:center;gap:7px;padding:0 12px;color:var(--bone);background:rgba(181,2,15,.22);border-right:1px solid rgba(181,2,15,.5)}
-#bpTicker .bpt-l i{width:6px;height:6px;border-radius:50%;background:var(--c-crit);animation:bptDot 1.4s ease-in-out infinite}
-@keyframes bptDot{0%,100%{opacity:.35}50%{opacity:1}}
-#bpTicker .bpt-v{flex:1;overflow:hidden;display:flex;align-items:center;min-width:0}
-#bpTicker .bpt-t{display:inline-flex;white-space:nowrap;animation:bptRun var(--bpt-dur,60s) linear infinite;will-change:transform}
-#bpTicker:hover .bpt-t{animation-play-state:paused}
-#bpTicker .bpt-i{padding-right:48px}
-#bpTicker .bpt-i b{font-weight:500;color:var(--clinical);margin-right:8px}
-#bpTicker .bpt-i.dead{color:#d8606b}
-@keyframes bptRun{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-@media (prefers-reduced-motion:reduce){#bpTicker .bpt-t{animation:none}}
-</style>
-<div id="bpTicker" title="點擊查看行動紀錄"><div class="bpt-l"><i></i>播報</div><div class="bpt-v"><div class="bpt-t" id="bpTrack"></div></div></div>
-<script>
-(function(){
-  const el=document.getElementById("bpTicker"), track=document.getElementById("bpTrack");
-  if(!el||!track) return;
-  const esc=t=>String(t==null?"":t).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-  let sig="";
-  function paint(rows){
-    if(!rows.length){ el.classList.remove("on"); return; }
-    const items=rows.map(r=>{
-      const d=r.ts?new Date(r.ts):null, tm=d?pad(d.getHours())+":"+pad(d.getMinutes()):"";
-      const msg=String(r.msg||"").replace(/\s+/g," ").trim().slice(0,140);
-      return '<span class="bpt-i'+(r.dead?" dead":"")+'"><b>'+tm+'</b>'+esc(msg)+'</span>';
-    }).join("");
-    const s=items; if(s===sig) return; sig=s;
-    track.innerHTML=items+items;   // 內容放兩份，捲到一半就無縫接回開頭
-    el.classList.add("on");
-    requestAnimationFrame(()=>{ const w=track.scrollWidth/2; track.style.setProperty("--bpt-dur",Math.max(20,w/55)+"s"); });
-  }
-  const pad=n=>String(n).padStart(2,"0");
-  function start(){
-    if(typeof firebase==="undefined"||!firebase.database){ setTimeout(start,1500); return; }
-    let d; try{ if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG); d=firebase.database(); }catch(e){ setTimeout(start,3000); return; }
-    d.ref("bloodpool_log_v1").limitToLast(12).on("value",sn=>{
-      const v=sn.val()||{};
-      paint(Object.keys(v).map(k=>v[k]).filter(x=>x&&x.msg).sort((a,b)=>(a.ts||0)-(b.ts||0)));
-    },e=>console.warn("ticker read failed",e));
-  }
-  el.addEventListener("click",()=>{ try{ if(typeof viewActionLog==="function") viewActionLog(); }catch(e){} });
-  window.addEventListener("load",()=>setTimeout(start,400));
 })();
 </script>
 </body>
