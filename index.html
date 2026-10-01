@@ -2739,6 +2739,8 @@
 .emo-like.on{color:#c4202c}
 .emo-like.on svg path{fill:currentColor}
 .emo-like.pop svg{animation:emoPop .28s ease}
+.emo-clike.on{color:#c4202c}
+.emo-clike.on svg path{fill:currentColor}
 @keyframes emoPop{50%{transform:scale(1.25)}}
 .emo-grid .card{cursor:pointer}
 .emo-post-box{width:min(560px,100vw);height:min(86vh,760px);max-height:none;padding:0;display:flex;flex-direction:column;overflow:hidden}
@@ -3941,7 +3943,7 @@ const SharedStore = (function(){
 window.SharedStore = SharedStore;
 
 const Auth=(function(){
-  let user=null,nick="",admin=false;
+  let user=null,nick="",admin=false,myAv="";
   const ST={"實驗體":["S","bloodpool_subjects_v1"],"醫療清潔部隊":["M","bloodpool_medic_subjects_v2"],"資助者":["P","bloodpool_sponsor_subjects_v1"]};
   const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const db=()=>{ if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG); return firebase.database(); };
@@ -3965,7 +3967,7 @@ const Auth=(function(){
   }
   /* ---------- 信箱（通知） ---------- */
   let inbox=[],inboxRef=null,inboxUid=null,inboxInit=false,badge=null,toastEl=null,toastT=null;
-  const NOTI={kill:{t:"你的角色被擊殺",c:"bad kill"},mad:{t:"你的角色陷入瘋狂",c:"bad"},hit:{t:"你的角色受到攻擊",c:"warn"},torture:{t:"你的角色遭到折磨",c:"warn"},accident:{t:"你的角色遭遇醫療事故",c:"warn"},heal:{t:"你的角色受到治療",c:"good"},support:{t:"你的角色獲得資助",c:"good"},sys:{t:"系統通知",c:"sys"},evt:{t:"通知",c:"sys"}};
+  const NOTI={kill:{t:"你的角色被擊殺",c:"bad kill"},mad:{t:"你的角色陷入瘋狂",c:"bad"},hit:{t:"你的角色受到攻擊",c:"warn"},torture:{t:"你的角色遭到折磨",c:"warn"},accident:{t:"你的角色遭遇醫療事故",c:"warn"},heal:{t:"你的角色受到治療",c:"good"},support:{t:"你的角色獲得資助",c:"good"},sys:{t:"系統通知",c:"sys"},reply:{t:"有人回覆了你",c:"sys"},evt:{t:"通知",c:"sys"}};
   const unread=()=>inbox.filter(x=>!x.r).length;
   const BACK='<div class="au-stick bk"><button class="modal-close au_back" aria-label="關閉">×</button></div>';   // 子頁面左上角：返回個人檔案首頁
   /* ---------- 綁定一覽（管理員） ---------- */
@@ -4238,12 +4240,13 @@ const Auth=(function(){
     });
   }
   function load(){
-    if(!user){ nick="";admin=false;favs=new Set();pend={};tutDone=null;if(pendRef){ try{ pendRef.off(); }catch(e){} pendRef=null; }watchInbox();loaded=true;paint();return Promise.resolve(); }
+    if(!user){ nick="";myAv="";admin=false;favs=new Set();pend={};tutDone=null;if(pendRef){ try{ pendRef.off(); }catch(e){} pendRef=null; }watchInbox();loaded=true;paint();return Promise.resolve(); }
     loaded=false;
     const d=db();
     return Promise.all([
       d.ref("users/"+user.uid+"/favs").once("value").then(s=>{ const v=s.val(); favs=new Set(v?Object.keys(v):localFavs()); }).catch(()=>{ favs=new Set(localFavs()); }),
       d.ref("users/"+user.uid+"/nick").once("value").then(s=>{ nick=s.val()||localNick(); if(nick) cacheNick(nick); }).catch(e=>{ nick=localNick(); console.warn("nick read failed",e); }),
+      d.ref("users/"+user.uid+"/avatar").once("value").then(s=>{ myAv=s.val()||""; }).catch(()=>{ myAv=""; }),
       d.ref("admins/"+user.uid).once("value").then(s=>{admin=s.val()===true;}).catch(()=>{admin=false;}),
       d.ref("claimRequests/"+user.uid).once("value").then(s=>{pend=s.val()||{};}).catch(()=>{pend={};}),
       d.ref("users/"+user.uid+"/tut").once("value").then(s=>{
@@ -4437,7 +4440,7 @@ const Auth=(function(){
     const keep=b.dataset.view===view?b.scrollTop:0; b.dataset.view=view;
     let h="";
     if(view==="nick"){
-      h+=(nick?BACK:"")+'<div class="modal-title">'+(nick?"修改暱稱":"先取個暱稱吧")+'</div><span class="field-label">暱稱（1–50 字）</span><div class="au-nickwrap"><input class="text-input" id="au_nick" maxlength="50" placeholder=" " value="'+esc(nick)+'"><span class="au-nickhint"><span class="a">暱稱｜陣營｜角色名，</span><span class="b">ex：汪汪｜實驗體｜十字</span></span></div><button class="confirm-btn" id="au_sn">儲存</button>';
+      h+=(nick?BACK:"")+'<div class="modal-title">'+(nick?"修改暱稱":"先取個暱稱吧")+'</div><span class="field-label">暱稱（1–50 字）</span><div class="au-nickwrap"><input class="text-input" id="au_nick" maxlength="50" placeholder=" " value="'+esc(nick)+'"><span class="au-nickhint"><span class="a">暱稱｜陣營｜角色名，</span><span class="b">ex：汪汪｜實驗體｜十字</span></span></div><button class="confirm-btn" id="au_sn">儲存</button>'+avBlock();
     }else if(view==="claim"){
       h+=BACK+'<div class="modal-title" style="font-size:17px">申請認領角色</div>';
       const pk=Object.keys(pend).filter(k=>!isApproved(pend[k])), ak=Object.keys(pend).filter(k=>isApproved(pend[k]));
@@ -4517,10 +4520,13 @@ const Auth=(function(){
         setTimeout(()=>{ try{ sessionStorage.setItem("bp_fadein","1"); }catch(e){} location.reload(); },650);
       }).catch(e=>{ working=""; notice=""; if(isOpen()) render(); alert("登出失敗："+(e.code||e.message)); }); },900);
     };
+    const avf=b.querySelector("#au_avf"), avx=b.querySelector("#au_avx");
+    if(avf) avf.onchange=()=>{ const f=avf.files&&avf.files[0]; if(!f) return; readAvatar(f,v=>{ Promise.resolve(saveAvatar(v)).then(()=>{ if(isOpen()&&view==="nick"){ const keepNick=b.querySelector("#au_nick"), nv=keepNick?keepNick.value:""; render(); const n2=b.querySelector("#au_nick"); if(n2&&nv) n2.value=nv; } }); }); };
+    if(avx) avx.onclick=()=>{ Promise.resolve(saveAvatar("")).then(()=>{ if(isOpen()&&view==="nick"){ const keepNick=b.querySelector("#au_nick"), nv=keepNick?keepNick.value:""; render(); const n2=b.querySelector("#au_nick"); if(n2&&nv) n2.value=nv; } }); };
     const sn=b.querySelector("#au_sn");
     if(sn) sn.onclick=()=>{
       const v=b.querySelector("#au_nick").value.trim(); if(!v||v.length>50) return alert("暱稱需為 1–50 字");
-      cacheNick(v); db().ref("users/"+user.uid).update({nick:v}).then(()=>{ nick=v; paint(); view="home"; render(); }).catch(e=>alert("儲存失敗："+(e.code||e.message)));
+      cacheNick(v); db().ref("users/"+user.uid).update({nick:v}).then(()=>{ const old=nick; nick=v; if(myAv){ db().ref("emotion_avatars/"+avKey(v)).set(myAv).catch(e=>console.warn("avatar mirror failed",e)); if(old&&old!==v) db().ref("emotion_avatars/"+avKey(old)).remove().catch(()=>{}); } paint(); view="home"; render(); }).catch(e=>alert("儲存失敗："+(e.code||e.message)));
     };
     b.querySelectorAll(".au_cancel").forEach(a=>a.onclick=ev=>{ ev.preventDefault(); const k=a.dataset.c; db().ref("claimRequests/"+user.uid+"/"+k).remove().then(()=>{ delete pend[k]; render(); }); });
     if(view==="bind"){
@@ -4588,7 +4594,7 @@ const Auth=(function(){
         const id=cs.value; if(!id) return alert("請選擇角色");
         const f=fs.value,s=roster(f).find(x=>String(x.id)===id),k=ST[f][0]+"_"+id;
         const rec={f,id,name:s?s.name:"",nick,ts:firebase.database.ServerValue.TIMESTAMP};
-        db().ref("claimRequests/"+user.uid+"/"+k).set(rec).then(()=>{ pend[k]=rec; view="home"; render(); }).catch(e=>alert("送出失敗："+(e.code||e.message)));
+        db().ref("claimRequests/"+user.uid+"/"+k).set(rec).then(()=>{ pend[k]=rec; view="home"; render(); notifyAdmins(rec); }).catch(e=>alert("送出失敗："+(e.code||e.message)));
       };
     }
     if(view==="admin") adminList(b);
@@ -4606,6 +4612,34 @@ const Auth=(function(){
         el.innerHTML=n?'<span class="au-badge">待批准 '+n+'</span>':"";
       }).catch(()=>{});
     }
+  }
+  // 有人送出角色申請 → 通知所有管理員（自己除外）
+  /* 實名頭像：96×96 小圖，存 users/<uid>/avatar，並公開一份到 emotion_avatars/<暱稱>，實名留言才看得到 */
+  const avKey=n=>encodeURIComponent(String(n||"")).replace(/\./g,"%2E");
+  function avInner(){ return myAv?'<img src="'+esc(myAv)+'" alt="" style="width:100%;height:100%;object-fit:cover;display:block">':esc(Array.from(nick||"?")[0]||"?"); }
+  function avBlock(){
+    return '<div class="au-sec"><span>實名頭像</span></div><div style="display:flex;align-items:center;gap:14px;margin:4px 0 6px"><div id="au_avp" style="width:64px;height:64px;border-radius:50%;overflow:hidden;flex:none;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.07);border:1px solid var(--line);font-size:24px">'+avInner()+'</div><div style="display:flex;gap:8px;flex-wrap:wrap"><label class="au-mini" style="cursor:pointer">更換頭像<input type="file" id="au_avf" accept="image/*" hidden></label>'+(myAv?'<button type="button" class="au-mini" id="au_avx">移除</button>':'')+'</div></div><div class="modal-note" style="margin:0 0 6px">只會顯示在你「實名」留言的旁邊。</div>';
+  }
+  function saveAvatar(v){
+    const d=db(), me=user; if(!me) return;
+    return d.ref("users/"+me.uid+"/avatar").set(v||null).then(()=>{
+      myAv=v||"";
+      if(!nick) return;
+      return d.ref("emotion_avatars/"+avKey(nick)).set(v||null).catch(e=>{ console.warn("avatar mirror failed",e); alert("頭像已儲存，但公開同步失敗（"+(e.code||e.message)+"）：請確認 Firebase 規則已加入 emotion_avatars 並發布。"); });
+    }).catch(e=>alert("頭像儲存失敗："+(e.code||e.message)));
+  }
+  function readAvatar(file,cb){
+    const r=new FileReader();
+    r.onload=()=>{ const im=new Image(); im.onload=()=>{ const s=Math.min(im.width,im.height), c=document.createElement("canvas"); c.width=c.height=96; c.getContext("2d").drawImage(im,(im.width-s)/2,(im.height-s)/2,s,s,0,0,96,96); cb(c.toDataURL("image/jpeg",0.8)); }; im.onerror=()=>alert("圖片讀取失敗"); im.src=r.result; };
+    r.readAsDataURL(file);
+  }
+  function notifyAdmins(rec){
+    try{
+      db().ref("admins").once("value").then(sn=>{
+        const v=sn.val()||{};
+        Object.keys(v).forEach(u=>{ if(v[u]===true&&user&&u!==user.uid) SharedStore.notify(u,"sys","有人申請認領角色：「"+(rec.nick||"未命名")+"」申請 "+rec.f+" 編號 "+rec.id+" "+(rec.name||"")+"，請到個人檔案的「待批准的申請」處理。"); });
+      }).catch(e=>console.warn("admin list read failed",e));
+    }catch(e){ console.warn("notifyAdmins failed",e); }
   }
   function adminList(b){
     db().ref("claimRequests").once("value").then(snap=>{
@@ -8352,7 +8386,7 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
   const LIKES="emotion_likes", CMT="emotion_comments", COWN="emotion_comment_owners", CMINE="emotion_comment_mine";
   let editingC=null, editDraft="", focusEdit=false, replyTo=null;
   let likeMap={}, cmtMap={}, curPost=null, cmode="anon", cMine=new Set(), cMineUid=null, cMineRef=null, lastC=0;
-  let picker=null, cRole=null, pRole=null;
+  let picker=null, cRole=null, pRole=null, avMap={}, mineReady=false, cMineReady=false;
   let db=null, ref=null, list=[], lastSend=0, mode="anon", editKey=null, mineSet=new Set(), mineUid=null, mineRef=null;
   const esc=t=>String(t==null?"":t).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const pad=(n,l)=>String(n).padStart(l,"0");
@@ -8443,16 +8477,17 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
   function watchMine(uid){
     const d=getDb(); if(!d) return;
     if(mineRef){ mineRef.off(); mineRef=null; }
-    mineUid=uid; mineSet=new Set();
+    mineUid=uid; mineSet=new Set(); mineReady=false;
     if(!uid){ return; }
     mineRef=d.ref(MINE+"/"+uid);
-    mineRef.on("value",snap=>{ const v=snap.val()||{}; mineSet=new Set(Object.keys(v)); syncAdmin(); },err=>{ console.warn("emo mine read failed",err); });
+    mineRef.on("value",snap=>{ const v=snap.val()||{}; mineSet=new Set(Object.keys(v)); mineReady=true; syncAdmin(); checkReplies(); },err=>{ console.warn("emo mine read failed",err); });
   }
   function subscribe(){
     const d=getDb(); if(!d){ setTimeout(subscribe,1500); return; }
     ref=d.ref(PATH);
+    d.ref("emotion_avatars").on("value",sn=>{ avMap=sn.val()||{}; if(curPost) renderPost(); },er=>console.warn("emo avatars read failed",er));
     d.ref(LIKES).on("value",sn=>{ likeMap=sn.val()||{}; updateCards(); if(curPost) renderPost(); },er=>console.warn("emo likes read failed",er));
-    d.ref(CMT).on("value",sn=>{ cmtMap=sn.val()||{}; updateCards(); if(curPost) renderPost(); },er=>console.warn("emo comments read failed",er));
+    d.ref(CMT).on("value",sn=>{ cmtMap=sn.val()||{}; checkReplies(); updateCards(); if(curPost) renderPost(); },er=>console.warn("emo comments read failed",er));
     ref.limitToLast(200).on("value",snap=>{
       const v=snap.val()||{}, arr=Object.keys(v).map(k=>({k,t:String(v[k].t||""),ts:v[k].ts||0,nm:v[k].n?String(v[k].n):""}));
       arr.sort((a,b)=>a.ts-b.ts||(a.k<b.k?-1:1));
@@ -8560,6 +8595,26 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
       const w=c.querySelector(".emo-when"); if(w) w.textContent=ago(+w.dataset.ts);
     });
   }
+  // 有人回覆你的留言／在你的貼文下留言（不管你或對方是不是匿名）→ 寫一則通知到自己的信箱
+  function checkReplies(){
+    try{
+      const uid=uidNow(); if(!uid||!mineReady||!cMineReady||mineUid!==uid||cMineUid!==uid||typeof SharedStore==="undefined") return;
+      const key="bp_emo_seen_"+uid; let raw=null; try{ raw=localStorage.getItem(key); }catch(e){}
+      let max=+raw||0; const found=[];
+      Object.keys(cmtMap).forEach(pk=>{ const v=cmtMap[pk]||{}; Object.keys(v).forEach(ck=>{
+        const c=v[ck]; if(!c||!c.ts) return;
+        const fresh=raw!==null&&c.ts>(+raw||0);
+        if(c.ts>max) max=c.ts;
+        if(!fresh||cMine.has(ck)) return;
+        if(c.p?cMine.has(c.p):mineSet.has(pk)) found.push({c,ts:c.ts});
+      }); });
+      try{ localStorage.setItem(key,String(max||Date.now())); }catch(e){}
+      found.sort((a,b)=>a.ts-b.ts).slice(-5).forEach(x=>{
+        const who=x.c.n?shortName(String(x.c.n)):"匿名";
+        SharedStore.notify(uid,"reply",who+(x.c.p?" 回覆了你的留言：":" 在你的貼文下留言：")+String(x.c.t||"").replace(/\s+/g," ").slice(0,40));
+      });
+    }catch(e){ console.warn("checkReplies failed",e); }
+  }
   function toggleLike(k,btn){
     if(!window.Auth||!Auth.requireLogin()) return;
     const d=getDb(), uid=uidNow(); if(!d||!uid) return;
@@ -8630,7 +8685,9 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
           ? '<div class="'+cls+' role-img"><img src="'+esc(r.avatarUrl)+'" alt=""></div>'
           : '<div class="'+cls+' role-empty"></div>';
       }
-      // 實名：維持原本的首字頭像
+      // 實名：有自己上傳的頭像就用，沒有就是首字頭像
+      const av=avMap[encodeURIComponent(nm).replace(/\./g,"%2E")];
+      if(av) return '<div class="'+cls+' role-img"><img src="'+esc(av)+'" alt=""></div>';
       const ch=Array.from(nm)[0]; let h=0; for(const x of nm) h=(h*31+x.charCodeAt(0))%360;
       return '<div class="'+cls+'" style="background:hsl('+h+',38%,30%)">'+esc(ch)+'</div>'; };
     // 一則留言（含它底下的回覆）。超過三層的回覆不再往內縮，改成同一層並標註「回覆誰」
@@ -8640,7 +8697,8 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
       const nrep=flat(c.k).length;
       const head='<div class="emo-chead"><span class="emo-name">'+esc(shortName(c.nm))+'</span><span class="emo-when" title="'+esc(fmt(c.ts))+'">'+esc(ago(c.ts))+'</span>'+(mng&&!ed?'<button type="button" class="emo-more" style="display:flex" title="更多">'+DOTS+'</button><div class="emo-menu"><button type="button" data-a="cedit">'+PEN+'編輯</button><button type="button" data-a="cdel">'+BIN+'刪除</button></div>':'')+'</div>';
       const body=ed?'<div class="emo-c-edit"><textarea class="emo-c-edit-ta" maxlength="200">'+esc(editDraft)+'</textarea><div class="emo-c-bar"><span class="n">'+editDraft.length+'/200</span><button type="button" data-a="ccancel">取消</button><button type="button" class="go" data-a="csave">儲存</button></div></div>':'<div class="emo-c-body">'+esc(c.t)+'</div>';
-      const acts=ed?"":'<div class="emo-cacts"><button type="button" class="emo-act emo-creply" title="回覆">'+BUBBLE+(nrep?'<span>'+nrep+'</span>':'')+'</button></div>';
+      const lc=likeCount(c.k);
+      const acts=ed?"":'<div class="emo-cacts"><button type="button" class="emo-act emo-clike'+(iLiked(c.k)?' on':'')+'" title="讚">'+HEART+(lc?'<span>'+lc+'</span>':'')+'</button><button type="button" class="emo-act emo-creply" title="回覆">'+BUBBLE+(nrep?'<span>'+nrep+'</span>':'')+'</button></div>';
       return '<div class="emo-c'+(replyTo===c.k?" replying":"")+'" data-ck="'+esc(c.k)+'"><div class="emo-crow"><div class="emo-cl">'+avatar(c.nm,depth>0)+(own.length?'<div class="emo-cline"></div>':'')+'</div><div class="emo-cm">'+head+(label?'<div class="emo-clabel">'+esc(label)+'</div>':'')+body+acts+'</div></div>'
         +(own.length?'<div class="emo-kids">'+own.map(x=>one(x,depth>=2?3:depth+1,(depth>=2&&x.p!==c.k&&byKey[x.p])?"回覆 "+shortName(byKey[x.p].nm):"")).join("")+'</div>':'')+'</div>';
     };
@@ -8701,6 +8759,8 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
   });
   // 貼文視窗：按讚、刪除留言
   cmtOv.addEventListener("click",e=>{
+    const cl=e.target.closest&&e.target.closest(".emo-clike");
+    if(cl){ const row=cl.closest(".emo-c"); if(row&&row.dataset.ck) toggleLike(row.dataset.ck,cl); return; }
     const like=e.target.closest&&e.target.closest(".emo-like");
     if(like&&curPost){ toggleLike(curPost,like); return; }
     const more=e.target.closest&&e.target.closest(".emo-more");
@@ -8807,10 +8867,10 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
   function watchCMine(uid){
     const d=getDb(); if(!d) return;
     if(cMineRef){ cMineRef.off(); cMineRef=null; }
-    cMineUid=uid; cMine=new Set();
+    cMineUid=uid; cMine=new Set(); cMineReady=false;
     if(!uid) return;
     cMineRef=d.ref(CMINE+"/"+uid);
-    cMineRef.on("value",sn=>{ cMine=new Set(Object.keys(sn.val()||{})); if(curPost) renderPost(); },er=>console.warn("emo cmine read failed",er));
+    cMineRef.on("value",sn=>{ cMine=new Set(Object.keys(sn.val()||{})); cMineReady=true; checkReplies(); if(curPost) renderPost(); },er=>console.warn("emo cmine read failed",er));
   }
   /* ===== 管理員：一鍵刪除全部貼文（連同讚、留言與索引一起清掉）===== */
   (function(){
@@ -8864,6 +8924,53 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
   setInterval(()=>{ const u=uidNow(); if(u!==cMineUid) watchCMine(u); updateCards(); },1500);
   setInterval(syncAdmin,1500);
   window.addEventListener("load",()=>setTimeout(subscribe,300));
+})();
+</script>
+<style>
+#bpTicker{position:fixed;left:0;right:84px;bottom:0;height:30px;z-index:450;display:none;align-items:stretch;background:rgba(10,7,6,.94);border-top:1px solid var(--line);border-right:1px solid var(--line);font-family:var(--mono);font-size:12px;letter-spacing:.04em;color:var(--bone-dim);cursor:pointer;padding-bottom:env(safe-area-inset-bottom,0px);box-sizing:content-box}
+#bpTicker.on{display:flex}
+#bpTicker .bpt-l{flex:none;display:flex;align-items:center;gap:7px;padding:0 12px;color:var(--bone);background:rgba(181,2,15,.22);border-right:1px solid rgba(181,2,15,.5)}
+#bpTicker .bpt-l i{width:6px;height:6px;border-radius:50%;background:var(--c-crit);animation:bptDot 1.4s ease-in-out infinite}
+@keyframes bptDot{0%,100%{opacity:.35}50%{opacity:1}}
+#bpTicker .bpt-v{flex:1;overflow:hidden;display:flex;align-items:center;min-width:0}
+#bpTicker .bpt-t{display:inline-flex;white-space:nowrap;animation:bptRun var(--bpt-dur,60s) linear infinite;will-change:transform}
+#bpTicker:hover .bpt-t{animation-play-state:paused}
+#bpTicker .bpt-i{padding-right:48px}
+#bpTicker .bpt-i b{font-weight:500;color:var(--clinical);margin-right:8px}
+#bpTicker .bpt-i.dead{color:#d8606b}
+@keyframes bptRun{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@media (prefers-reduced-motion:reduce){#bpTicker .bpt-t{animation:none}}
+</style>
+<div id="bpTicker" title="點擊查看行動紀錄"><div class="bpt-l"><i></i>播報</div><div class="bpt-v"><div class="bpt-t" id="bpTrack"></div></div></div>
+<script>
+(function(){
+  const el=document.getElementById("bpTicker"), track=document.getElementById("bpTrack");
+  if(!el||!track) return;
+  const esc=t=>String(t==null?"":t).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  let sig="";
+  function paint(rows){
+    if(!rows.length){ el.classList.remove("on"); return; }
+    const items=rows.map(r=>{
+      const d=r.ts?new Date(r.ts):null, tm=d?pad(d.getHours())+":"+pad(d.getMinutes()):"";
+      const msg=String(r.msg||"").replace(/\s+/g," ").trim().slice(0,140);
+      return '<span class="bpt-i'+(r.dead?" dead":"")+'"><b>'+tm+'</b>'+esc(msg)+'</span>';
+    }).join("");
+    const s=items; if(s===sig) return; sig=s;
+    track.innerHTML=items+items;   // 內容放兩份，捲到一半就無縫接回開頭
+    el.classList.add("on");
+    requestAnimationFrame(()=>{ const w=track.scrollWidth/2; track.style.setProperty("--bpt-dur",Math.max(20,w/55)+"s"); });
+  }
+  const pad=n=>String(n).padStart(2,"0");
+  function start(){
+    if(typeof firebase==="undefined"||!firebase.database){ setTimeout(start,1500); return; }
+    let d; try{ if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG); d=firebase.database(); }catch(e){ setTimeout(start,3000); return; }
+    d.ref("bloodpool_log_v1").limitToLast(12).on("value",sn=>{
+      const v=sn.val()||{};
+      paint(Object.keys(v).map(k=>v[k]).filter(x=>x&&x.msg).sort((a,b)=>(a.ts||0)-(b.ts||0)));
+    },e=>console.warn("ticker read failed",e));
+  }
+  el.addEventListener("click",()=>{ try{ if(typeof viewActionLog==="function") viewActionLog(); }catch(e){} });
+  window.addEventListener("load",()=>setTimeout(start,400));
 })();
 </script>
 </body>
