@@ -4049,6 +4049,7 @@ const Auth=(function(){
     badge.textContent=n>99?"99+":String(n); badge.style.display=n?"block":"none";
   }
   /* 通知跳轉：g = post:<貼文>[:<留言>]（收容室貼文）／profile（個人檔案）／admin（待批准的申請）。舊通知沒有 g，就用內文判斷。 */
+  const ACT_KINDS=["kill","mad","hit","torture","accident","heal","support"];
   function goOf(x){
     if(!x) return "";
     if(x.g) return String(x.g);
@@ -4056,6 +4057,7 @@ const Auth=(function(){
     if(m.indexOf("有人申請認領角色")===0) return "admin";
     if(m.indexOf("你的角色申請已批准")===0||m.indexOf("你已被設為管理員")===0) return "profile";
     if(x.k==="reply") return "room";
+    if(ACT_KINDS.indexOf(x.k)>-1) return "profile";   // 被攻擊／折磨／擊殺／瘋狂／醫療事故／治療／資助 → 個人檔案
     return "";
   }
   function goNoti(x){
@@ -4687,12 +4689,20 @@ const Auth=(function(){
     const d=db(), k=avKey(n);
     return d.ref("emotion_avatars/"+k).remove().then(()=>d.ref("emotion_avatar_owners/"+k).remove());
   }
+  let okEl=null,okT=null;
+  function okToast(msg){
+    ensureInboxStyle();
+    if(!okEl){ okEl=document.createElement("div"); okEl.className="au-toast"; okEl.style.pointerEvents="none"; okEl.style.cursor="default"; okEl.style.textAlign="center"; document.body.appendChild(okEl); }
+    okEl.innerHTML="<b>"+esc(msg)+"</b>";
+    okEl.classList.remove("show"); void okEl.offsetWidth; okEl.classList.add("show");
+    clearTimeout(okT); okT=setTimeout(()=>{ if(okEl) okEl.classList.remove("show"); },2200);
+  }
   function saveAvatar(v){
     const d=db(), me=user; if(!me) return;
     return d.ref("users/"+me.uid+"/avatar").set(v||null).then(()=>{
       myAv=v||"";
-      if(!nick) return;
-      return mirrorAvatar(nick,v).catch(e=>{ console.warn("avatar mirror failed",e); alert("頭像已儲存，但公開同步失敗（"+(e.code||e.message)+"）：請確認 Firebase 規則已加入 emotion_avatars 與 emotion_avatar_owners 並發布。"); });
+      if(!nick){ okToast(v?"頭像更換成功":"已移除頭像"); return; }
+      return mirrorAvatar(nick,v).then(()=>{ okToast(v?"頭像更換成功":"已移除頭像"); }).catch(e=>{ console.warn("avatar mirror failed",e); alert("頭像已儲存，但公開同步失敗（"+(e.code||e.message)+"）：請確認 Firebase 規則已加入 emotion_avatars 與 emotion_avatar_owners 並發布。"); });
     }).catch(e=>alert("頭像儲存失敗："+(e.code||e.message)));
   }
   function readAvatar(file,cb){
@@ -8722,11 +8732,11 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
     if(iLiked(k)){
       // 先在本地更新，畫面立即反應
       if(likeMap[k]) delete likeMap[k][uid]; updateCards(); if(curPost) renderPost();
-      r.remove().catch(er=>alert("操作失敗："+(er.code||er.message)));
+      r.remove().catch(er=>{ (likeMap[k]=likeMap[k]||{})[uid]=true; updateCards(); if(curPost) renderPost(); alert("操作失敗："+(er.code||er.message)); });
     }else{
       (likeMap[k]=likeMap[k]||{})[uid]=true; updateCards(); if(curPost) renderPost();
       if(btn){ btn.classList.add("pop"); setTimeout(()=>btn.classList.remove("pop"),300); }
-      r.set(true).catch(er=>alert("操作失敗："+(er.code||er.message)));
+      r.set(true).catch(er=>{ if(likeMap[k]) delete likeMap[k][uid]; updateCards(); if(curPost) renderPost(); alert("操作失敗："+(er.code||er.message)); });
     }
   }
   function setCMode(m){
@@ -8970,10 +8980,10 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
     const fail=er=>alert("刪除失敗："+(er.code||er.message));
     const base={}; base[CMT+"/"+pk+"/"+ck]=null; base[COWN+"/"+ck]=null;
     if(isAdmin()){
-      d.ref(COWN+"/"+ck).once("value").then(sn=>{ const ou=sn.val(), up=Object.assign({},base); if(ou) up[CMINE+"/"+ou+"/"+ck]=null; return d.ref().update(up); }).catch(fail);
+      d.ref(COWN+"/"+ck).once("value").then(sn=>{ const ou=sn.val(), up=Object.assign({},base); if(ou) up[CMINE+"/"+ou+"/"+ck]=null; return d.ref().update(up); }).then(()=>d.ref(LIKES+"/"+ck).remove().catch(()=>{})).catch(fail);
     }else{
       const up=Object.assign({},base); up[CMINE+"/"+cMineUid+"/"+ck]=null;
-      d.ref().update(up).catch(fail);
+      d.ref().update(up).then(()=>d.ref(LIKES+"/"+ck).remove().catch(()=>{})).catch(fail);
     }
   }
   // 刪除貼文後，順手清掉它的讚與留言（失敗也不影響貼文本身的刪除）
