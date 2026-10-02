@@ -3791,13 +3791,15 @@ const SharedStore = (function(){
     return typeof v === "number" ? v : String(v);
   }
   // 通知信箱：寫一筆到「對方帳號」的信箱（notifications/<uid>）。自己對自己的操作不通知。
-  function notify(to, kind, msg){
+  function notify(to, kind, msg, go){
     try{
       const d = init(); if(!d || !to) return;
       const me = window.Auth && Auth.uid();
       if(!me) return;   // 同一個帳號的兩個角色互相行動也要通知（道具／重生本來就不會帶 to，不受影響）
-      d.ref("notifications/" + to).push({ts: firebase.database.ServerValue.TIMESTAMP, k: String(kind || "evt").slice(0, 12),
-        msg: String(msg).slice(0, 300), f: me, r: false}).catch(err => {
+      const nrec = {ts: firebase.database.ServerValue.TIMESTAMP, k: String(kind || "evt").slice(0, 12),
+        msg: String(msg).slice(0, 300), f: me, r: false};
+      if(go) nrec.g = String(go).slice(0, 120);   // 點通知要跳去哪：post:<貼文>[:<留言>]／profile／admin
+      d.ref("notifications/" + to).push(nrec).catch(err => {
           console.warn("notify failed", err);
           setBanner("通知送出失敗（" + ((err && err.code) || "未知原因") + "）：請確認 Firebase 規則已加入 notifications 並發布。");
         });
@@ -4046,9 +4048,41 @@ const Auth=(function(){
     if(!badge){ badge=document.createElement("span"); badge.style.cssText="position:absolute;top:2px;right:0;min-width:16px;height:16px;padding:0 4px;box-sizing:border-box;border-radius:8px;background:#c2242f;color:#fff;font-size:10px;line-height:16px;text-align:center;font-family:var(--mono);pointer-events:none;display:none"; btn.appendChild(badge); }
     badge.textContent=n>99?"99+":String(n); badge.style.display=n?"block":"none";
   }
-  function toast(title,body,iconTitle){
-    ensureInboxStyle();
-    if(!toastEl){ toastEl=document.createElement("div"); toastEl.className="au-toast"; toastEl.onclick=()=>{ toastEl.classList.remove("show"); openPanel(); view="inbox"; render(); }; document.body.appendChild(toastEl); }
+  /* 通知跳轉：g = post:<貼文>[:<留言>]（收容室貼文）／profile（個人檔案）／admin（待批准的申請）。舊通知沒有 g，就用內文判斷。 */
+  function goOf(x){
+    if(!x) return "";
+    if(x.g) return String(x.g);
+    const m=String(x.msg||"");
+    if(m.indexOf("有人申請認領角色")===0) return "admin";
+    if(m.indexOf("你的角色申請已批准")===0||m.indexOf("你已被設為管理員")===0) return "profile";
+    if(x.k==="reply") return "room";
+    return "";
+  }
+  function goNoti(x){
+    const g=goOf(x); if(!g) return;
+    if(x.id&&!x.r&&user){ try{ db().ref("notifications/"+user.uid+"/"+x.id+"/r").set(true); }catch(e){} }
+    if(g==="profile"||g==="admin"){
+      openPanel();
+      view=(g==="admin"&&admin)?"admin":"home";
+      render();
+      return;
+    }
+    // 收容室：關掉個人檔案 → 捲到收容室 → 打開那則貼文
+    const parts=g.split(":"), pk=parts[0]==="post"?parts[1]:null, ck=parts[2]||null;
+    if(isOpen()) hide();
+    setTimeout(()=>{
+      try{
+        const sec=document.getElementById("emoRoom");
+        if(typeof jumpToIndex==="function"&&typeof snapSections!=="undefined"){ const i=snapSections.indexOf(sec); if(i>=0) jumpToIndex(i); else sec.scrollIntoView({behavior:"smooth"}); }
+        else if(sec) sec.scrollIntoView({behavior:"smooth"});
+      }catch(e){}
+      if(pk) setTimeout(()=>{ if(window.EmoNav) window.EmoNav.open(pk,ck); },750);
+    },400);
+  }
+  let toastX=null;
+  function toast(title,body,iconTitle,x){
+    ensureInboxStyle(); toastX=(x&&goOf(x))?x:null;
+    if(!toastEl){ toastEl=document.createElement("div"); toastEl.className="au-toast"; toastEl.onclick=()=>{ toastEl.classList.remove("show"); if(toastX){ goNoti(toastX); return; } openPanel(); view="inbox"; render(); }; document.body.appendChild(toastEl); }
     toastEl.innerHTML="<b>"+(iconTitle?MAIL_ICON:esc(title))+"</b><span>"+esc(body)+"</span>";
     void toastEl.offsetWidth; toastEl.classList.add("show");
     clearTimeout(toastT); toastT=setTimeout(()=>{ if(toastEl) toastEl.classList.remove("show"); },6500);
@@ -4114,7 +4148,7 @@ const Auth=(function(){
           if(ks.length) showKill(ks);
           if(rest.length&&!viewing){
             const x=rest[0], m=NOTI[x.k]||NOTI.evt;
-            toast(m.t+(rest.length>1?"（共 "+rest.length+" 則）":""),String(x.msg||"").split("\n")[0]);
+            toast(m.t+(rest.length>1?"（共 "+rest.length+" 則）":""),String(x.msg||"").split("\n")[0],false,rest.length===1?x:null);
           }
         }
         if(isOpen()&&(view==="home"||view==="inbox")) render();
@@ -4492,7 +4526,8 @@ const Auth=(function(){
       h+=BACK+'<div class="modal-title" style="font-size:17px">'+MAIL_ICON+'</div>';
       if(!inbox.length) h+='<div class="au-empty">目前沒有通知。你的角色被攻擊、擊殺、治療時，會顯示在這裡。</div>';
       else h+=inbox.map(x=>{ const m=NOTI[x.k]||NOTI.evt; const tm=x.ts?new Date(x.ts).toLocaleString("zh-TW",{hour12:false,month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"}):"";
-        return '<div class="au-noti '+(x.r?"":"unread ")+m.c+'"><div class="au-noti-h"><span>'+m.t+'</span><span class="au-noti-time">'+esc(tm)+'</span></div><div class="au-noti-b">'+esc(x.msg).replace(/\n/g,"<br>")+'</div></div>'; }).join("")
+        const go=goOf(x);
+        return '<div class="au-noti '+(x.r?"":"unread ")+m.c+(go?" au-go":"")+'" data-nid="'+esc(x.id)+'"'+(go?' style="cursor:pointer"':'')+'><div class="au-noti-h"><span>'+m.t+(go?' ›':'')+'</span><span class="au-noti-time">'+esc(tm)+'</span></div><div class="au-noti-b">'+esc(x.msg).replace(/\n/g,"<br>")+'</div></div>'; }).join("")
         +'<button class="modify-btn" id="au_clr">清空信箱</button>';
     }else if(view==="addadmin"){
       h+=BACK+'<div class="modal-title" style="font-size:17px">新增管理員</div><div class="modal-note">輸入對方的 Google 信箱。對方登入過就會立刻成為管理員；還沒登入過的，會在他第一次用這個信箱登入時自動成為管理員。</div><span class="field-label">Email</span><input class="text-input" id="au_ae" type="email" inputmode="email" autocapitalize="off" autocomplete="off" placeholder="name@gmail.com"><button class="confirm-btn" id="au_aeb">新增為管理員</button><div class="au-sec"><span>目前管理員</span></div><div id="au_admlist" class="modal-note">讀取中…</div>';
@@ -4593,7 +4628,7 @@ const Auth=(function(){
         const k=emailKey(em); btn.disabled=true;
         d.ref("emailIndex/"+k).once("value").then(sn=>{
           const u=sn.val();
-          if(u) return d.ref("admins/"+u).set(true).then(()=>{ try{ SharedStore.notify(u,"sys","你已被設為管理員，重新整理頁面即可使用管理功能。"); }catch(e){} return "done"; });
+          if(u) return d.ref("admins/"+u).set(true).then(()=>{ try{ SharedStore.notify(u,"sys","你已被設為管理員，重新整理頁面即可使用管理功能。","profile"); }catch(e){} return "done"; });
           return d.ref("adminInvites/"+k).set(true).then(()=>"pending");
         }).then(r=>{
           btn.disabled=false; inp.value="";
@@ -4605,6 +4640,7 @@ const Auth=(function(){
     }
     if(view==="inbox"){
       if(unread()) setTimeout(()=>{ if(isOpen()&&view==="inbox") markAllRead(); },1500);   // 開著信箱一下就當作看過了
+      b.querySelectorAll(".au-noti.au-go").forEach(el=>{ el.onclick=()=>{ const x=inbox.find(n=>n.id===el.dataset.nid); if(x) goNoti(x); }; });
       const clr=b.querySelector("#au_clr");
       if(clr) clr.onclick=()=>{ if(!confirm("確定清空所有通知？")) return; db().ref("notifications/"+user.uid).remove().catch(e=>alert("清空失敗："+(e.code||e.message))); };
     }
@@ -4668,7 +4704,7 @@ const Auth=(function(){
     try{
       db().ref("admins").once("value").then(sn=>{
         const v=sn.val()||{};
-        Object.keys(v).forEach(u=>{ if(v[u]===true&&user&&u!==user.uid) SharedStore.notify(u,"sys","有人申請認領角色：「"+(rec.nick||"未命名")+"」申請 "+rec.f+" 編號 "+rec.id+" "+(rec.name||"")+"，請到個人檔案的「待批准的申請」處理。"); });
+        Object.keys(v).forEach(u=>{ if(v[u]===true&&user&&u!==user.uid) SharedStore.notify(u,"sys","有人申請認領角色：「"+(rec.nick||"未命名")+"」申請 "+rec.f+" 編號 "+rec.id+" "+(rec.name||"")+"，請到個人檔案的「待批准的申請」處理。","admin"); });
       }).catch(e=>console.warn("admin list read failed",e));
     }catch(e){ console.warn("notifyAdmins failed",e); }
   }
@@ -4683,7 +4719,7 @@ const Auth=(function(){
         ev.preventDefault(); const x=rows[+a.dataset.i]; const d=db();
         const done=()=>d.ref("claimRequests/"+x.u+"/"+x.k).remove().then(()=>render());
         // 批准：不刪除申請，改標記「已批准」，申請人那邊才看得到結果
-        const okDone=()=>{ SharedStore.notify(x.u,"sys","你的角色申請已批准：「"+x.r.f+" 編號 "+x.r.id+" "+x.r.name+"」，現在可以使用這個角色了。"); return d.ref("claimRequests/"+x.u+"/"+x.k).update({approved:true,at:firebase.database.ServerValue.TIMESTAMP}).then(()=>render()).catch(()=>done()); };
+        const okDone=()=>{ SharedStore.notify(x.u,"sys","你的角色申請已批准：「"+x.r.f+" 編號 "+x.r.id+" "+x.r.name+"」，現在可以使用這個角色了。","profile"); return d.ref("claimRequests/"+x.u+"/"+x.k).update({approved:true,at:firebase.database.ServerValue.TIMESTAMP}).then(()=>render()).catch(()=>done()); };
         if(a.dataset.a==="no") return done();
         d.ref(ST[x.r.f][1]+"/s"+x.r.id+"/owner").set(x.u).then(okDone).catch(e=>alert("批准失敗："+(e.code||e.message)));
       });
@@ -8670,12 +8706,12 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
         const fresh=raw!==null&&c.ts>(+raw||0);
         if(c.ts>max) max=c.ts;
         if(!fresh||cMine.has(ck)) return;
-        if(c.p?cMine.has(c.p):mineSet.has(pk)) found.push({c,ts:c.ts});
+        if(c.p?cMine.has(c.p):mineSet.has(pk)) found.push({c,ts:c.ts,pk:pk,ck:ck});
       }); });
       try{ localStorage.setItem(key,String(max||Date.now())); }catch(e){}
       found.sort((a,b)=>a.ts-b.ts).slice(-5).forEach(x=>{
         const who=x.c.n?shortName(String(x.c.n)):(x.c.a||"匿名");
-        SharedStore.notify(uid,"reply",who+(x.c.p?" 回覆了你的留言：":" 在你的貼文下留言：")+String(x.c.t||"").replace(/\s+/g," ").slice(0,40));
+        SharedStore.notify(uid,"reply",who+(x.c.p?" 回覆了你的留言：":" 在你的貼文下留言：")+String(x.c.t||"").replace(/\s+/g," ").slice(0,40),"post:"+x.pk+":"+x.ck);
       });
     }catch(e){ console.warn("checkReplies failed",e); }
   }
@@ -8795,6 +8831,18 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
     renderPost(); cmtOv.classList.add("open"); pScroll.scrollTop=0;
     lockScroll(true); fitComposer();
   }
+  window.EmoNav={ open:function(pk,ck,n){
+    n=n||0;
+    if(!list.some(x=>x.k===pk)){
+      if(n<10) return void setTimeout(()=>window.EmoNav.open(pk,ck,n+1),400);
+      return void alert("這則貼文已經不存在了");
+    }
+    openPost(pk);
+    if(ck) setTimeout(()=>{
+      const el=pList.querySelector('[data-ck="'+ck+'"]');
+      if(el){ el.scrollIntoView({block:"center",behavior:"smooth"}); el.style.transition="background .6s"; el.style.background="rgba(194,36,47,.22)"; setTimeout(()=>{ el.style.background=""; },1800); }
+    },300);
+  } };
   function closePost(){ curPost=null; editingC=null; replyTo=null; refreshReplyBar(); closePicker(); cmtOv.classList.remove("open"); lockScroll(false); }
   function lockScroll(on){
     document.documentElement.style.overflow=on?"hidden":"";
