@@ -3686,6 +3686,22 @@ const SharedStore = (function(){
 
   // 只把「跟資料庫不一樣」的實驗體寫上去，不會蓋掉別人改的其他人。
   // 回傳 true = 已交給 Firebase；false = 尚未連上（呼叫端改存本機備援）
+  // 寫入失敗時自動回報到操作紀錄節點（k:"err"，不會顯示在公開的行動紀錄裡），之後可到 Firebase 看是誰、做什麼動作、哪個錯誤代碼、想寫哪些欄位
+  function reportFail(ctx, j, fields, e){
+    try{
+      const d = init(); if(!d) return;
+      const sum = {};
+      Object.keys(fields || {}).forEach(f => { sum[f] = (f === "avatarUrl") ? "(圖片)" : fields[f]; });
+      const msg = ("寫入失敗 " + ((e && e.code) || "unknown") +
+        "｜動作 " + (ctx || "未知") +
+        "｜角色 " + j.id + (j.del ? "（刪除）" : "") +
+        "｜admin=" + !!(window.Auth && Auth.isAdmin) +
+        "｜online=" + (typeof navigator !== "undefined" ? navigator.onLine : "?") +
+        "｜欄位 " + JSON.stringify(sum)).slice(0, 600);
+      d.ref(LOG_PATH).push({u: (window.Auth && Auth.uid()) || "", n: (window.Auth && Auth.nick()) || "",
+        ts: firebase.database.ServerValue.TIMESTAMP, k: "err", msg: msg, g: "", dead: false}).catch(() => {});
+    }catch(_){}
+  }
   let lastSave = Promise.resolve(true);   // 最近一次 save() 的寫入結果（true = 資料庫已確認收到）
   let lastErr = null;                      // 最近一次寫入失敗的錯誤代碼
   function save(path, list, opts){
@@ -3741,6 +3757,7 @@ const SharedStore = (function(){
       const fail = e => {
         console.warn("firebase save failed", j.k, e);
         lastErr = (e && e.code) || "unknown";
+        reportFail(ctx, j, fields, e);
         undo();
         setBanner("儲存失敗（" + ((e && e.code) || "未知原因") + "）：角色 " + j.id + "。修改可能沒有同步給其他人。");
       };
@@ -6039,7 +6056,7 @@ function renderModalBody(){
       backBtn() +
       '<div class="modal-eyebrow">' + eyebrow + '</div>' +
       '<div class="modal-title">添加狀態</div>' +
-      '<input type="text" class="text-input" id="statusInput1" maxlength="50" placeholder="例如：斷手、腦震盪">' +
+      '<input type="text" class="text-input" id="statusInput1" maxlength="40" placeholder="例如：斷手、腦震盪">' +
       '<button class="confirm-btn" onclick="confirmStatus1()">下一步</button>';
 
   } else if(step === "statusAskSecond"){
@@ -6056,7 +6073,7 @@ function renderModalBody(){
       backBtn() +
       '<div class="modal-eyebrow">' + eyebrow + '</div>' +
       '<div class="modal-title">第二個狀態</div>' +
-      '<input type="text" class="text-input" id="statusInput2" maxlength="50" placeholder="例如：斷手、腦震盪">' +
+      '<input type="text" class="text-input" id="statusInput2" maxlength="40" placeholder="例如：斷手、腦震盪">' +
       '<button class="confirm-btn" onclick="confirmStatus2()">前往確認</button>';
 
   } else if(step === "actionPreview"){
@@ -6158,16 +6175,16 @@ function renderModalBody(){
       '<button class="confirm-btn" onclick="applyItem()">確認使用</button>' +
       '<button class="modify-btn" onclick="goBack()">修改</button>';
 
-  } else if(step === "itemFail"){
+  } else if(step === "writeFail"){
     html =
-      '<div class="modal-eyebrow">道具使用</div>' +
-      '<div class="modal-title">使用失敗</div>' +
+      '<div class="modal-eyebrow">' + escapeHTML(wizard.failEyebrow || "") + '</div>' +
+      '<div class="modal-title">操作失敗</div>' +
       '<div class="result-block">' +
-        '<div class="result-line">' + escapeHTML(wizard.itemFailMsg || "道具沒有使用成功。") + '</div>' +
-        '<div class="result-line">數值和道具數量都沒有改變，也沒有留下行動紀錄。請重新使用。</div>' +
-        (wizard.itemFailCode ? '<div class="result-line">錯誤代碼：' + escapeHTML(wizard.itemFailCode) + '</div>' : '') +
+        '<div class="result-line">' + escapeHTML(wizard.failMsg || "資料庫沒有收到這次的修改。") + '</div>' +
+        '<div class="result-line">數值、狀態和道具數量都沒有改變，也沒有留下行動紀錄。請重新操作。</div>' +
+        (wizard.failCode ? '<div class="result-line">錯誤代碼：' + escapeHTML(wizard.failCode) + '</div>' : '') +
       '</div>' +
-      '<button class="confirm-btn" onclick="retryItem()">重新使用</button>' +
+      '<button class="confirm-btn" onclick="goBack()">' + escapeHTML(wizard.failRetry || "重新送出") + '</button>' +
       '<button class="modify-btn" onclick="closeModal()">關閉</button>';
 
   } else if(step === "itemResult"){
@@ -6303,7 +6320,55 @@ function reportBlock(t, deltaTxt, tailTxt, killed){
 }
 
 function auditWho(){ return ""; }
-function applyAction(){
+/* ---------- 寫入確認：等資料庫確認收到才算成功，失敗就還原並且不記行動紀錄 ---------- */
+const WRITE_FIELDS = ["hp","san","statuses","bandages","syringes","deathCount","madCount"];
+let writeBusy = false;
+function _cp(v){ return JSON.parse(JSON.stringify(v === undefined ? null : v)); }
+function snapFields(list){
+  const m = {};
+  list.forEach(s => { const o = {}; WRITE_FIELDS.forEach(f => { o[f] = _cp(s[f]); }); m[s.id] = o; });
+  return m;
+}
+function showWritePending(eyebrow){
+  modalBody.innerHTML =
+    '<div class="modal-eyebrow">' + eyebrow + '</div>' +
+    '<div class="modal-title">處理中…</div>' +
+    '<div class="result-block"><div class="result-line">正在確認是否成功寫入，請稍候。</div></div>';
+}
+// 必須緊接在 renderGrid()（內含 saveState）之後呼叫，中間不能有 await
+async function awaitWrite(list, before, after){
+  const pending = SharedStore.lastSave();
+  let result = false;
+  try{
+    result = await Promise.race([pending, new Promise(res => setTimeout(() => res("timeout"), 10000))]);
+  }catch(e){ result = false; }
+  if(result === true) return {ok: true};
+  // 失敗：只還原這次改到的欄位（期間別人又改了同一欄就不動它）
+  list.forEach(s => {
+    WRITE_FIELDS.forEach(f => {
+      if(JSON.stringify(_cp(s[f])) === JSON.stringify(after[s.id][f])) s[f] = _cp(before[s.id][f]);
+    });
+  });
+  renderGrid();
+  return {
+    ok: false,
+    code: result === "timeout" ? "timeout" : (SharedStore.lastError() || "unknown"),
+    msg: result === "timeout" ? "連線逾時，請確認網路後再試。" : "資料庫沒有收到這次的修改。"
+  };
+}
+function showWriteFail(eyebrow, r, retryLabel){
+  wizard.failEyebrow = eyebrow; wizard.failMsg = r.msg; wizard.failCode = r.code; wizard.failRetry = retryLabel;
+  if(modalOverlay.classList.contains("open")) goStep("writeFail");
+}
+
+async function applyAction(){
+  if(writeBusy) return;
+  const _evts = [];
+  const _log = (m, o) => _evts.push([m, o]);   // 先收著，確認寫入成功才真的記進行動紀錄
+  const _list = ((wizard.mode === "medical" || wizard.mode === "support")
+    ? [subjects.find(s => s.id === wizard.targetId)]
+    : wizard.targetIds.map(id => subjects.find(s => s.id === id))).filter(Boolean);
+  const _before = snapFields(_list);
   const _vb = ({medical:"醫療", support:"資助"})[wizard.mode] || (modeLabels[wizard.mode] && modeLabels[wizard.mode].verb) || wizard.mode;
   SharedStore.setCtx(_vb + "・" + (wizard.natureLabel || "") + auditWho(), true);
   if(wizard.mode === "medical" || wizard.mode === "support"){
@@ -6319,10 +6384,10 @@ function applyAction(){
       wizard.removedNow = null;
     }
     if(wizard.mode === "medical"){
-      SharedStore.logEvent("「" + actorLabel() + "」治療「" + subjLabel(target) + "」\n" + _statTxt + "+1，解除狀態：" +
+      _log("「" + actorLabel() + "」治療「" + subjLabel(target) + "」\n" + _statTxt + "+1，解除狀態：" +
         (wizard.removedNow || "無") + "。", {g: wizard.faction, to: target.owner, kind: "heal"});
     } else {
-      SharedStore.logEvent("「" + actorLabel() + "」資助「" + subjLabel(target) + "」\n" + _statTxt + "+1（" + wizard.natureLabel + "），解除狀態：" +
+      _log("「" + actorLabel() + "」資助「" + subjLabel(target) + "」\n" + _statTxt + "+1（" + wizard.natureLabel + "），解除狀態：" +
         (wizard.removedNow || "無") + "。", {g: wizard.faction, to: target.owner, kind: "support"});
     }
   } else {
@@ -6353,7 +6418,7 @@ function applyAction(){
         else if(wizard.mode === "torture"){ msg = A + "折磨" + S + "\n" + statTxt + "，附加狀態：" + addedTxt + "。"; }
         else if(wizard.mode === "accident"){ msg = A + "造成醫療事故，" + S + "\n" + statTxt + "，附加狀態：" + addedTxt + "。"; }
         else { msg = A + "攻擊" + S + "（" + statTxt + "），附加狀態：" + addedTxt + "。"; }
-        SharedStore.logEvent(msg, {g: wizard.faction, dead: dead, to: t.owner,
+        _log(msg, {g: wizard.faction, dead: dead, to: t.owner,
           kind: diedNow ? "kill" : madNow ? "mad" : wizard.mode === "torture" ? "torture" : wizard.mode === "accident" ? "accident" : "hit"});
       }
       // 只有「這一下」才讓 HP／SAN 歸零才算擊殺／瘋狂；對已經死亡（或瘋狂）的目標只是普通攻擊／折磨
@@ -6372,19 +6437,40 @@ function applyAction(){
     wizard.anyDead = anyDead;
   }
 
-  renderGrid();
-  goStep("actionResult");
+  const _after = snapFields(_list);
+  writeBusy = true;
+  showWritePending("行動");
+  renderGrid();   // 內部會 saveState() → SharedStore.save()
+  let _r;
+  try{ _r = await awaitWrite(_list, _before, _after); } finally { writeBusy = false; }
+  if(_r.ok){
+    _evts.forEach(e => SharedStore.logEvent(e[0], e[1]));
+    if(modalOverlay.classList.contains("open")) goStep("actionResult");
+    return;
+  }
+  showWriteFail("行動", _r, "重新送出");
 }
 
-function applyRespawn(){
-  SharedStore.setCtx("重生" + auditWho(), true);
+async function applyRespawn(){
+  if(writeBusy) return;
   const self = subjects.find(s => s.id === wizard.selfId);
-  SharedStore.logEvent("「" + subjLabel(self) + "」重生。", {g: "實驗體"});
+  const list = [self], before = snapFields(list);
+  writeBusy = true;
+  showWritePending("重生");
+  SharedStore.setCtx("重生" + auditWho(), true);
   self.hp = 3;
   self.san = 3;
   self.statuses = [];
+  const after = snapFields(list);
   renderGrid();
-  goStep("respawnResult");
+  let r;
+  try{ r = await awaitWrite(list, before, after); } finally { writeBusy = false; }
+  if(r.ok){
+    SharedStore.logEvent("「" + subjLabel(self) + "」重生。", {g: "實驗體"});
+    if(modalOverlay.classList.contains("open")) goStep("respawnResult");
+    return;
+  }
+  showWriteFail("重生", r, "重新送出");
 }
 
 function confirmItemSelf(){
@@ -6399,63 +6485,32 @@ function chooseItem(type){
   goStep("itemPreview");
 }
 
-let itemBusy = false;
-// 使用道具：等資料庫確認寫入成功才算成功。成功 → 記行動紀錄並顯示結果；失敗 → 還原、不記紀錄，請玩家重新使用
 async function applyItem(){
-  if(itemBusy) return;
+  if(writeBusy) return;
   const self = subjects.find(s => s.id === wizard.selfId);
   const isBandage = wizard.itemType === "bandage";
   const itemName = isBandage ? "繃帶" : "針筒";
   if(!self || (isBandage ? !(self.bandages > 0) : !(self.syringes > 0))){
-    wizard.itemFailMsg = "道具數量不足，無法使用。";
-    wizard.itemFailCode = "";
-    goStep("itemFail");
+    // 道具不夠：回到選道具頁（那裡會顯示剩餘數量、按鈕反灰）
+    wizard.history = ["itemSelf"]; wizard.step = "itemChoice"; renderModalBody();
     return;
   }
-  itemBusy = true;
-  const before = {bandages: self.bandages, syringes: self.syringes, hp: self.hp, san: self.san};
-  modalBody.innerHTML =
-    '<div class="modal-eyebrow">道具使用</div>' +
-    '<div class="modal-title">處理中…</div>' +
-    '<div class="result-block"><div class="result-line">正在確認道具是否使用成功，請稍候。</div></div>';
+  const list = [self], before = snapFields(list);
+  writeBusy = true;
+  showWritePending("道具使用");
   SharedStore.setCtx("使用" + itemName + auditWho(), true);
-  const after = {};
-  if(isBandage){
-    self.bandages -= 1; self.hp = Math.min(3, self.hp + 1);
-    after.bandages = self.bandages; after.hp = self.hp;
-  } else {
-    self.syringes -= 1; self.san = Math.min(3, self.san + 1);
-    after.syringes = self.syringes; after.san = self.san;
-  }
-  renderGrid();   // 內部會 saveState() → SharedStore.save()
-  let result = false;
-  try{
-    result = await Promise.race([
-      SharedStore.lastSave(),
-      new Promise(res => setTimeout(() => res("timeout"), 10000))
-    ]);
-  }catch(e){ result = false; }
-  itemBusy = false;
-  const modalOpen = modalOverlay.classList.contains("open");
-
-  if(result === true){
+  if(isBandage){ self.bandages -= 1; self.hp = Math.min(3, self.hp + 1); }
+  else { self.syringes -= 1; self.san = Math.min(3, self.san + 1); }
+  const after = snapFields(list);
+  renderGrid();
+  let r;
+  try{ r = await awaitWrite(list, before, after); } finally { writeBusy = false; }
+  if(r.ok){
     SharedStore.logEvent("「" + subjLabel(self) + "」使用" + itemName + (isBandage ? "（HP+1）。" : "（SAN+1）。"), {g: "實驗體"});
-    if(modalOpen) goStep("itemResult");
+    if(modalOverlay.classList.contains("open")) goStep("itemResult");
     return;
   }
-
-  // 失敗：只還原這次改到的欄位（如果期間別人又改了同一欄就不動它），不留行動紀錄
-  Object.keys(after).forEach(f => { if(self[f] === after[f]) self[f] = before[f]; });
-  renderGrid();
-  wizard.itemFailMsg = result === "timeout" ? "連線逾時，請確認網路後再試。" : "資料庫沒有收到這次的修改。";
-  wizard.itemFailCode = result === "timeout" ? "timeout" : (SharedStore.lastError() || "unknown");
-  if(modalOpen) goStep("itemFail");
-}
-
-function retryItem(){
-  wizard.history = ["itemSelf"];
-  wizard.step = "itemChoice";
-  renderModalBody();
+  showWriteFail("道具使用", r, "重新使用");
 }
 
 /* ---------- EDIT SUBJECT (stats/name only) ---------- */
@@ -6525,7 +6580,7 @@ function renderEditForm(){
         : '<span class="edit-status-empty">目前沒有狀態</span>') +
     '</div>' +
     '<div class="edit-status-add">' +
-      '<input type="text" class="text-input" id="editStatusInput" placeholder="輸入新狀態名稱" maxlength="50">' +
+      '<input type="text" class="text-input" id="editStatusInput" placeholder="輸入新狀態名稱" maxlength="40">' +
       '<button class="modify-btn small" onclick="addEditStatus()">新增狀態</button>' +
     '</div>' +
     '<span class="field-label">隱藏台詞（連續點擊卡片三下觸發，可留空）</span>' +
@@ -6543,7 +6598,7 @@ function openEditStatusModal(i){
     '<div class="modal-eyebrow">編輯狀態 ／ ' + s.id + '</div>' +
     '<div class="modal-title">修改狀態內容</div>' +
     '<span class="field-label">狀態名稱</span>' +
-    '<input type="text" class="text-input" id="editStatusModalInput" value="' + escapeHTML(editDraft.statuses[i]) + '" maxlength="50">' +
+    '<input type="text" class="text-input" id="editStatusModalInput" value="' + escapeHTML(editDraft.statuses[i]) + '" maxlength="40">' +
     '<button class="confirm-btn" onclick="saveEditStatusModal()">儲存</button>' +
     '<button class="modify-btn" onclick="renderEditForm()">取消</button>' +
     '<button class="danger-btn" onclick="deleteEditStatusModal()">刪除此狀態</button>';
