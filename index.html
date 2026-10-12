@@ -2699,6 +2699,11 @@
 .emo-post-btn:hover{border-color:var(--bone-dim);color:var(--bone)}
 #emoRoom .roster-head-right{flex-direction:row;align-items:center;justify-content:space-between;gap:16px}
 #emoRoom .emo-post-btn{flex:none}
+.emo-btns{display:flex;gap:12px;flex:none}
+.emo-av-hint{font-size:13px;color:var(--bone-dim);line-height:1.7;margin:4px 0 14px}
+.emo-av-stage{width:240px;height:240px;margin:0 auto 14px;border-radius:50%;overflow:hidden;border:1px solid var(--line);background:#1c1514;touch-action:none;cursor:grab}
+.emo-av-stage canvas{display:block;width:240px;height:240px}
+.emo-av-zoom{width:240px;display:block;margin:0 auto 16px}
 @media (max-width:520px){#emoRoom .roster-head-right{width:100%;align-items:center}}
 .emo-grid .card{gap:18px;animation:bpBodyIn .5s ease both}
 .emo-grid .card-top .status{max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -3402,7 +3407,7 @@
   <div class="roster-eyebrow">檔案 ⁄ 情感收容</div>
   <div class="roster-head">
     <h2>匿名情感收容室</h2>
-    <div class="roster-head-right"><div class="meta" id="emoMeta">收容數量 000</div><button type="button" class="emo-post-btn" id="emoAddBtn" title="投稿">＋ 投稿</button></div>
+    <div class="roster-head-right"><div class="meta" id="emoMeta">收容數量 000</div><div class="emo-btns"><button type="button" class="emo-post-btn" id="emoAvatarBtn" title="更換實名發言的頭像">頭像 ＋</button><button type="button" class="emo-post-btn" id="emoAddBtn" title="投稿">投稿 ＋</button></div></div>
   </div>
   <div class="roster-divider"></div>
   <div class="grid emo-grid" id="emoGrid"></div>
@@ -3432,6 +3437,22 @@
       <button class="modify-btn" id="emoCancel">取消</button>
       <button class="danger-btn" id="emoDel" style="display:none">刪除此投遞</button>
     </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="emoAvOverlay">
+  <div class="modal-box">
+    <button class="modal-close" id="emoAvClose">×</button>
+    <div class="modal-eyebrow">匿名情感收容室</div>
+    <div class="modal-title">實名頭像</div>
+    <div class="emo-av-hint" id="emoAvHint">以實名留言時會顯示這張頭像。</div>
+    <div class="emo-av-stage" id="emoAvStage"><canvas id="emoAvCanvas" width="240" height="240"></canvas></div>
+    <input type="range" class="emo-av-zoom" id="emoAvZoom" min="1" max="3" step="0.01" value="1">
+    <input type="file" id="emoAvFile" accept="image/*" style="display:none">
+    <button class="modify-btn" id="emoAvPick">選擇圖片</button>
+    <button class="confirm-btn" id="emoAvSave">儲存</button>
+    <button class="danger-btn" id="emoAvDel" style="display:none">移除頭像</button>
+    <button class="modify-btn" id="emoAvCancel">取消</button>
   </div>
 </div>
 
@@ -8668,6 +8689,92 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
     });
     return hit;
   }
+  /* ===== 實名頭像：emotion_avatars/<暱稱編碼> = 圖片(data URL)，emotion_avatar_owners/<暱稱編碼> = 擁有者 uid ===== */
+  const AV="emotion_avatars", AVOWN="emotion_avatar_owners";
+  const avKey=n=>encodeURIComponent(String(n||"").trim()).replace(/\./g,"%2E");
+  let avMap={}, avWatch={};
+  function watchAv(nm){
+    const k=avKey(nm); if(!k||avWatch[k]) return;
+    const d=getDb(); if(!d) return;
+    avWatch[k]=true;
+    d.ref(AV+"/"+k).on("value",sn=>{ avMap[k]=sn.val()||null; if(curPost) renderPost(); },()=>{ avMap[k]=null; });
+  }
+  (function avatarEditor(){
+    const btn=document.getElementById("emoAvatarBtn"), ovl=document.getElementById("emoAvOverlay");
+    if(!btn||!ovl) return;
+    const cv=document.getElementById("emoAvCanvas"), stage=document.getElementById("emoAvStage"), zoomEl=document.getElementById("emoAvZoom"),
+          fileEl=document.getElementById("emoAvFile"), hint=document.getElementById("emoAvHint"),
+          bSave=document.getElementById("emoAvSave"), bDel=document.getElementById("emoAvDel");
+    const S=240;
+    let img=null, zoom=1, ox=0, oy=0, nick="", drag=null;
+    const base=()=>img?Math.max(S/img.width,S/img.height):1;
+    function clamp(){
+      if(!img) return;
+      const s=base()*zoom, mx=Math.max(0,(img.width*s-S)/2), my=Math.max(0,(img.height*s-S)/2);
+      ox=Math.min(mx,Math.max(-mx,ox)); oy=Math.min(my,Math.max(-my,oy));
+    }
+    function draw(c,size){
+      const x=c.getContext("2d"), k=size/S;
+      x.fillStyle="#1c1514"; x.fillRect(0,0,size,size);
+      if(!img){ x.fillStyle="rgba(230,221,207,.4)"; x.font=(14*k)+"px sans-serif"; x.textAlign="center"; x.fillText("請選擇圖片",size/2,size/2+5*k); return; }
+      const s=base()*zoom*k, w=img.width*s, h=img.height*s;
+      x.drawImage(img,size/2+ox*k-w/2,size/2+oy*k-h/2,w,h);
+    }
+    function loadSrc(src){
+      const im=new Image();
+      im.onload=()=>{ img=im; zoom=1; ox=0; oy=0; zoomEl.value=1; draw(cv,S); };
+      im.onerror=()=>alert("無法讀取這張圖片，請換一張（建議 JPG 或 PNG）。");
+      im.src=src;
+    }
+    function close(){ ovl.classList.remove("open"); }
+    function open(){
+      if(!window.Auth||!Auth.requireLogin()) return;
+      nick=((Auth.nick&&Auth.nick())||"").trim();
+      if(!nick){ alert("請先設定暱稱。"); return; }
+      const d=getDb(); if(!d) return alert("暫時無法連線");
+      img=null; zoom=1; ox=0; oy=0; zoomEl.value=1; draw(cv,S);
+      hint.textContent="以實名（"+nick+"）留言時，會顯示這張頭像。拖曳可移動位置，滑桿可縮放。";
+      bDel.style.display="none";
+      ovl.classList.add("open");
+      d.ref(AV+"/"+avKey(nick)).once("value").then(sn=>{
+        const v=sn.val();
+        if(v&&ovl.classList.contains("open")){ loadSrc(v); bDel.style.display=""; }
+      }).catch(()=>{});
+    }
+    btn.addEventListener("click",open);
+    document.getElementById("emoAvClose").addEventListener("click",close);
+    document.getElementById("emoAvCancel").addEventListener("click",close);
+    ovl.addEventListener("click",e=>{ if(e.target===ovl) close(); });
+    document.getElementById("emoAvPick").addEventListener("click",()=>{ fileEl.value=""; fileEl.click(); });
+    fileEl.addEventListener("change",()=>{
+      const f=fileEl.files&&fileEl.files[0]; if(!f) return;
+      const r=new FileReader(); r.onload=()=>loadSrc(r.result); r.onerror=()=>alert("無法讀取這個檔案。"); r.readAsDataURL(f);
+    });
+    zoomEl.addEventListener("input",()=>{ zoom=+zoomEl.value; clamp(); draw(cv,S); });
+    stage.addEventListener("pointerdown",e=>{ if(!img) return; drag={x:e.clientX,y:e.clientY,ox:ox,oy:oy}; try{ stage.setPointerCapture(e.pointerId); }catch(_){} stage.style.cursor="grabbing"; });
+    stage.addEventListener("pointermove",e=>{ if(!drag) return; ox=drag.ox+(e.clientX-drag.x); oy=drag.oy+(e.clientY-drag.y); clamp(); draw(cv,S); });
+    const endDrag=()=>{ drag=null; stage.style.cursor=""; };
+    stage.addEventListener("pointerup",endDrag); stage.addEventListener("pointercancel",endDrag);
+    function fail(e){
+      const code=(e&&e.code)||"";
+      alert(code==="PERMISSION_DENIED"?"儲存失敗：這個暱稱的頭像已被其他帳號使用，無法更換。":"儲存失敗："+(code||(e&&e.message)||"未知錯誤"));
+    }
+    bSave.addEventListener("click",()=>{
+      if(!img){ alert("請先選擇圖片。"); return; }
+      const d=getDb(), uid=uidNow(); if(!d||!uid) return;
+      const out=document.createElement("canvas"); out.width=out.height=160; draw(out,160);
+      const url=out.toDataURL("image/jpeg",0.85), k=avKey(nick);
+      const up={}; up[AVOWN+"/"+k]=uid; up[AV+"/"+k]=url;
+      bSave.disabled=true;
+      d.ref().update(up).then(()=>{ avMap[k]=url; close(); if(curPost) renderPost(); }).catch(fail).then(()=>{ bSave.disabled=false; });
+    });
+    bDel.addEventListener("click",()=>{
+      if(!confirm("確定移除實名頭像？")) return;
+      const d=getDb(); if(!d) return;
+      const k=avKey(nick);
+      d.ref(AV+"/"+k).remove().then(()=>{ avMap[k]=null; close(); if(curPost) renderPost(); }).catch(fail);
+    });
+  })();
   function renderPost(){
     const it=list.find(x=>x.k===curPost);
     if(!it){ closePost(); return; }
@@ -8694,7 +8801,10 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
           ? '<div class="'+cls+' role-img"><img src="'+esc(r.avatarUrl)+'" alt=""></div>'
           : '<div class="'+cls+' role-empty"></div>';
       }
-      // 實名：維持原本的首字頭像
+      // 實名：有設定頭像就顯示頭像，沒有就維持首字頭像
+      const _ai=(watchAv(nm),avMap[avKey(nm)]);
+      if(_ai&&/^data:image\//.test(_ai)) return '<div class="'+cls+' role-img"><img src="'+esc(_ai)+'" alt=""></div>';
+      //
       const ch=Array.from(nm)[0]; let h=0; for(const x of nm) h=(h*31+x.charCodeAt(0))%360;
       return '<div class="'+cls+'" style="background:hsl('+h+',38%,30%)">'+esc(ch)+'</div>'; };
     // 一則留言（含它底下的回覆）。超過三層的回覆不再往內縮，改成同一層並標註「回覆誰」
