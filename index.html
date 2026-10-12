@@ -2699,13 +2699,6 @@
 .emo-post-btn:hover{border-color:var(--bone-dim);color:var(--bone)}
 #emoRoom .roster-head-right{flex-direction:row;align-items:center;justify-content:space-between;gap:16px}
 #emoRoom .emo-post-btn{flex:none}
-.emo-btns{display:inline-flex;gap:8px;flex:none}
-.emo-post-btn.sm{padding:6px 12px;font-size:12px;letter-spacing:.08em}
-.emo-head{align-items:center;gap:10px}
-.emo-head .emo-more{top:-3px}
-.emo-phead{align-items:center;gap:10px}
-.emo-cav.md{width:32px;height:32px;font-size:14px;flex:none}
-.emo-cav.md.anon{font-size:20px}
 @media (max-width:520px){#emoRoom .roster-head-right{width:100%;align-items:center}}
 .emo-grid .card{gap:18px;animation:bpBodyIn .5s ease both}
 .emo-grid .card-top .status{max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -2714,7 +2707,7 @@
 @media (min-width:641px){#emoRoom .emo-grid{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}}
 @media (max-width:640px){#emoRoom .emo-grid{grid-template-columns:minmax(0,1fr)}}
 @media (min-width:601px){.emo-post-box{border-radius:14px}.emo-composer{margin-left:20px;margin-right:20px}}
-.emo-head{display:flex;align-items:center;gap:10px;position:relative;padding-right:34px;min-height:24px}
+.emo-head{display:flex;align-items:baseline;gap:8px;position:relative;padding-right:34px;min-height:24px}
 .emo-name{font-family:var(--sans);font-size:15px;font-weight:600;color:var(--bone);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .emo-when{font-family:var(--mono);font-size:11px;color:var(--bone-dim);white-space:nowrap;flex:none}
 .emo-more{position:absolute;right:-8px;top:-6px;width:34px;height:34px;display:none;align-items:center;justify-content:center;background:none;border:none;color:var(--bone-dim);cursor:pointer;transition:color .2s ease}
@@ -2746,8 +2739,6 @@
 .emo-like.on{color:#c4202c}
 .emo-like.on svg path{fill:currentColor}
 .emo-like.pop svg{animation:emoPop .28s ease}
-.emo-clike.on{color:#c4202c}
-.emo-clike.on svg path{fill:currentColor}
 @keyframes emoPop{50%{transform:scale(1.25)}}
 .emo-grid .card{cursor:pointer}
 .emo-post-box{width:min(560px,100vw);height:min(86vh,760px);max-height:none;padding:0;display:flex;flex-direction:column;overflow:hidden}
@@ -2755,7 +2746,7 @@
 .emo-post-box .modal-close{top:20px;right:16px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;z-index:2}
 #emoPostOverlay{-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
 .emo-pscroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:18px 20px 40px;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
-.emo-phead{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.emo-phead{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}
 .emo-phead .emo-name{font-size:16px}
 .emo-pscroll>.emo-text{font-size:16px;margin-bottom:14px}
 .emo-pscroll>.emo-actions{margin-top:0;padding-bottom:14px;border-bottom:1px solid var(--line)}
@@ -2778,8 +2769,8 @@
 .emo-cl{flex:none;width:36px;display:flex;flex-direction:column;align-items:center}
 .emo-cav{flex:none;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--bone);font-family:var(--sans);font-size:15px;font-weight:600}
 .emo-cav.sm{width:28px;height:28px;font-size:12px}
-.emo-cav.anon{background:#5c0d14;border:1px solid rgba(255,59,71,.38);color:#ff3b47;font-family:"PMingLiU","新細明體","MingLiU","細明體","Songti TC","Noto Serif TC","Source Han Serif TC",serif;font-weight:400;font-size:21px;line-height:1;padding-bottom:2px}
-.emo-cav.anon.sm{font-size:17px}
+.emo-cav.anon{background:#5c0d14;border:1px solid rgba(255,59,71,.38);color:#ff3b47;font-weight:800;font-size:19px;line-height:1}
+.emo-cav.anon.sm{font-size:15px}
 .emo-cav.role-empty{background:rgba(255,255,255,.07);border:1.5px dashed var(--bone-dim)}
 .emo-cav.role-img{background:rgba(255,255,255,.07);overflow:hidden}
 .emo-cav.role-img img{width:100%;height:100%;object-fit:cover;display:block;border-radius:50%}
@@ -3411,7 +3402,7 @@
   <div class="roster-eyebrow">檔案 ⁄ 情感收容</div>
   <div class="roster-head">
     <h2>匿名情感收容室</h2>
-    <div class="roster-head-right"><div class="meta" id="emoMeta">收容數量 000</div><span class="emo-btns"><button type="button" class="emo-post-btn sm" id="emoAvBtn" title="更換我的實名頭像">頭像＋</button><button type="button" class="emo-post-btn sm" id="emoAddBtn" title="投稿">投稿＋</button></span></div>
+    <div class="roster-head-right"><div class="meta" id="emoMeta">收容數量 000</div><button type="button" class="emo-post-btn" id="emoAddBtn" title="投稿">＋ 投稿</button></div>
   </div>
   <div class="roster-divider"></div>
   <div class="grid emo-grid" id="emoGrid"></div>
@@ -3449,7 +3440,7 @@
     <button class="modal-close" id="emoPostClose" title="關閉">×</button>
     <div class="emo-ptop">貼文</div>
     <div class="emo-pscroll" id="emoPScroll">
-      <div class="emo-phead"><span id="emoPAv" style="display:flex"></span><span class="emo-name" id="emoPName"></span><span class="emo-when" id="emoPTime"></span></div>
+      <div class="emo-phead"><span class="emo-name" id="emoPName"></span><span class="emo-when" id="emoPTime"></span></div>
       <div class="emo-text" id="emoPText"></div>
       <div class="emo-actions" id="emoPActs"></div>
       <div class="emo-clist" id="emoPList"></div>
@@ -3695,10 +3686,14 @@ const SharedStore = (function(){
 
   // 只把「跟資料庫不一樣」的實驗體寫上去，不會蓋掉別人改的其他人。
   // 回傳 true = 已交給 Firebase；false = 尚未連上（呼叫端改存本機備援）
+  let lastSave = Promise.resolve(true);   // 最近一次 save() 的寫入結果（true = 資料庫已確認收到）
+  let lastErr = null;                      // 最近一次寫入失敗的錯誤代碼
   function save(path, list, opts){
     const st = stores[path];
-    if(!st || !st.ready) return false;
-    if(window.Auth && !Auth.uid()) return true;
+    if(!st || !st.ready){ lastSave = Promise.resolve(false); lastErr = "not-connected"; return false; }
+    if(window.Auth && !Auth.uid()){ lastSave = Promise.resolve(false); lastErr = "not-logged-in"; return true; }
+    lastErr = null;
+    const proms = [];
     const ctx = pendingLoggable ? pendingCtx : null;
     pendingCtx = null; pendingLoggable = false;
     opts = opts || {};
@@ -3720,7 +3715,7 @@ const SharedStore = (function(){
         jobs.push({k: k, del: true, id: st.ids[k], old: st.rec[k] || null, oldC: st.known[k], oldId: st.ids[k]});
       }
     });
-    if(!jobs.length) return true;
+    if(!jobs.length){ lastSave = Promise.resolve(true); return true; }
     jobs.forEach(j => {
       let fields = null;
       if(!j.del){
@@ -3745,15 +3740,18 @@ const SharedStore = (function(){
       };
       const fail = e => {
         console.warn("firebase save failed", j.k, e);
+        lastErr = (e && e.code) || "unknown";
         undo();
         setBanner("儲存失敗（" + ((e && e.code) || "未知原因") + "）：角色 " + j.id + "。修改可能沒有同步給其他人。");
       };
       try{
         const r = st.ref.child(j.k);
         const p = j.del ? r.remove() : (j.old ? r.update(fields) : r.set(fields));
-        if(p && p.catch) p.catch(fail);
-      }catch(e){ fail(e); }
+        if(p && p.then) proms.push(p.then(() => true, e => { fail(e); return false; }));
+        else proms.push(Promise.resolve(true));
+      }catch(e){ fail(e); proms.push(Promise.resolve(false)); }
     });
+    lastSave = Promise.all(proms).then(a => a.every(Boolean));
     return true;
   }
 
@@ -3791,15 +3789,13 @@ const SharedStore = (function(){
     return typeof v === "number" ? v : String(v);
   }
   // 通知信箱：寫一筆到「對方帳號」的信箱（notifications/<uid>）。自己對自己的操作不通知。
-  function notify(to, kind, msg, go){
+  function notify(to, kind, msg){
     try{
       const d = init(); if(!d || !to) return;
       const me = window.Auth && Auth.uid();
       if(!me) return;   // 同一個帳號的兩個角色互相行動也要通知（道具／重生本來就不會帶 to，不受影響）
-      const nrec = {ts: firebase.database.ServerValue.TIMESTAMP, k: String(kind || "evt").slice(0, 12),
-        msg: String(msg).slice(0, 300), f: me, r: false};
-      if(go) nrec.g = String(go).slice(0, 120);   // 點通知要跳去哪：post:<貼文>[:<留言>]／profile／admin
-      d.ref("notifications/" + to).push(nrec).catch(err => {
+      d.ref("notifications/" + to).push({ts: firebase.database.ServerValue.TIMESTAMP, k: String(kind || "evt").slice(0, 12),
+        msg: String(msg).slice(0, 300), f: me, r: false}).catch(err => {
           console.warn("notify failed", err);
           setBanner("通知送出失敗（" + ((err && err.code) || "未知原因") + "）：請確認 Firebase 規則已加入 notifications 並發布。");
         });
@@ -3947,12 +3943,12 @@ const SharedStore = (function(){
     if(!started) setTimeout(start, 2500);
   }
 
-  return {attach, save, downloadJSON, setCtx, logEvent, logEdit, mountLog, notify, banner: setBanner};
+  return {attach, save, downloadJSON, setCtx, logEvent, logEdit, mountLog, notify, banner: setBanner, lastSave: () => lastSave, lastError: () => lastErr};
 })();
 window.SharedStore = SharedStore;
 
 const Auth=(function(){
-  let user=null,nick="",admin=false,myAv="";
+  let user=null,nick="",admin=false;
   const ST={"實驗體":["S","bloodpool_subjects_v1"],"醫療清潔部隊":["M","bloodpool_medic_subjects_v2"],"資助者":["P","bloodpool_sponsor_subjects_v1"]};
   const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const db=()=>{ if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG); return firebase.database(); };
@@ -3976,7 +3972,7 @@ const Auth=(function(){
   }
   /* ---------- 信箱（通知） ---------- */
   let inbox=[],inboxRef=null,inboxUid=null,inboxInit=false,badge=null,toastEl=null,toastT=null;
-  const NOTI={kill:{t:"你的角色被擊殺",c:"bad kill"},mad:{t:"你的角色陷入瘋狂",c:"bad"},hit:{t:"你的角色受到攻擊",c:"warn"},torture:{t:"你的角色遭到折磨",c:"warn"},accident:{t:"你的角色遭遇醫療事故",c:"warn"},heal:{t:"你的角色受到治療",c:"good"},support:{t:"你的角色獲得資助",c:"good"},sys:{t:"系統通知",c:"sys"},reply:{t:"有人回覆了你",c:"sys"},evt:{t:"通知",c:"sys"}};
+  const NOTI={kill:{t:"你的角色被擊殺",c:"bad kill"},mad:{t:"你的角色陷入瘋狂",c:"bad"},hit:{t:"你的角色受到攻擊",c:"warn"},torture:{t:"你的角色遭到折磨",c:"warn"},accident:{t:"你的角色遭遇醫療事故",c:"warn"},heal:{t:"你的角色受到治療",c:"good"},support:{t:"你的角色獲得資助",c:"good"},sys:{t:"系統通知",c:"sys"},evt:{t:"通知",c:"sys"}};
   const unread=()=>inbox.filter(x=>!x.r).length;
   const BACK='<div class="au-stick bk"><button class="modal-close au_back" aria-label="關閉">×</button></div>';   // 子頁面左上角：返回個人檔案首頁
   /* ---------- 綁定一覽（管理員） ---------- */
@@ -4048,43 +4044,9 @@ const Auth=(function(){
     if(!badge){ badge=document.createElement("span"); badge.style.cssText="position:absolute;top:2px;right:0;min-width:16px;height:16px;padding:0 4px;box-sizing:border-box;border-radius:8px;background:#c2242f;color:#fff;font-size:10px;line-height:16px;text-align:center;font-family:var(--mono);pointer-events:none;display:none"; btn.appendChild(badge); }
     badge.textContent=n>99?"99+":String(n); badge.style.display=n?"block":"none";
   }
-  /* 通知跳轉：g = post:<貼文>[:<留言>]（收容室貼文）／profile（個人檔案）／admin（待批准的申請）。舊通知沒有 g，就用內文判斷。 */
-  const ACT_KINDS=["kill","mad","hit","torture","accident","heal","support"];
-  function goOf(x){
-    if(!x) return "";
-    if(x.g) return String(x.g);
-    const m=String(x.msg||"");
-    if(m.indexOf("有人申請認領角色")===0) return "admin";
-    if(m.indexOf("你的角色申請已批准")===0||m.indexOf("你已被設為管理員")===0) return "profile";
-    if(x.k==="reply") return "room";
-    if(ACT_KINDS.indexOf(x.k)>-1) return "profile";   // 被攻擊／折磨／擊殺／瘋狂／醫療事故／治療／資助 → 個人檔案
-    return "";
-  }
-  function goNoti(x){
-    const g=goOf(x); if(!g) return;
-    if(x.id&&!x.r&&user){ try{ db().ref("notifications/"+user.uid+"/"+x.id+"/r").set(true); }catch(e){} }
-    if(g==="profile"||g==="admin"){
-      openPanel();
-      view=(g==="admin"&&admin)?"admin":"home";
-      render();
-      return;
-    }
-    // 收容室：關掉個人檔案 → 捲到收容室 → 打開那則貼文
-    const parts=g.split(":"), pk=parts[0]==="post"?parts[1]:null, ck=parts[2]||null;
-    if(isOpen()) hide();
-    setTimeout(()=>{
-      try{
-        const sec=document.getElementById("emoRoom");
-        if(typeof jumpToIndex==="function"&&typeof snapSections!=="undefined"){ const i=snapSections.indexOf(sec); if(i>=0) jumpToIndex(i); else sec.scrollIntoView({behavior:"smooth"}); }
-        else if(sec) sec.scrollIntoView({behavior:"smooth"});
-      }catch(e){}
-      if(pk) setTimeout(()=>{ if(window.EmoNav) window.EmoNav.open(pk,ck); },750);
-    },400);
-  }
-  let toastX=null;
-  function toast(title,body,iconTitle,x){
-    ensureInboxStyle(); toastX=(x&&goOf(x))?x:null;
-    if(!toastEl){ toastEl=document.createElement("div"); toastEl.className="au-toast"; toastEl.onclick=()=>{ toastEl.classList.remove("show"); if(toastX){ goNoti(toastX); return; } openPanel(); view="inbox"; render(); }; document.body.appendChild(toastEl); }
+  function toast(title,body,iconTitle){
+    ensureInboxStyle();
+    if(!toastEl){ toastEl=document.createElement("div"); toastEl.className="au-toast"; toastEl.onclick=()=>{ toastEl.classList.remove("show"); openPanel(); view="inbox"; render(); }; document.body.appendChild(toastEl); }
     toastEl.innerHTML="<b>"+(iconTitle?MAIL_ICON:esc(title))+"</b><span>"+esc(body)+"</span>";
     void toastEl.offsetWidth; toastEl.classList.add("show");
     clearTimeout(toastT); toastT=setTimeout(()=>{ if(toastEl) toastEl.classList.remove("show"); },6500);
@@ -4150,7 +4112,7 @@ const Auth=(function(){
           if(ks.length) showKill(ks);
           if(rest.length&&!viewing){
             const x=rest[0], m=NOTI[x.k]||NOTI.evt;
-            toast(m.t+(rest.length>1?"（共 "+rest.length+" 則）":""),String(x.msg||"").split("\n")[0],false,rest.length===1?x:null);
+            toast(m.t+(rest.length>1?"（共 "+rest.length+" 則）":""),String(x.msg||"").split("\n")[0]);
           }
         }
         if(isOpen()&&(view==="home"||view==="inbox")) render();
@@ -4268,51 +4230,21 @@ const Auth=(function(){
 #authBox #au_nick:not(:placeholder-shown)+.au-nickhint{display:none}`;
     document.head.appendChild(st);
   }
-  function emailKey(e){ return String(e||"").trim().toLowerCase().replace(/\./g,","); }
-  // 登入時：記下「信箱 → uid」；如果管理員先發過邀請，就自動升為管理員
-  function registerEmail(){
-    if(!user||!user.email) return Promise.resolve();
-    const d=db(), k=emailKey(user.email), me=user;
-    d.ref("users/"+me.uid+"/email").set(me.email.toLowerCase()).catch(()=>{});
-    return d.ref("emailIndex/"+k).set(me.uid).catch(()=>{}).then(()=>{
-      if(admin) return;
-      return d.ref("adminInvites/"+k).once("value").then(s=>{
-        if(s.val()!==true) return;
-        return d.ref("admins/"+me.uid).set(true).then(()=>{ admin=true; d.ref("adminInvites/"+k).remove().catch(()=>{}); });
-      }).catch(()=>{});
-    });
-  }
-  // 讀取管理員身分：自動登入（還原登入狀態）時，資料庫的登入憑證可能還沒就緒，
-  // 第一次讀取會被拒絕。以前這裡一失敗就直接當成「不是管理員」，所以要登出再登入才會有管理員介面。
-  // 現在失敗會重新取得憑證並重試，最後仍失敗才當作非管理員。
-  function readAdmin(u,n){
-    n=n||0;
-    return db().ref("admins/"+u.uid).once("value").then(s=>{
-      if(user&&user.uid===u.uid) admin=s.val()===true;
-    }).catch(e=>{
-      if(!user||user.uid!==u.uid) return;
-      if(n<3){
-        return u.getIdToken(true).catch(()=>{}).then(()=>new Promise(r=>setTimeout(r,400*(n+1)))).then(()=>readAdmin(u,n+1));
-      }
-      console.warn("admin read failed",e); admin=false;
-    });
-  }
   function load(){
-    if(!user){ nick="";myAv="";admin=false;favs=new Set();pend={};tutDone=null;if(pendRef){ try{ pendRef.off(); }catch(e){} pendRef=null; }watchInbox();loaded=true;paint();return Promise.resolve(); }
+    if(!user){ nick="";admin=false;favs=new Set();pend={};tutDone=null;if(pendRef){ try{ pendRef.off(); }catch(e){} pendRef=null; }watchInbox();loaded=true;paint();return Promise.resolve(); }
     loaded=false;
     const d=db();
     return Promise.all([
       d.ref("users/"+user.uid+"/favs").once("value").then(s=>{ const v=s.val(); favs=new Set(v?Object.keys(v):localFavs()); }).catch(()=>{ favs=new Set(localFavs()); }),
       d.ref("users/"+user.uid+"/nick").once("value").then(s=>{ nick=s.val()||localNick(); if(nick) cacheNick(nick); }).catch(e=>{ nick=localNick(); console.warn("nick read failed",e); }),
-      d.ref("users/"+user.uid+"/avatar").once("value").then(s=>{ myAv=s.val()||""; }).catch(()=>{ myAv=""; }),
-      readAdmin(user),
+      d.ref("admins/"+user.uid).once("value").then(s=>{admin=s.val()===true;}).catch(()=>{admin=false;}),
       d.ref("claimRequests/"+user.uid).once("value").then(s=>{pend=s.val()||{};}).catch(()=>{pend={};}),
       d.ref("users/"+user.uid+"/tut").once("value").then(s=>{
         if(s.val()===true){ tutDone=true; try{ localStorage.setItem("bp_tut_"+user.uid,"1"); }catch(e){} }
         else if(localTut()){ tutDone=true; markTutorialDone(); }   // 這台看過但雲端沒記到：補記
         else tutDone=false;   // 雲端確實沒有紀錄 → 這個帳號還沒看過
       }).catch(()=>{ tutDone=localTut()?true:null; })   // 讀不到雲端：寧可不顯示（null），也不讓已看過的人再看一次
-    ]).then(()=>registerEmail()).then(()=>{ loaded=true; paint(); watchPend(); watchInbox(); try{ window.dispatchEvent(new Event("bp-auth-ready")); }catch(e){} });
+    ]).then(()=>{ loaded=true; paint(); watchPend(); watchInbox(); });
   }
   // 回到首頁（第一個區塊）
   function goHome(){
@@ -4498,7 +4430,7 @@ const Auth=(function(){
     const keep=b.dataset.view===view?b.scrollTop:0; b.dataset.view=view;
     let h="";
     if(view==="nick"){
-      h+=(nick?BACK:"")+'<div class="modal-title">'+(nick?"修改暱稱":"先取個暱稱吧")+'</div><span class="field-label">暱稱（1–50 字）</span><div class="au-nickwrap"><input class="text-input" id="au_nick" maxlength="50" placeholder=" " value="'+esc(nick)+'"><span class="au-nickhint"><span class="a">暱稱｜陣營｜角色名，</span><span class="b">ex：汪汪｜實驗體｜十字</span></span></div><button class="confirm-btn" id="au_sn">儲存</button>'+avBlock();
+      h+=(nick?BACK:"")+'<div class="modal-title">'+(nick?"修改暱稱":"先取個暱稱吧")+'</div><span class="field-label">暱稱（1–50 字）</span><div class="au-nickwrap"><input class="text-input" id="au_nick" maxlength="50" placeholder=" " value="'+esc(nick)+'"><span class="au-nickhint"><span class="a">暱稱｜陣營｜角色名，</span><span class="b">ex：汪汪｜實驗體｜十字</span></span></div><button class="confirm-btn" id="au_sn">儲存</button>';
     }else if(view==="claim"){
       h+=BACK+'<div class="modal-title" style="font-size:17px">申請認領角色</div>';
       const pk=Object.keys(pend).filter(k=>!isApproved(pend[k])), ak=Object.keys(pend).filter(k=>isApproved(pend[k]));
@@ -4528,11 +4460,8 @@ const Auth=(function(){
       h+=BACK+'<div class="modal-title" style="font-size:17px">'+MAIL_ICON+'</div>';
       if(!inbox.length) h+='<div class="au-empty">目前沒有通知。你的角色被攻擊、擊殺、治療時，會顯示在這裡。</div>';
       else h+=inbox.map(x=>{ const m=NOTI[x.k]||NOTI.evt; const tm=x.ts?new Date(x.ts).toLocaleString("zh-TW",{hour12:false,month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"}):"";
-        const go=goOf(x);
-        return '<div class="au-noti '+(x.r?"":"unread ")+m.c+(go?" au-go":"")+'" data-nid="'+esc(x.id)+'"'+(go?' style="cursor:pointer"':'')+'><div class="au-noti-h"><span>'+m.t+(go?' ›':'')+'</span><span class="au-noti-time">'+esc(tm)+'</span></div><div class="au-noti-b">'+esc(x.msg).replace(/\n/g,"<br>")+'</div></div>'; }).join("")
+        return '<div class="au-noti '+(x.r?"":"unread ")+m.c+'"><div class="au-noti-h"><span>'+m.t+'</span><span class="au-noti-time">'+esc(tm)+'</span></div><div class="au-noti-b">'+esc(x.msg).replace(/\n/g,"<br>")+'</div></div>'; }).join("")
         +'<button class="modify-btn" id="au_clr">清空信箱</button>';
-    }else if(view==="addadmin"){
-      h+=BACK+'<div class="modal-title" style="font-size:17px">新增管理員</div><div class="modal-note">輸入對方的 Google 信箱。對方登入過就會立刻成為管理員；還沒登入過的，會在他第一次用這個信箱登入時自動成為管理員。</div><span class="field-label">Email</span><input class="text-input" id="au_ae" type="email" inputmode="email" autocapitalize="off" autocomplete="off" placeholder="name@gmail.com"><button class="confirm-btn" id="au_aeb">新增為管理員</button><div class="au-sec"><span>目前管理員</span></div><div id="au_admlist" class="modal-note">讀取中…</div>';
     }else if(view==="admin"){
       h+=BACK+'<div class="modal-title" style="font-size:17px">待批准的申請</div><div id="au_list" class="modal-note">讀取中…</div>';
     }else if(view==="fav"){
@@ -4546,7 +4475,7 @@ const Auth=(function(){
         +(an?'<div class="au-pend click au_row" data-v="claim"><div class="au-pend-h">已批准</div><div class="au-pend-s">你有 '+an+' 筆申請已批准，點此查看 ›</div></div>':"")
         +(pn?'<div class="au-pend click au_row" data-v="claim"><div class="au-pend-h">等待批准</div><div class="au-pend-s">你有 '+pn+' 筆申請正在等管理員審核，點此查看／取消 ›</div></div>':"")
         +row("inbox",MAIL_ICON,un?'<span class="au-badge amber">未讀 '+un+'</span>':"無新通知")
-        +(admin?row("admin","待批准的申請",'<span id="au_admcnt"></span>')+'<div class="au-row" id="au_addchar"><span>新增角色</span><span class="v">›</span></div>'+row("bind","綁定一覽",(()=>{ const ub=Object.keys(ST).reduce((n,f)=>n+roster(f).filter(s=>!s.owner).length,0); return ub?'<span class="au-badge amber">未綁定 '+ub+'</span>':"全部已綁定"; })())+row("addadmin","新增管理員",""):"")
+        +(admin?row("admin","待批准的申請",'<span id="au_admcnt"></span>')+'<div class="au-row" id="au_addchar"><span>新增角色</span><span class="v">›</span></div>'+row("bind","綁定一覽",(()=>{ const ub=Object.keys(ST).reduce((n,f)=>n+roster(f).filter(s=>!s.owner).length,0); return ub?'<span class="au-badge amber">未綁定 '+ub+'</span>':"全部已綁定"; })()):"")
         +'<div class="au-sec"><span>我的角色</span><button class="au-mini au_row" data-v="claim">＋ 申請角色</button></div><div id="au_cards"></div>'
         +'<div class="au-sec"><span>收藏的實驗體</span><button class="au-mini au_row" data-v="fav">＋ 選擇收藏</button></div><div id="au_favcards"></div>'
         +(admin?"":'<div class="modal-note" style="word-break:break-all;font-size:11px;opacity:.5;margin-top:16px">UID：'+user.uid+"</div>");
@@ -4579,13 +4508,10 @@ const Auth=(function(){
         setTimeout(()=>{ try{ sessionStorage.setItem("bp_fadein","1"); }catch(e){} location.reload(); },650);
       }).catch(e=>{ working=""; notice=""; if(isOpen()) render(); alert("登出失敗："+(e.code||e.message)); }); },900);
     };
-    const avf=b.querySelector("#au_avf"), avx=b.querySelector("#au_avx");
-    if(avf) avf.onchange=()=>{ const f=avf.files&&avf.files[0]; if(!f) return; readAvatar(f,v=>{ Promise.resolve(saveAvatar(v)).then(()=>{ if(isOpen()&&view==="nick"){ const keepNick=b.querySelector("#au_nick"), nv=keepNick?keepNick.value:""; render(); const n2=b.querySelector("#au_nick"); if(n2&&nv) n2.value=nv; } }); }); };
-    if(avx) avx.onclick=()=>{ Promise.resolve(saveAvatar("")).then(()=>{ if(isOpen()&&view==="nick"){ const keepNick=b.querySelector("#au_nick"), nv=keepNick?keepNick.value:""; render(); const n2=b.querySelector("#au_nick"); if(n2&&nv) n2.value=nv; } }); };
     const sn=b.querySelector("#au_sn");
     if(sn) sn.onclick=()=>{
       const v=b.querySelector("#au_nick").value.trim(); if(!v||v.length>50) return alert("暱稱需為 1–50 字");
-      cacheNick(v); db().ref("users/"+user.uid).update({nick:v}).then(()=>{ const old=nick; nick=v; if(myAv){ mirrorAvatar(v,myAv).then(()=>{ if(old&&old!==v) return dropAvatar(old); }).catch(e=>console.warn("avatar mirror failed",e)); } paint(); view="home"; render(); }).catch(e=>alert("儲存失敗："+(e.code||e.message)));
+      cacheNick(v); db().ref("users/"+user.uid).update({nick:v}).then(()=>{ nick=v; paint(); view="home"; render(); }).catch(e=>alert("儲存失敗："+(e.code||e.message)));
     };
     b.querySelectorAll(".au_cancel").forEach(a=>a.onclick=ev=>{ ev.preventDefault(); const k=a.dataset.c; db().ref("claimRequests/"+user.uid+"/"+k).remove().then(()=>{ delete pend[k]; render(); }); });
     if(view==="bind"){
@@ -4604,45 +4530,8 @@ const Auth=(function(){
       });
       loadNicks(bindItems().list);
     }
-    if(view==="addadmin"){
-      const d=db(), inp=b.querySelector("#au_ae"), btn=b.querySelector("#au_aeb"), lst=b.querySelector("#au_admlist");
-      const loadList=()=>{
-        d.ref("admins").once("value").then(sn=>{
-          const v=sn.val()||{}, ids=Object.keys(v).filter(u=>v[u]===true);
-          return Promise.all(ids.map(u=>Promise.all([
-            d.ref("users/"+u+"/nick").once("value").then(x=>x.val()||"").catch(()=>""),
-            d.ref("users/"+u+"/email").once("value").then(x=>x.val()||"").catch(()=>"")
-          ]).then(r=>({u,n:r[0],e:r[1]}))));
-        }).then(rows=>{
-          if(view!=="addadmin"||!lst.isConnected) return;
-          lst.className="";
-          lst.innerHTML=rows.length?rows.map(x=>'<div class="au-req"><div class="au-req-n">'+esc(x.n||"（未設定暱稱）")+'</div><div class="au-req-t">'+esc(x.e||"（沒有 Email 紀錄）")+'</div>'+(x.u===user.uid?'<div class="au-req-t">這是你自己</div>':'<div class="au-req-b"><button class="au-btn au-danger" data-u="'+esc(x.u)+'">移除管理員</button></div>')+'</div>').join(""):'<div class="au-empty">沒有資料。</div>';
-          lst.querySelectorAll("button[data-u]").forEach(x=>x.onclick=()=>{
-            if(!confirm("確定要移除這位管理員嗎？")) return;
-            d.ref("admins/"+x.dataset.u).remove().then(loadList).catch(e=>alert("移除失敗："+(e.code||e.message)));
-          });
-        }).catch(e=>{ if(lst.isConnected) lst.textContent="讀取失敗："+(e.code||e.message); });
-      };
-      btn.onclick=()=>{
-        if(!admin) return alert("只有管理員可以新增管理員");
-        const em=inp.value.trim().toLowerCase();
-        if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) return alert("請輸入正確的 Email");
-        const k=emailKey(em); btn.disabled=true;
-        d.ref("emailIndex/"+k).once("value").then(sn=>{
-          const u=sn.val();
-          if(u) return d.ref("admins/"+u).set(true).then(()=>{ try{ SharedStore.notify(u,"sys","你已被設為管理員，重新整理頁面即可使用管理功能。","profile"); }catch(e){} return "done"; });
-          return d.ref("adminInvites/"+k).set(true).then(()=>"pending");
-        }).then(r=>{
-          btn.disabled=false; inp.value="";
-          alert(r==="done"?"已新增為管理員":"對方還沒登入過，已先記下。他第一次用這個信箱登入時會自動成為管理員。");
-          loadList();
-        }).catch(e=>{ btn.disabled=false; alert("新增失敗："+(e.code||e.message)); });
-      };
-      loadList();
-    }
     if(view==="inbox"){
       if(unread()) setTimeout(()=>{ if(isOpen()&&view==="inbox") markAllRead(); },1500);   // 開著信箱一下就當作看過了
-      b.querySelectorAll(".au-noti.au-go").forEach(el=>{ el.onclick=()=>{ const x=inbox.find(n=>n.id===el.dataset.nid); if(x) goNoti(x); }; });
       const clr=b.querySelector("#au_clr");
       if(clr) clr.onclick=()=>{ if(!confirm("確定清空所有通知？")) return; db().ref("notifications/"+user.uid).remove().catch(e=>alert("清空失敗："+(e.code||e.message))); };
     }
@@ -4654,7 +4543,7 @@ const Auth=(function(){
         const id=cs.value; if(!id) return alert("請選擇角色");
         const f=fs.value,s=roster(f).find(x=>String(x.id)===id),k=ST[f][0]+"_"+id;
         const rec={f,id,name:s?s.name:"",nick,ts:firebase.database.ServerValue.TIMESTAMP};
-        db().ref("claimRequests/"+user.uid+"/"+k).set(rec).then(()=>{ pend[k]=rec; view="home"; render(); notifyAdmins(rec); }).catch(e=>alert("送出失敗："+(e.code||e.message)));
+        db().ref("claimRequests/"+user.uid+"/"+k).set(rec).then(()=>{ pend[k]=rec; view="home"; render(); }).catch(e=>alert("送出失敗："+(e.code||e.message)));
       };
     }
     if(view==="admin") adminList(b);
@@ -4673,51 +4562,6 @@ const Auth=(function(){
       }).catch(()=>{});
     }
   }
-  // 有人送出角色申請 → 通知所有管理員（自己除外）
-  /* 實名頭像：96×96 小圖，存 users/<uid>/avatar，並公開一份到 emotion_avatars/<暱稱>，實名留言才看得到 */
-  const avKey=n=>encodeURIComponent(String(n||"")).replace(/\./g,"%2E");
-  function avInner(){ return myAv?'<img src="'+esc(myAv)+'" alt="" style="width:100%;height:100%;object-fit:cover;display:block">':esc(Array.from(nick||"?")[0]||"?"); }
-  function avBlock(){
-    return '<div class="au-sec"><span>實名頭像</span></div><div style="display:flex;align-items:center;gap:14px;margin:4px 0 6px"><div id="au_avp" style="width:64px;height:64px;border-radius:50%;overflow:hidden;flex:none;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.07);border:1px solid var(--line);font-size:24px">'+avInner()+'</div><div style="display:flex;gap:8px;flex-wrap:wrap"><label class="au-mini" style="cursor:pointer">更換頭像<input type="file" id="au_avf" accept="image/*" hidden></label>'+(myAv?'<button type="button" class="au-mini" id="au_avx">移除</button>':'')+'</div></div><div class="modal-note" style="margin:0 0 6px">只會顯示在你「實名」留言的旁邊。</div>';
-  }
-  /* 先登記此暱稱的頭像擁有者（emotion_avatar_owners），再寫入公開頭像；暱稱可含任何符號 */
-  function mirrorAvatar(n,v){
-    const d=db(), me=user, k=avKey(n);
-    return d.ref("emotion_avatar_owners/"+k).set(me.uid).then(()=>d.ref("emotion_avatars/"+k).set(v||null));
-  }
-  function dropAvatar(n){
-    const d=db(), k=avKey(n);
-    return d.ref("emotion_avatars/"+k).remove().then(()=>d.ref("emotion_avatar_owners/"+k).remove());
-  }
-  let okEl=null,okT=null;
-  function okToast(msg){
-    ensureInboxStyle();
-    if(!okEl){ okEl=document.createElement("div"); okEl.className="au-toast"; okEl.style.pointerEvents="none"; okEl.style.cursor="default"; okEl.style.textAlign="center"; document.body.appendChild(okEl); }
-    okEl.innerHTML="<b>"+esc(msg)+"</b>";
-    okEl.classList.remove("show"); void okEl.offsetWidth; okEl.classList.add("show");
-    clearTimeout(okT); okT=setTimeout(()=>{ if(okEl) okEl.classList.remove("show"); },2200);
-  }
-  function saveAvatar(v){
-    const d=db(), me=user; if(!me) return;
-    return d.ref("users/"+me.uid+"/avatar").set(v||null).then(()=>{
-      myAv=v||"";
-      if(!nick){ okToast(v?"頭像更換成功":"已移除頭像"); return; }
-      return mirrorAvatar(nick,v).then(()=>{ okToast(v?"頭像更換成功":"已移除頭像"); }).catch(e=>{ console.warn("avatar mirror failed",e); alert("頭像已儲存，但公開同步失敗（"+(e.code||e.message)+"）：請確認 Firebase 規則已加入 emotion_avatars 與 emotion_avatar_owners 並發布。"); });
-    }).catch(e=>alert("頭像儲存失敗："+(e.code||e.message)));
-  }
-  function readAvatar(file,cb){
-    const r=new FileReader();
-    r.onload=()=>{ const im=new Image(); im.onload=()=>{ const s=Math.min(im.width,im.height), c=document.createElement("canvas"); c.width=c.height=96; c.getContext("2d").drawImage(im,(im.width-s)/2,(im.height-s)/2,s,s,0,0,96,96); let q=0.8, out=c.toDataURL("image/jpeg",q); while(out.length>90000&&q>0.2){ q-=0.1; out=c.toDataURL("image/jpeg",q); } cb(out); }; im.onerror=()=>alert("圖片讀取失敗"); im.src=r.result; };
-    r.readAsDataURL(file);
-  }
-  function notifyAdmins(rec){
-    try{
-      db().ref("admins").once("value").then(sn=>{
-        const v=sn.val()||{};
-        Object.keys(v).forEach(u=>{ if(v[u]===true&&user&&u!==user.uid) SharedStore.notify(u,"sys","有人申請認領角色：「"+(rec.nick||"未命名")+"」申請 "+rec.f+" 編號 "+rec.id+" "+(rec.name||"")+"，請到個人檔案的「待批准的申請」處理。","admin"); });
-      }).catch(e=>console.warn("admin list read failed",e));
-    }catch(e){ console.warn("notifyAdmins failed",e); }
-  }
   function adminList(b){
     db().ref("claimRequests").once("value").then(snap=>{
       const box2=b.querySelector("#au_list"); if(!box2) return;
@@ -4729,7 +4573,7 @@ const Auth=(function(){
         ev.preventDefault(); const x=rows[+a.dataset.i]; const d=db();
         const done=()=>d.ref("claimRequests/"+x.u+"/"+x.k).remove().then(()=>render());
         // 批准：不刪除申請，改標記「已批准」，申請人那邊才看得到結果
-        const okDone=()=>{ SharedStore.notify(x.u,"sys","你的角色申請已批准：「"+x.r.f+" 編號 "+x.r.id+" "+x.r.name+"」，現在可以使用這個角色了。","profile"); return d.ref("claimRequests/"+x.u+"/"+x.k).update({approved:true,at:firebase.database.ServerValue.TIMESTAMP}).then(()=>render()).catch(()=>done()); };
+        const okDone=()=>{ SharedStore.notify(x.u,"sys","你的角色申請已批准：「"+x.r.f+" 編號 "+x.r.id+" "+x.r.name+"」，現在可以使用這個角色了。"); return d.ref("claimRequests/"+x.u+"/"+x.k).update({approved:true,at:firebase.database.ServerValue.TIMESTAMP}).then(()=>render()).catch(()=>done()); };
         if(a.dataset.a==="no") return done();
         d.ref(ST[x.r.f][1]+"/s"+x.r.id+"/owner").set(x.u).then(okDone).catch(e=>alert("批准失敗："+(e.code||e.message)));
       });
@@ -4744,13 +4588,6 @@ const Auth=(function(){
     get isAdmin(){return admin;},
     onBack(){ if(!isOpen()) return false; if(view!=="home"&&nick){ view="home"; render(); } else hide(); return true; },
     uid:()=>user?user.uid:null, nick:()=>nick,
-    needAvatar:()=>!!(user&&nick&&loaded&&!myAv),   // 已登入、有暱稱、資料讀完、還沒上傳實名頭像
-    pickAvatar(){
-      if(!api.requireLogin()) return;
-      const inp=document.createElement("input"); inp.type="file"; inp.accept="image/*";
-      inp.onchange=()=>{ const f=inp.files&&inp.files[0]; if(f) readAvatar(f,v=>{ saveAvatar(v); }); };
-      inp.click();
-    },
     myChars:()=>myChars().map(x=>({f:x.f,id:String(x.s.id),name:String(x.s.name||"")})),
     newOwner:()=>(user&&!admin)?user.uid:null,
     requireLogin(){ if(user&&nick) return true; openPanel(); return false; },
@@ -5851,7 +5688,6 @@ function resetWizard(startStep){
     lastAddedMap:{},
     anyDead:false,
     removeStatus:null,
-    removeSel:[],
     removedNow:null,
     itemType:null
   };
@@ -6191,15 +6027,10 @@ function renderModalBody(){
       html += '<div class="modal-note">此實驗體目前沒有可解除的狀態。</div>' +
               '<button class="confirm-btn" onclick="chooseRemoveStatusIdx(-1)">下一步</button>';
     } else {
-      const sel = wizard.removeSel || [];
-      html += '<div class="modal-note">最多可解除 2 個狀態（已選 ' + sel.length + '／2）。再點一次可取消選取。</div>';
       target.statuses.forEach((st, i) => {
-        const on = sel.indexOf(i) > -1;
-        html += '<button class="choice-btn" style="' + (on ? 'border-color:var(--bone);background:rgba(181,2,15,.25)' : '') + '" onclick="toggleRemoveStatus(' + i + ')">' + (on ? '✓ ' : '') + '解除：' + escapeHTML(st) + '</button>';
+        html += '<button class="choice-btn" onclick="chooseRemoveStatusIdx(' + i + ')">解除：' + escapeHTML(st) + '</button>';
       });
-      html += sel.length
-        ? '<button class="confirm-btn" onclick="confirmRemoveStatus()">確認解除 ' + sel.length + ' 個狀態</button>'
-        : '<button class="choice-btn" onclick="chooseRemoveStatusIdx(-1)">不解除狀態</button>';
+      html += '<button class="choice-btn" onclick="chooseRemoveStatusIdx(-1)">不解除狀態</button>';
     }
 
   } else if(step === "statusInput1"){
@@ -6327,6 +6158,18 @@ function renderModalBody(){
       '<button class="confirm-btn" onclick="applyItem()">確認使用</button>' +
       '<button class="modify-btn" onclick="goBack()">修改</button>';
 
+  } else if(step === "itemFail"){
+    html =
+      '<div class="modal-eyebrow">道具使用</div>' +
+      '<div class="modal-title">使用失敗</div>' +
+      '<div class="result-block">' +
+        '<div class="result-line">' + escapeHTML(wizard.itemFailMsg || "道具沒有使用成功。") + '</div>' +
+        '<div class="result-line">數值和道具數量都沒有改變，也沒有留下行動紀錄。請重新使用。</div>' +
+        (wizard.itemFailCode ? '<div class="result-line">錯誤代碼：' + escapeHTML(wizard.itemFailCode) + '</div>' : '') +
+      '</div>' +
+      '<button class="confirm-btn" onclick="retryItem()">重新使用</button>' +
+      '<button class="modify-btn" onclick="closeModal()">關閉</button>';
+
   } else if(step === "itemResult"){
     const self = subjects.find(s => s.id === wizard.selfId);
     const isBandage = wizard.itemType === "bandage";
@@ -6425,29 +6268,12 @@ function chooseDamageType(key){
 function chooseMedicalType(key){
   wizard.statKey = key;
   wizard.natureLabel = key === "hp" ? "物理醫療" : "精神醫療";
-  wizard.removeSel = []; wizard.removeStatus = null;
   goStep("medicalRemoveStatus");
 }
 
 function chooseRemoveStatusIdx(i){
   const target = subjects.find(s => s.id === wizard.targetId);
-  wizard.removeSel = i >= 0 ? [i] : [];
   wizard.removeStatus = i >= 0 ? target.statuses[i] : null;
-  goStep("actionPreview");
-}
-function toggleRemoveStatus(i){
-  const sel = wizard.removeSel || (wizard.removeSel = []);
-  const at = sel.indexOf(i);
-  if(at > -1) sel.splice(at, 1);
-  else if(sel.length < 2) sel.push(i);
-  else { sel.shift(); sel.push(i); }   // 已選滿兩個：再點第三個就換掉最早選的
-  renderModalBody();
-}
-function confirmRemoveStatus(){
-  const target = subjects.find(s => s.id === wizard.targetId);
-  const sel = (wizard.removeSel || []).slice().sort((a,b)=>a-b);
-  wizard.removeSel = sel;
-  wizard.removeStatus = sel.length ? sel.map(i => target.statuses[i]).join("、") : null;
   goStep("actionPreview");
 }
 
@@ -6485,11 +6311,10 @@ function applyAction(){
 
     const _statTxt = wizard.statKey === "hp" ? "HP" : "SAN";
     target[wizard.statKey] = Math.min(3, target[wizard.statKey] + 1);
-    const _sel = (wizard.removeSel || []).filter(i => i >= 0 && i < target.statuses.length).sort((a,b)=>b-a);
-    if(_sel.length){
-      const _names = _sel.slice().reverse().map(i => target.statuses[i]);
-      _sel.forEach(i => target.statuses.splice(i, 1));   // 由後往前刪，索引才不會錯位
-      wizard.removedNow = _names.join("、");
+    if(wizard.removeStatus){
+      const idx = target.statuses.indexOf(wizard.removeStatus);
+      if(idx > -1) target.statuses.splice(idx, 1);
+      wizard.removedNow = wizard.removeStatus;
     } else {
       wizard.removedNow = null;
     }
@@ -6574,20 +6399,63 @@ function chooseItem(type){
   goStep("itemPreview");
 }
 
-function applyItem(){
-  SharedStore.setCtx("使用" + (wizard.itemType === "bandage" ? "繃帶" : "針筒") + auditWho(), true);
+let itemBusy = false;
+// 使用道具：等資料庫確認寫入成功才算成功。成功 → 記行動紀錄並顯示結果；失敗 → 還原、不記紀錄，請玩家重新使用
+async function applyItem(){
+  if(itemBusy) return;
   const self = subjects.find(s => s.id === wizard.selfId);
-  if(wizard.itemType === "bandage" && self.bandages > 0){
-    self.bandages -= 1;
-    self.hp = Math.min(3, self.hp + 1);
-    SharedStore.logEvent("「" + subjLabel(self) + "」使用繃帶（HP+1）。", {g: "實驗體"});
-  } else if(wizard.itemType === "syringe" && self.syringes > 0){
-    self.syringes -= 1;
-    self.san = Math.min(3, self.san + 1);
-    SharedStore.logEvent("「" + subjLabel(self) + "」使用針筒（SAN+1）。", {g: "實驗體"});
+  const isBandage = wizard.itemType === "bandage";
+  const itemName = isBandage ? "繃帶" : "針筒";
+  if(!self || (isBandage ? !(self.bandages > 0) : !(self.syringes > 0))){
+    wizard.itemFailMsg = "道具數量不足，無法使用。";
+    wizard.itemFailCode = "";
+    goStep("itemFail");
+    return;
   }
+  itemBusy = true;
+  const before = {bandages: self.bandages, syringes: self.syringes, hp: self.hp, san: self.san};
+  modalBody.innerHTML =
+    '<div class="modal-eyebrow">道具使用</div>' +
+    '<div class="modal-title">處理中…</div>' +
+    '<div class="result-block"><div class="result-line">正在確認道具是否使用成功，請稍候。</div></div>';
+  SharedStore.setCtx("使用" + itemName + auditWho(), true);
+  const after = {};
+  if(isBandage){
+    self.bandages -= 1; self.hp = Math.min(3, self.hp + 1);
+    after.bandages = self.bandages; after.hp = self.hp;
+  } else {
+    self.syringes -= 1; self.san = Math.min(3, self.san + 1);
+    after.syringes = self.syringes; after.san = self.san;
+  }
+  renderGrid();   // 內部會 saveState() → SharedStore.save()
+  let result = false;
+  try{
+    result = await Promise.race([
+      SharedStore.lastSave(),
+      new Promise(res => setTimeout(() => res("timeout"), 10000))
+    ]);
+  }catch(e){ result = false; }
+  itemBusy = false;
+  const modalOpen = modalOverlay.classList.contains("open");
+
+  if(result === true){
+    SharedStore.logEvent("「" + subjLabel(self) + "」使用" + itemName + (isBandage ? "（HP+1）。" : "（SAN+1）。"), {g: "實驗體"});
+    if(modalOpen) goStep("itemResult");
+    return;
+  }
+
+  // 失敗：只還原這次改到的欄位（如果期間別人又改了同一欄就不動它），不留行動紀錄
+  Object.keys(after).forEach(f => { if(self[f] === after[f]) self[f] = before[f]; });
   renderGrid();
-  goStep("itemResult");
+  wizard.itemFailMsg = result === "timeout" ? "連線逾時，請確認網路後再試。" : "資料庫沒有收到這次的修改。";
+  wizard.itemFailCode = result === "timeout" ? "timeout" : (SharedStore.lastError() || "unknown");
+  if(modalOpen) goStep("itemFail");
+}
+
+function retryItem(){
+  wizard.history = ["itemSelf"];
+  wizard.step = "itemChoice";
+  renderModalBody();
 }
 
 /* ---------- EDIT SUBJECT (stats/name only) ---------- */
@@ -8494,7 +8362,7 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
   const LIKES="emotion_likes", CMT="emotion_comments", COWN="emotion_comment_owners", CMINE="emotion_comment_mine";
   let editingC=null, editDraft="", focusEdit=false, replyTo=null;
   let likeMap={}, cmtMap={}, curPost=null, cmode="anon", cMine=new Set(), cMineUid=null, cMineRef=null, lastC=0;
-  let picker=null, cRole=null, pRole=null, avMap={}, mineReady=false, cMineReady=false;
+  let picker=null, cRole=null, pRole=null;
   let db=null, ref=null, list=[], lastSend=0, mode="anon", editKey=null, mineSet=new Set(), mineUid=null, mineRef=null;
   const esc=t=>String(t==null?"":t).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const pad=(n,l)=>String(n).padStart(l,"0");
@@ -8568,7 +8436,7 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
     meta.textContent="收容數量 "+pad(list.length,3);
     if(!list.length){ grid.innerHTML='<div class="emo-empty">收容室目前是空的。</div>'; return; }
     grid.innerHTML=list.slice().reverse().map(x=>
-      '<div class="card ok" data-k="'+esc(x.k)+'"><div class="emo-head">'+avHtml(x.nm,"md")+'<span class="emo-name">'+esc(shortName(x.nm))+'</span><span class="emo-when" data-ts="'+(x.ts||0)+'" title="'+esc(fmt(x.ts))+'">'+esc(ago(x.ts))+'</span><button type="button" class="emo-more" title="更多">'+DOTS+'</button><div class="emo-menu"><button type="button" data-a="edit">'+PEN+'編輯</button><button type="button" data-a="del">'+BIN+'刪除</button></div></div><div class="emo-text">'+esc(x.t)+'</div>'+actionsHtml(x.k)+'</div>'
+      '<div class="card ok" data-k="'+esc(x.k)+'"><div class="emo-head"><span class="emo-name">'+esc(shortName(x.nm))+'</span><span class="emo-when" data-ts="'+(x.ts||0)+'" title="'+esc(fmt(x.ts))+'">'+esc(ago(x.ts))+'</span><button type="button" class="emo-more" title="更多">'+DOTS+'</button><div class="emo-menu"><button type="button" data-a="edit">'+PEN+'編輯</button><button type="button" data-a="del">'+BIN+'刪除</button></div></div><div class="emo-text">'+esc(x.t)+'</div>'+actionsHtml(x.k)+'</div>'
     ).join("");
     syncAdmin();
   }
@@ -8585,17 +8453,16 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
   function watchMine(uid){
     const d=getDb(); if(!d) return;
     if(mineRef){ mineRef.off(); mineRef=null; }
-    mineUid=uid; mineSet=new Set(); mineReady=false;
+    mineUid=uid; mineSet=new Set();
     if(!uid){ return; }
     mineRef=d.ref(MINE+"/"+uid);
-    mineRef.on("value",snap=>{ const v=snap.val()||{}; mineSet=new Set(Object.keys(v)); mineReady=true; syncAdmin(); checkReplies(); },err=>{ console.warn("emo mine read failed",err); });
+    mineRef.on("value",snap=>{ const v=snap.val()||{}; mineSet=new Set(Object.keys(v)); syncAdmin(); },err=>{ console.warn("emo mine read failed",err); });
   }
   function subscribe(){
     const d=getDb(); if(!d){ setTimeout(subscribe,1500); return; }
     ref=d.ref(PATH);
-    d.ref("emotion_avatars").on("value",sn=>{ avMap=sn.val()||{}; render(); if(curPost) renderPost(); },er=>console.warn("emo avatars read failed",er));
     d.ref(LIKES).on("value",sn=>{ likeMap=sn.val()||{}; updateCards(); if(curPost) renderPost(); },er=>console.warn("emo likes read failed",er));
-    d.ref(CMT).on("value",sn=>{ cmtMap=sn.val()||{}; checkReplies(); updateCards(); if(curPost) renderPost(); },er=>console.warn("emo comments read failed",er));
+    d.ref(CMT).on("value",sn=>{ cmtMap=sn.val()||{}; updateCards(); if(curPost) renderPost(); },er=>console.warn("emo comments read failed",er));
     ref.limitToLast(200).on("value",snap=>{
       const v=snap.val()||{}, arr=Object.keys(v).map(k=>({k,t:String(v[k].t||""),ts:v[k].ts||0,nm:v[k].n?String(v[k].n):""}));
       arr.sort((a,b)=>a.ts-b.ts||(a.k<b.k?-1:1));
@@ -8624,8 +8491,6 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
   if(addBtn){
     addBtn.addEventListener("click",()=>openForm(null));
   }
-  const avBtn=document.getElementById("emoAvBtn");
-  if(avBtn) avBtn.addEventListener("click",()=>{ if(window.Auth&&Auth.pickAvatar) Auth.pickAvatar(); });
   document.getElementById("emoClose").addEventListener("click",closeForm);
   cancelBtn.addEventListener("click",closeForm);
   ov.addEventListener("click",e=>{ if(e.target===ov) closeForm(); });
@@ -8692,7 +8557,7 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
   const iLiked=k=>{ const u=uidNow(); return !!(u&&likeMap[k]&&likeMap[k][u]); };
   function cmtList(k){
     const v=cmtMap[k]||{};
-    return Object.keys(v).map(ck=>({k:ck,t:String(v[ck].t||""),ts:v[ck].ts||0,nm:v[ck].n?String(v[ck].n):"",al:v[ck].a?String(v[ck].a):"",p:v[ck].p?String(v[ck].p):""})).sort((a,b)=>a.ts-b.ts||(a.k<b.k?-1:1));
+    return Object.keys(v).map(ck=>({k:ck,t:String(v[ck].t||""),ts:v[ck].ts||0,nm:v[ck].n?String(v[ck].n):"",p:v[ck].p?String(v[ck].p):""})).sort((a,b)=>a.ts-b.ts||(a.k<b.k?-1:1));
   }
   function actionsHtml(k){
     return '<div class="emo-actions"><button type="button" class="emo-act emo-like'+(iLiked(k)?' on':'')+'" title="讚">'+HEART+'<span>'+likeCount(k)+'</span></button><button type="button" class="emo-act emo-cmt" title="留言">'+BUBBLE+'<span>'+cmtList(k).length+'</span></button></div>';
@@ -8705,26 +8570,6 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
       const w=c.querySelector(".emo-when"); if(w) w.textContent=ago(+w.dataset.ts);
     });
   }
-  // 有人回覆你的留言／在你的貼文下留言（不管你或對方是不是匿名）→ 寫一則通知到自己的信箱
-  function checkReplies(){
-    try{
-      const uid=uidNow(); if(!uid||!mineReady||!cMineReady||mineUid!==uid||cMineUid!==uid||typeof SharedStore==="undefined") return;
-      const key="bp_emo_seen_"+uid; let raw=null; try{ raw=localStorage.getItem(key); }catch(e){}
-      let max=+raw||0; const found=[];
-      Object.keys(cmtMap).forEach(pk=>{ const v=cmtMap[pk]||{}; Object.keys(v).forEach(ck=>{
-        const c=v[ck]; if(!c||!c.ts) return;
-        const fresh=raw!==null&&c.ts>(+raw||0);
-        if(c.ts>max) max=c.ts;
-        if(!fresh||cMine.has(ck)) return;
-        if(c.p?cMine.has(c.p):mineSet.has(pk)) found.push({c,ts:c.ts,pk:pk,ck:ck});
-      }); });
-      try{ localStorage.setItem(key,String(max||Date.now())); }catch(e){}
-      found.sort((a,b)=>a.ts-b.ts).slice(-5).forEach(x=>{
-        const who=x.c.n?shortName(String(x.c.n)):(x.c.a||"匿名");
-        SharedStore.notify(uid,"reply",who+(x.c.p?" 回覆了你的留言：":" 在你的貼文下留言：")+String(x.c.t||"").replace(/\s+/g," ").slice(0,40),"post:"+x.pk+":"+x.ck);
-      });
-    }catch(e){ console.warn("checkReplies failed",e); }
-  }
   function toggleLike(k,btn){
     if(!window.Auth||!Auth.requireLogin()) return;
     const d=getDb(), uid=uidNow(); if(!d||!uid) return;
@@ -8732,11 +8577,11 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
     if(iLiked(k)){
       // 先在本地更新，畫面立即反應
       if(likeMap[k]) delete likeMap[k][uid]; updateCards(); if(curPost) renderPost();
-      r.remove().catch(er=>{ (likeMap[k]=likeMap[k]||{})[uid]=true; updateCards(); if(curPost) renderPost(); alert("操作失敗："+(er.code||er.message)); });
+      r.remove().catch(er=>alert("操作失敗："+(er.code||er.message)));
     }else{
       (likeMap[k]=likeMap[k]||{})[uid]=true; updateCards(); if(curPost) renderPost();
       if(btn){ btn.classList.add("pop"); setTimeout(()=>btn.classList.remove("pop"),300); }
-      r.set(true).catch(er=>{ if(likeMap[k]) delete likeMap[k][uid]; updateCards(); if(curPost) renderPost(); alert("操作失敗："+(er.code||er.message)); });
+      r.set(true).catch(er=>alert("操作失敗："+(er.code||er.message)));
     }
   }
   function setCMode(m){
@@ -8769,31 +8614,10 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
     });
     return hit;
   }
-  // 頭像：匿名＝問號（樓主紅色、其他人依亂碼換色）；角色＝角色頭像；實名＝自己上傳的頭像，沒有就是虛線圓圈
-  function avHtml(nm,size,al){
-    const cls="emo-cav"+(size?" "+size:"");
-    if(!nm){
-      return '<div class="'+cls+' anon">?</div>';
-    }
-    const r=roleByName(nm);
-    if(r) return r.avatarUrl?'<div class="'+cls+' role-img"><img src="'+esc(r.avatarUrl)+'" alt=""></div>':'<div class="'+cls+' role-empty"></div>';
-    const av=avMap[encodeURIComponent(nm).replace(/\./g,"%2E")];
-    if(av) return '<div class="'+cls+' role-img"><img src="'+esc(av)+'" alt=""></div>';
-    return '<div class="'+cls+' role-empty"></div>';
-  }
-  const nameOf=c=>c.nm?shortName(c.nm):(c.al||"匿名");
-  // 匿名亂碼：同一個人在同一篇貼文永遠是同一個，換一篇就是新的
-  const ANIMALS=["cat","dog","fox","owl","bear","wolf","deer","crow","seal","mole","hare","lynx","moth","newt","toad","swan","wasp","crab","duck","goat","horse","beetle","squid","otter","panda","koala","tiger","eagle","gecko","raven","whale","mouse"];
-  function hash32(s,seed){ let h=2166136261^seed; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; }
-  function anonAlias(pk,uid){
-    const s=uid+":"+pk;
-    return ANIMALS[hash32(s,1)%ANIMALS.length]+String(10000+hash32(s,7)%90000);
-  }
   function renderPost(){
     const it=list.find(x=>x.k===curPost);
     if(!it){ closePost(); return; }
     pName.textContent=it.nm?it.nm:"匿名";
-    const pav=document.getElementById("emoPAv"); if(pav) pav.innerHTML=avHtml(it.nm,"md");
     pTime.textContent=ago(it.ts); pTime.title=fmt(it.ts);
     pText.textContent=it.t;
     pActs.innerHTML=actionsHtml(it.k).replace(/^<div class="emo-actions">|<\/div>$/g,"");
@@ -8805,18 +8629,30 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
     cs.forEach(c=>{ byKey[c.k]=c; });
     cs.forEach(c=>{ if(c.p&&c.p!==c.k&&byKey[c.p]) (kids[c.p]=kids[c.p]||[]).push(c); else tops.push(c); });
     const flat=k=>{ let o=[]; (kids[k]||[]).forEach(x=>{ o.push(x); o=o.concat(flat(x.k)); }); return o.sort((a,b)=>a.ts-b.ts||(a.k<b.k?-1:1)); };
-    const avatar=(nm,sm,al)=>avHtml(nm,sm?"sm":"",al);
+    const avatar=(nm,sm)=>{
+      const cls="emo-cav"+(sm?" sm":"");
+      // 匿名：統一紅底亮紅問號
+      if(!nm) return '<div class="'+cls+' anon">?</div>';
+      // 角色：換成該角色的頭像；沒上傳頭像就是虛線底色（沒有加號）
+      const r=roleByName(nm);
+      if(r){
+        return r.avatarUrl
+          ? '<div class="'+cls+' role-img"><img src="'+esc(r.avatarUrl)+'" alt=""></div>'
+          : '<div class="'+cls+' role-empty"></div>';
+      }
+      // 實名：維持原本的首字頭像
+      const ch=Array.from(nm)[0]; let h=0; for(const x of nm) h=(h*31+x.charCodeAt(0))%360;
+      return '<div class="'+cls+'" style="background:hsl('+h+',38%,30%)">'+esc(ch)+'</div>'; };
     // 一則留言（含它底下的回覆）。超過三層的回覆不再往內縮，改成同一層並標註「回覆誰」
     const one=(c,depth,label)=>{
       const mng=canManageC(c.k), ed=(editingC===c.k);
       const own=depth>=3?[]:(depth>=2?flat(c.k):(kids[c.k]||[]));
       const nrep=flat(c.k).length;
-      const head='<div class="emo-chead"><span class="emo-name">'+esc(nameOf(c))+'</span><span class="emo-when" title="'+esc(fmt(c.ts))+'">'+esc(ago(c.ts))+'</span>'+(mng&&!ed?'<button type="button" class="emo-more" style="display:flex" title="更多">'+DOTS+'</button><div class="emo-menu"><button type="button" data-a="cedit">'+PEN+'編輯</button><button type="button" data-a="cdel">'+BIN+'刪除</button></div>':'')+'</div>';
+      const head='<div class="emo-chead"><span class="emo-name">'+esc(shortName(c.nm))+'</span><span class="emo-when" title="'+esc(fmt(c.ts))+'">'+esc(ago(c.ts))+'</span>'+(mng&&!ed?'<button type="button" class="emo-more" style="display:flex" title="更多">'+DOTS+'</button><div class="emo-menu"><button type="button" data-a="cedit">'+PEN+'編輯</button><button type="button" data-a="cdel">'+BIN+'刪除</button></div>':'')+'</div>';
       const body=ed?'<div class="emo-c-edit"><textarea class="emo-c-edit-ta" maxlength="200">'+esc(editDraft)+'</textarea><div class="emo-c-bar"><span class="n">'+editDraft.length+'/200</span><button type="button" data-a="ccancel">取消</button><button type="button" class="go" data-a="csave">儲存</button></div></div>':'<div class="emo-c-body">'+esc(c.t)+'</div>';
-      const lc=likeCount(c.k);
-      const acts=ed?"":'<div class="emo-cacts"><button type="button" class="emo-act emo-clike'+(iLiked(c.k)?' on':'')+'" title="讚">'+HEART+(lc?'<span>'+lc+'</span>':'')+'</button><button type="button" class="emo-act emo-creply" title="回覆">'+BUBBLE+(nrep?'<span>'+nrep+'</span>':'')+'</button></div>';
-      return '<div class="emo-c'+(replyTo===c.k?" replying":"")+'" data-ck="'+esc(c.k)+'"><div class="emo-crow"><div class="emo-cl">'+avatar(c.nm,depth>0,c.al)+(own.length?'<div class="emo-cline"></div>':'')+'</div><div class="emo-cm">'+head+(label?'<div class="emo-clabel">'+esc(label)+'</div>':'')+body+acts+'</div></div>'
-        +(own.length?'<div class="emo-kids">'+own.map(x=>one(x,depth>=2?3:depth+1,(depth>=2&&x.p!==c.k&&byKey[x.p])?"回覆 "+nameOf(byKey[x.p]):"")).join("")+'</div>':'')+'</div>';
+      const acts=ed?"":'<div class="emo-cacts"><button type="button" class="emo-act emo-creply" title="回覆">'+BUBBLE+(nrep?'<span>'+nrep+'</span>':'')+'</button></div>';
+      return '<div class="emo-c'+(replyTo===c.k?" replying":"")+'" data-ck="'+esc(c.k)+'"><div class="emo-crow"><div class="emo-cl">'+avatar(c.nm,depth>0)+(own.length?'<div class="emo-cline"></div>':'')+'</div><div class="emo-cm">'+head+(label?'<div class="emo-clabel">'+esc(label)+'</div>':'')+body+acts+'</div></div>'
+        +(own.length?'<div class="emo-kids">'+own.map(x=>one(x,depth>=2?3:depth+1,(depth>=2&&x.p!==c.k&&byKey[x.p])?"回覆 "+shortName(byKey[x.p].nm):"")).join("")+'</div>':'')+'</div>';
     };
     pList.innerHTML=tops.length?tops.map(c=>one(c,0,(c.p&&!byKey[c.p])?"回覆已刪除的留言":"")).join(""):'<div class="emo-cempty">還沒有留言，來說點什麼。</div>';
     refreshReplyBar();
@@ -8831,7 +8667,7 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
     if(!replyTo||!curPost){ replyBar.style.display="none"; return; }
     const c=cmtList(curPost).find(x=>x.k===replyTo);
     if(!c){ replyTo=null; replyBar.style.display="none"; return; }
-    replyBar.firstElementChild.textContent="回覆 "+nameOf(c)+"："+c.t.replace(/\s+/g," ").slice(0,24);
+    replyBar.firstElementChild.textContent="回覆 "+shortName(c.nm)+"："+c.t.replace(/\s+/g," ").slice(0,24);
     replyBar.style.display="flex";
   }
   function setReply(ck){ replyTo=ck||null; renderPost(); if(replyTo) cTa.focus(); }
@@ -8841,18 +8677,6 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
     renderPost(); cmtOv.classList.add("open"); pScroll.scrollTop=0;
     lockScroll(true); fitComposer();
   }
-  window.EmoNav={ open:function(pk,ck,n){
-    n=n||0;
-    if(!list.some(x=>x.k===pk)){
-      if(n<10) return void setTimeout(()=>window.EmoNav.open(pk,ck,n+1),400);
-      return void alert("這則貼文已經不存在了");
-    }
-    openPost(pk);
-    if(ck) setTimeout(()=>{
-      const el=pList.querySelector('[data-ck="'+ck+'"]');
-      if(el){ el.scrollIntoView({block:"center",behavior:"smooth"}); el.style.transition="background .6s"; el.style.background="rgba(194,36,47,.22)"; setTimeout(()=>{ el.style.background=""; },1800); }
-    },300);
-  } };
   function closePost(){ curPost=null; editingC=null; replyTo=null; refreshReplyBar(); closePicker(); cmtOv.classList.remove("open"); lockScroll(false); }
   function lockScroll(on){
     document.documentElement.style.overflow=on?"hidden":"";
@@ -8887,8 +8711,6 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
   });
   // 貼文視窗：按讚、刪除留言
   cmtOv.addEventListener("click",e=>{
-    const cl=e.target.closest&&e.target.closest(".emo-clike");
-    if(cl){ const row=cl.closest(".emo-c"); if(row&&row.dataset.ck) toggleLike(row.dataset.ck,cl); return; }
     const like=e.target.closest&&e.target.closest(".emo-like");
     if(like&&curPost){ toggleLike(curPost,like); return; }
     const more=e.target.closest&&e.target.closest(".emo-more");
@@ -8934,7 +8756,6 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
     if(replyTo&&cmtList(pk).some(c=>c.k===replyTo)) rec.p=replyTo;
     if(cmode==="named"){ const nk=(Auth.nick()||"").slice(0,50); if(nk) rec.n=nk; }
     else if(cmode==="role"&&cRole){ rec.n=String(cRole.name).slice(0,50); }
-    else{ const it=list.find(x=>x.k===pk); rec.a=(it&&!it.nm&&mineSet.has(pk))?"匿名-樓主":anonAlias(pk,uid); }
     const up={}; up[CMT+"/"+pk+"/"+ck]=rec; up[COWN+"/"+ck]=uid; up[CMINE+"/"+uid+"/"+ck]=true;
     cSend.disabled=true;
     d.ref().update(up).then(()=>{ lastC=Date.now(); cTa.value=""; fitComposer(); replyTo=null; if(curPost===pk) renderPost();
@@ -8980,10 +8801,10 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
     const fail=er=>alert("刪除失敗："+(er.code||er.message));
     const base={}; base[CMT+"/"+pk+"/"+ck]=null; base[COWN+"/"+ck]=null;
     if(isAdmin()){
-      d.ref(COWN+"/"+ck).once("value").then(sn=>{ const ou=sn.val(), up=Object.assign({},base); if(ou) up[CMINE+"/"+ou+"/"+ck]=null; return d.ref().update(up); }).then(()=>d.ref(LIKES+"/"+ck).remove().catch(()=>{})).catch(fail);
+      d.ref(COWN+"/"+ck).once("value").then(sn=>{ const ou=sn.val(), up=Object.assign({},base); if(ou) up[CMINE+"/"+ou+"/"+ck]=null; return d.ref().update(up); }).catch(fail);
     }else{
       const up=Object.assign({},base); up[CMINE+"/"+cMineUid+"/"+ck]=null;
-      d.ref().update(up).then(()=>d.ref(LIKES+"/"+ck).remove().catch(()=>{})).catch(fail);
+      d.ref().update(up).catch(fail);
     }
   }
   // 刪除貼文後，順手清掉它的讚與留言（失敗也不影響貼文本身的刪除）
@@ -8996,10 +8817,10 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
   function watchCMine(uid){
     const d=getDb(); if(!d) return;
     if(cMineRef){ cMineRef.off(); cMineRef=null; }
-    cMineUid=uid; cMine=new Set(); cMineReady=false;
+    cMineUid=uid; cMine=new Set();
     if(!uid) return;
     cMineRef=d.ref(CMINE+"/"+uid);
-    cMineRef.on("value",sn=>{ cMine=new Set(Object.keys(sn.val()||{})); cMineReady=true; checkReplies(); if(curPost) renderPost(); },er=>console.warn("emo cmine read failed",er));
+    cMineRef.on("value",sn=>{ cMine=new Set(Object.keys(sn.val()||{})); if(curPost) renderPost(); },er=>console.warn("emo cmine read failed",er));
   }
   /* ===== 管理員：一鍵刪除全部貼文（連同讚、留言與索引一起清掉）===== */
   (function(){
@@ -9052,56 +8873,7 @@ window.sponsorApp={getSubjects:()=>subjects.slice(),openAvatar,openEdit,createSu
   })();
   setInterval(()=>{ const u=uidNow(); if(u!==cMineUid) watchCMine(u); updateCards(); },1500);
   setInterval(syncAdmin,1500);
-  window.addEventListener("bp-auth-ready",syncAdmin);
   window.addEventListener("load",()=>setTimeout(subscribe,300));
-})();
-</script>
-<style>
-.avnag-ov{position:fixed;inset:0;z-index:100001;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.6);padding:16px}
-.avnag-ov.show{display:flex}
-.avnag{width:min(92vw,360px);box-sizing:border-box;padding:22px 20px 18px;background:rgba(20,4,6,.97);border:1px solid #7a1c1c;border-left:3px solid #c2242f;box-shadow:0 6px 30px rgba(0,0,0,.6);color:#e8dfd0;text-align:center}
-.avnag-ring{width:64px;height:64px;margin:0 auto 12px;border-radius:50%;border:2px dashed rgba(232,223,208,.55)}
-.avnag h4{margin:0 0 6px;font-size:15px;letter-spacing:.08em;color:#ff9a9a;font-weight:700}
-.avnag p{margin:0 0 16px;font-size:13px;line-height:1.7;opacity:.85}
-.avnag button{display:block;width:100%;box-sizing:border-box;padding:10px 12px;margin-top:8px;font:inherit;font-size:14px;letter-spacing:.06em;cursor:pointer;border:1px solid #7a1c1c;background:transparent;color:#e8dfd0}
-.avnag button.go{background:#8f1019;border-color:#c2242f;color:#fff}
-</style>
-<script>
-(function(){
-  var room=document.getElementById("emoRoom"); if(!room) return;
-  var shown=false, visMs=0, vis=false, ov=null;
-  try{ if(sessionStorage.getItem("avnag_done")) shown=true; }catch(e){}
-  function build(){
-    ov=document.createElement("div"); ov.className="avnag-ov";
-    ov.innerHTML='<div class="avnag"><div class="avnag-ring"></div><h4>設定你的實名頭像</h4><p>你還沒有上傳實名頭像。<br>用實名投稿、留言時，就會顯示你的頭像。</p><button type="button" class="go">前往更換</button><button type="button" class="later">稍後再說</button></div>';
-    document.body.appendChild(ov);
-    ov.querySelector(".later").onclick=close;
-    ov.addEventListener("click",function(e){ if(e.target===ov) close(); });
-    ov.querySelector(".go").onclick=function(){
-      close();
-      var b=document.getElementById("emoAvBtn"); if(b) b.click();   // 等同按下「頭像＋」
-    };
-  }
-  function close(){ if(ov) ov.classList.remove("show"); }
-  function show(){
-    shown=true; try{ sessionStorage.setItem("avnag_done","1"); }catch(e){}
-    if(!ov) build(); ov.classList.add("show");
-  }
-  if("IntersectionObserver" in window){
-    new IntersectionObserver(function(es){ vis=es[0].isIntersecting; if(!vis) visMs=0; },{threshold:0.5}).observe(room);
-  } else { vis=true; }
-  var t=setInterval(function(){
-    if(shown){ clearInterval(t); return; }
-    if(!vis){ visMs=0; return; }
-    // 登入提示或其他視窗開著時先不打擾
-    if(document.querySelector(".avnag-ov.show")) return;
-    visMs+=500;
-    if(visMs>=3000 && window.Auth && Auth.needAvatar && Auth.needAvatar()){
-      var open=document.querySelector("#emoOverlay.open");
-      if(open) return;
-      show();
-    }
-  },500);
 })();
 </script>
 </body>
