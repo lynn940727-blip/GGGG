@@ -5285,7 +5285,7 @@ function renderGrid(){
     counts[c.dead ? "dead" : c.cardClass]++;
 
     let noteHTML;
-    if(!c.dead && s.statuses.length > 0){
+    if(s.statuses.length > 0){   // 死亡後狀態照樣顯示，重生才會清除
       noteHTML = s.statuses.map(st => '<span class="status-pill">' + escapeHTML(st) + '</span>').join("");
     } else {
       noteHTML = c.text;
@@ -6077,7 +6077,7 @@ function renderModalBody(){
       backBtn() +
       '<div class="modal-eyebrow">' + eyebrow + '</div>' +
       '<div class="modal-title">添加狀態</div>' +
-      '<input type="text" class="text-input" id="statusInput1" maxlength="40" placeholder="例如：斷手、腦震盪">' +
+      '<input type="text" class="text-input" id="statusInput1" maxlength="50" placeholder="例如：斷手、腦震盪">' +
       '<button class="confirm-btn" onclick="confirmStatus1()">下一步</button>';
 
   } else if(step === "statusAskSecond"){
@@ -6094,7 +6094,7 @@ function renderModalBody(){
       backBtn() +
       '<div class="modal-eyebrow">' + eyebrow + '</div>' +
       '<div class="modal-title">第二個狀態</div>' +
-      '<input type="text" class="text-input" id="statusInput2" maxlength="40" placeholder="例如：斷手、腦震盪">' +
+      '<input type="text" class="text-input" id="statusInput2" maxlength="50" placeholder="例如：斷手、腦震盪">' +
       '<button class="confirm-btn" onclick="confirmStatus2()">前往確認</button>';
 
   } else if(step === "actionPreview"){
@@ -6601,7 +6601,7 @@ function renderEditForm(){
         : '<span class="edit-status-empty">目前沒有狀態</span>') +
     '</div>' +
     '<div class="edit-status-add">' +
-      '<input type="text" class="text-input" id="editStatusInput" placeholder="輸入新狀態名稱" maxlength="40">' +
+      '<input type="text" class="text-input" id="editStatusInput" placeholder="輸入新狀態名稱" maxlength="50">' +
       '<button class="modify-btn small" onclick="addEditStatus()">新增狀態</button>' +
     '</div>' +
     '<span class="field-label">隱藏台詞（連續點擊卡片三下觸發，可留空）</span>' +
@@ -6619,7 +6619,7 @@ function openEditStatusModal(i){
     '<div class="modal-eyebrow">編輯狀態 ／ ' + s.id + '</div>' +
     '<div class="modal-title">修改狀態內容</div>' +
     '<span class="field-label">狀態名稱</span>' +
-    '<input type="text" class="text-input" id="editStatusModalInput" value="' + escapeHTML(editDraft.statuses[i]) + '" maxlength="40">' +
+    '<input type="text" class="text-input" id="editStatusModalInput" value="' + escapeHTML(editDraft.statuses[i]) + '" maxlength="50">' +
     '<button class="confirm-btn" onclick="saveEditStatusModal()">儲存</button>' +
     '<button class="modify-btn" onclick="renderEditForm()">取消</button>' +
     '<button class="danger-btn" onclick="deleteEditStatusModal()">刪除此狀態</button>';
