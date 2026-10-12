@@ -6427,7 +6427,7 @@ async function applyAction(){
       if(_diedNow || _madNow){
         anyDead = true;
         killedMap[id] = _diedNow ? "dead" : "mad";
-        t.statuses = [];
+        // 死亡／瘋狂不清除狀態，重生時才會清空
         if(_diedNow) t.deathCount += 1;
         if(_madNow) t.madCount += 1;
       }
@@ -6665,7 +6665,6 @@ function saveEdit(){
   // （如果同一次編輯裡有自己改次數欄位，就以填的次數為準，不再自動加）
   if(oldHp > 0 && s.hp === 0 && s.deathCount === oldDeath) s.deathCount = Math.min(99, oldDeath + 1);
   if(oldSan > 0 && s.san === 0 && s.madCount === oldMad) s.madCount = Math.min(99, oldMad + 1);
-  if(s.hp === 0 || s.san === 0) s.statuses = [];
   s.egg = document.getElementById("editEgg").value.slice(0, 300);
   if(before) SharedStore.logEdit("實驗體", "實驗體" + before.id + "——" + before.name, before, snapOfSubject(s));
   editSnap = null; editDraft = null;
