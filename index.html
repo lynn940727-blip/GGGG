@@ -3767,6 +3767,14 @@ const SharedStore = (function(){
           if(!any) fields = null;
         }
       }
+      // 一般玩家對「別人的角色」：Firebase 規則只允許改 hp／san（±1）、狀態、死亡／瘋狂次數。
+      // 名字、繃帶、針筒、頭像、隱藏台詞等欄位就算跟資料庫不一樣（例如舊紀錄缺欄位、程式裡改過名字）也不能一起送，
+      // 否則整筆會被拒絕（PERMISSION_DENIED）。這裡只留下規則允許的欄位。
+      if(!j.del && j.old && fields && window.Auth && Auth.uid() && !Auth.isAdmin && j.old.owner !== Auth.uid()){
+        const ALLOW = {hp:1, san:1, statuses:1, deathCount:1, madCount:1};
+        Object.keys(fields).forEach(f => { if(!ALLOW[f]) delete fields[f]; });
+        if(!Object.keys(fields).length) fields = null;
+      }
       if(!j.del && !fields){ st.known[j.k] = j.c; st.rec[j.k] = j.rec; return; }
       // 先當作已寫入（避免重複送出）；失敗時還原，下次再試
       if(j.del){ delete st.known[j.k]; delete st.rec[j.k]; }
@@ -4274,7 +4282,10 @@ const Auth=(function(){
     const d=db();
     return Promise.all([
       d.ref("users/"+user.uid+"/favs").once("value").then(s=>{ const v=s.val(); favs=new Set(v?Object.keys(v):localFavs()); }).catch(()=>{ favs=new Set(localFavs()); }),
-      d.ref("users/"+user.uid+"/nick").once("value").then(s=>{ nick=s.val()||localNick(); if(nick) cacheNick(nick); }).catch(e=>{ nick=localNick(); console.warn("nick read failed",e); }),
+      d.ref("users/"+user.uid+"/nick").once("value").then(s=>{ const dbNick=s.val(); nick=dbNick||localNick(); if(nick) cacheNick(nick);
+        // 資料庫沒有暱稱、只有這台裝置記著：規則要求資料庫有暱稱才能改別人的角色，否則一律 PERMISSION_DENIED → 自動補寫回去
+        if(!dbNick && nick){ d.ref("users/"+user.uid).update({nick:nick}).catch(e=>console.warn("nick backfill failed",e)); }
+      }).catch(e=>{ nick=localNick(); console.warn("nick read failed",e); }),
       d.ref("admins/"+user.uid).once("value").then(s=>{admin=s.val()===true;}).catch(()=>{admin=false;}),
       d.ref("claimRequests/"+user.uid).once("value").then(s=>{pend=s.val()||{};}).catch(()=>{pend={};}),
       d.ref("users/"+user.uid+"/tut").once("value").then(s=>{
@@ -6364,6 +6375,8 @@ async function awaitWrite(list, before, after){
     result = await Promise.race([pending, new Promise(res => setTimeout(() => res("timeout"), 10000))]);
   }catch(e){ result = false; }
   if(result === true) return {ok: true};
+  // 先記下錯誤代碼：下面 renderGrid() 會再跑一次 save()，把 lastError 清成空的，視窗就只剩 unknown
+  const _failCode = result === "timeout" ? "timeout" : (SharedStore.lastError() || "unknown");
   // 失敗：只還原這次改到的欄位（期間別人又改了同一欄就不動它）
   list.forEach(s => {
     WRITE_FIELDS.forEach(f => {
@@ -6373,7 +6386,7 @@ async function awaitWrite(list, before, after){
   renderGrid();
   return {
     ok: false,
-    code: result === "timeout" ? "timeout" : (SharedStore.lastError() || "unknown"),
+    code: _failCode,
     msg: result === "timeout" ? "連線逾時，請確認網路後再試。" : "資料庫沒有收到這次的修改。"
   };
 }
