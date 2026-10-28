@@ -4486,6 +4486,10 @@ const Auth=(function(){
       if(ak.length) h+='<div class="au-pend"><div class="au-pend-h">已批准</div><div class="au-pend-s">角色已綁定到你的帳號，可以在「我的角色」使用</div>'+ak.map(k=>'<div class="au-pend-t">'+esc(pend[k].f)+'　編號 '+esc(pend[k].id)+'　'+esc(pend[k].name)+'</div><button class="au-btn au_cancel" data-c="'+esc(k)+'">知道了</button>').join("")+'</div>';
       if(pk.length) h+='<div class="au-pend"><div class="au-pend-h">等待批准</div><div class="au-pend-s">管理員批准後即可使用角色</div>'+pk.map(k=>'<div class="au-pend-t">'+esc(pend[k].f)+'　編號 '+esc(pend[k].id)+'　'+esc(pend[k].name)+'</div><button class="au-btn au-danger au_cancel" data-c="'+esc(k)+'">取消申請</button>').join("")+'</div>';
       h+='<span class="field-label">陣營</span><select class="pick" id="au_f">'+Object.keys(ST).map(f=>"<option>"+f+"</option>").join("")+'</select><span class="field-label">角色</span><select class="pick" id="au_c" size="5"></select><button class="confirm-btn" id="au_rq">送出申請</button>';
+    }else if(view==="addadmin"){
+      if(!admin){ view="home"; render(); return; }
+      h+=BACK+'<div class="modal-title" style="font-size:17px">新增管理員</div><div class="modal-note">只要登入過網站、設定過暱稱的帳號，都會出現在這裡。設為管理員後，他的權限跟你一樣。</div>'
+        +'<input class="text-input" id="au_adm_q" placeholder="搜尋暱稱" maxlength="50"><div id="au_adm_list" class="modal-note">讀取中…</div>';
     }else if(view==="bind"){
       if(!admin){ view="home"; render(); return; }
       ensureBindStyle();
@@ -4524,7 +4528,7 @@ const Auth=(function(){
         +(an?'<div class="au-pend click au_row" data-v="claim"><div class="au-pend-h">已批准</div><div class="au-pend-s">你有 '+an+' 筆申請已批准，點此查看 ›</div></div>':"")
         +(pn?'<div class="au-pend click au_row" data-v="claim"><div class="au-pend-h">等待批准</div><div class="au-pend-s">你有 '+pn+' 筆申請正在等管理員審核，點此查看／取消 ›</div></div>':"")
         +row("inbox",MAIL_ICON,un?'<span class="au-badge amber">未讀 '+un+'</span>':"無新通知")
-        +(admin?row("admin","待批准的申請",'<span id="au_admcnt"></span>')+'<div class="au-row" id="au_addchar"><span>新增角色</span><span class="v">›</span></div>'+row("bind","綁定一覽",(()=>{ const ub=Object.keys(ST).reduce((n,f)=>n+roster(f).filter(s=>!s.owner).length,0); return ub?'<span class="au-badge amber">未綁定 '+ub+'</span>':"全部已綁定"; })()):"")
+        +(admin?row("admin","待批准的申請",'<span id="au_admcnt"></span>')+'<div class="au-row" id="au_addchar"><span>新增角色</span><span class="v">›</span></div>'+row("addadmin","新增管理員","")+row("bind","綁定一覽",(()=>{ const ub=Object.keys(ST).reduce((n,f)=>n+roster(f).filter(s=>!s.owner).length,0); return ub?'<span class="au-badge amber">未綁定 '+ub+'</span>':"全部已綁定"; })()):"")
         +'<div class="au-sec"><span>我的角色</span><button class="au-mini au_row" data-v="claim">＋ 申請角色</button></div><div id="au_cards"></div>'
         +'<div class="au-sec"><span>收藏的實驗體</span><button class="au-mini au_row" data-v="fav">＋ 選擇收藏</button></div><div id="au_favcards"></div>'
         +(admin?"":'<div class="modal-note" style="word-break:break-all;font-size:11px;opacity:.5;margin-top:16px">UID：'+user.uid+"</div>");
@@ -4596,6 +4600,7 @@ const Auth=(function(){
       };
     }
     if(view==="admin") adminList(b);
+    if(view==="addadmin") addAdminView(b);
     if(view==="home"){
       const c=b.querySelector("#au_cards"), fc=b.querySelector("#au_favcards");
       const fillC=()=>{
@@ -4610,6 +4615,42 @@ const Auth=(function(){
         el.innerHTML=n?'<span class="au-badge">待批准 '+n+'</span>':"";
       }).catch(()=>{});
     }
+  }
+  function addAdminView(b){
+    const box=b.querySelector("#au_adm_list"), q=b.querySelector("#au_adm_q"); if(!box) return;
+    let users=null, adms={};
+    const alive=()=>isOpen()&&view==="addadmin"&&document.body.contains(box);
+    const draw=()=>{
+      if(!users||!alive()) return;
+      const kw=(q&&q.value||"").trim().toLowerCase();
+      const arr=Object.keys(users).map(u=>({u:u,n:(users[u]&&users[u].nick)||""}))
+        .filter(x=>x.n&&(!kw||x.n.toLowerCase().indexOf(kw)>=0||x.u.toLowerCase().indexOf(kw)>=0))
+        .sort((x,y)=>(adms[y.u]?1:0)-(adms[x.u]?1:0)||x.n.localeCompare(y.n,"zh-TW"));
+      box.className="";
+      box.innerHTML=arr.length?arr.map(x=>{
+        const isAdm=adms[x.u]===true, me=user&&x.u===user.uid;
+        return '<div class="au-req"><div class="au-req-n">'+esc(x.n)+(me?'　（你）':'')+'</div><div class="au-req-t">'+(isAdm?'目前身分：管理員':'目前身分：一般玩家')+'　UID …'+esc(x.u.slice(-6))+'</div>'
+          +(me?'':'<div class="au-req-b">'+(isAdm
+            ?'<button class="au-btn au-danger" data-u="'+esc(x.u)+'" data-a="del">取消管理員</button>'
+            :'<button class="au-btn au-ok" data-u="'+esc(x.u)+'" data-a="add">設為管理員</button>')+'</div>')+'</div>';
+      }).join(""):'<div class="au-empty">找不到帳號。對方需要先登入網站並設定暱稱。</div>';
+      box.querySelectorAll("button[data-a]").forEach(btn=>btn.onclick=ev=>{
+        ev.preventDefault();
+        const u=btn.dataset.u, n=(users[u]&&users[u].nick)||"對方", add=btn.dataset.a==="add";
+        if(!confirm(add?"確定要讓「"+n+"」成為管理員嗎？他會擁有跟你一樣的權限。":"確定要取消「"+n+"」的管理員身分嗎？")) return;
+        btn.disabled=true;
+        const r=db().ref("admins/"+u);
+        (add?r.set(true):r.remove()).then(()=>{
+          if(add) adms[u]=true; else delete adms[u];
+          try{ SharedStore.notify(u,"sys",add?"你已被設為管理員。":"你的管理員身分已被取消。"); }catch(e){}
+          draw();
+        }).catch(e=>{ btn.disabled=false; alert("設定失敗："+(e.code||e.message)); });
+      });
+    };
+    if(q) q.oninput=draw;
+    Promise.all([db().ref("users").once("value"),db().ref("admins").once("value")]).then(r=>{
+      users=r[0].val()||{}; adms=r[1].val()||{}; draw();
+    }).catch(e=>{ if(alive()) box.textContent="讀取失敗："+(e.code||e.message); });
   }
   function adminList(b){
     db().ref("claimRequests").once("value").then(snap=>{
